@@ -1,0 +1,19 @@
+# Permalinks
+#
+# Use of `relative_permalinks` ensures post links from the index work properly.
+permalink:           pretty
+
+# Setup
+title:               avlc
+tagline:             'Another VHDL Language Compiler'
+description:         'because we need another one https://xkcd.com/927/'
+baseurl:             '/avlc'
+paginate:            5
+
+# About/contact
+author:
+  name:              Rishabh Rawat
+  email:             rishabhrawat1994@gmail.com
+
+gems: ['jekyll-github-metadata', 'jekyll-paginate', 'jemoji']
+repository: rishabhrawat/avlc
