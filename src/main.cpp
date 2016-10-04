@@ -19,7 +19,9 @@
 #include "options.h"
 
 int main(int argc, char *argv[]) {
-  Options configOptions;
-  configOptions.parse(argc, argv);
-  if (configOptions["help"])
+
+    Options configOptions;
+    configOptions.parse(argc, argv);
+    if (configOptions["help"].as<bool>())
+        configOptions.displayHelp();
 }
