@@ -19,203 +19,181 @@
 #include "Parser.h"
 
 Parser::Parser(const std::string sourceFile)
-    : fileName(sourceFile), sourceFile(sourceFile) {}
+        : fileName(sourceFile), sourceFile(sourceFile) {}
 
 void Parser::parse() {}
 
 std::string Parser::ParseComment() {
-  std::string commment;
-  sourceFile.getline(comment, INT16_MAX);
-  if (sourceFile.fail())
-    throw SyntaxError(fileName, lineNumber, "Too long line, for gods sake dont "
-                                            "write the whole world in a single "
-                                            "line");
-  sourceFile.unget();
-  return commment;
+    std::string commment;
+    sourceFile.getline(comment, INT16_MAX);
+    if (sourceFile.fail())
+        throw SyntaxError(fileName, lineNumber, "Too long line, for gods sake dont "
+                "write the whole world in a single "
+                "line");
+    sourceFile.unget();
+    lastComment = commment;
+    return commment;
 }
-
-// procedure Scan_Comment
-// is
-//        C :
-// Character;
-// begin
-//        Token_Idlen : = 0;
-// loop
-//        C : = Get_Char;
-// exit when
-// C = CR or C = LF;
-// Token_Idlen : = Token_Idlen + 1;
-// Token_Ident (Token_Idlen) : = C;
-// end loop;
-// Unget_Char;
-// end Scan_Comment;
-
 Parser::Token Parser::getNextToken() {
 
-  while (1) {
-    int inputCharacter = sourceFile.get();
-    switch (inputCharacter) {
-    case -1:
-      return Token::Tok_Eof;
-    case '\r':
-      break;
-    case '\n':
-      lineNumber++;
-      break;
-    case '+':
-      return Token::Tok_Plus;
-    case '-':
-      if (sourceFile.get() == '-') {
-        switch (sourceFile.get()) {
-        case '#':
-          return Token::Tok_Line_Number;
-        case 'F':
-          return Token::Tok_
-        }
-      } else {
-        sourceFile.unget();
-        break;
-      }
-    C:
-      = Get_Char;
-      if
-        C = '#' then return Tok_Line_Number;
-      elsif C = 'F' then Scan_Comment;
-      return Tok_File_Name;
-      elsif C = ' ' then Scan_Comment;
-      return Tok_Comment;
-      else Scan_Error("bad comment");
-      end if;
-      else Unget_Char;
-      return Tok_Minus;
-      end if;
-    default:
-      return Token::Tok_Eof;
-    }
-  }
+    while (1) {
+        int inputCharacter = sourceFile.get();
+        switch (inputCharacter) {
+            case -1:
+                return Token::Tok_Eof;
+            case '\r':
+                break;
+            case '\n':
+                lineNumber++;
+                break;
+            case '+':
+                return Token::Tok_Plus;
+            case '-':
+                if (sourceFile.get() == '-') {
+                    switch (sourceFile.get()) {
+                        case '#':
+                            return Token::Tok_Line_Number;
+                        case 'F':
+                            return Token::Tok_File_Name;
+                        case ' ':
+                            ParseComment();
+                            return Token::Tok_Comment;
+                        default:
+                            throw SyntaxError(fileName, lineNumber, "Invalid syntax for comments");_
+                    }
+                } else {
+                    sourceFile.unget();
+                    return Token::Tok_Minus;
+                }
+            case '/':
+                if(sourceFile.get() == '=')
+                    return Token::Tok_Not_Equal;
+                else {
+                    sourceFile.unget();
+                    return Token::Tok_Div;
+                }
+            case '*':
+                return Token::Tok_Star;
+            case '#':
+                return Token::Tok_Sharp;
+            case '=':
+                if (sourceFile.get()=='>')
+                    return Token::Tok_Arrow;
+                else {
+                    sourceFile.unget();
+                    return Token::Tok_Equal;
+                }
+            case '>':
+                if (sourceFile.get()=='=')
+                    return Token::Tok_Greater_Eq;
+                else {
+                    sourceFile.unget();
+                    return Token::Tok_Greater;
+                }
+            case '<':
+                if (sourceFile.get()=='=')
+                    return Token::Tok_Less_Eq;
+                else {
+                    sourceFile.unget();
+                    return Token::Tok_Less;
+                }
+            case '(':
+                return Token::Tok_Left_Paren;
+            case ')':
+                return Token::Tok_Right_Paren;
+            case '{':
+                return Token::Tok_Left_Brace;
+            case '}':
+                return Token::Tok_Right_Brace;
+            case '[':
+                return Token::Tok_Left_Brack;
+            case ']':
+                return Token::Tok_Right_Brack;
+            case ':':
+                if (sourceFile.get()=='=')
+                    return Token::Tok_Assign;
+                else {
+                    sourceFile.unget();
+                    return Token::Tok_Colon;
+                }
+            case '.':
+                if(sourceFile.get() == '.') {
+                    if(sourceFile.get() == '.')
+                        return Token::Tok_Elipsis;
+                    else
+                        throw SyntaxError(fileName, lineNumber, "Expecting ellipsis (...)");
+                }
+                else {
+                    sourceFile.unget();
+                    return Token::Tok_Colon;
+                }
+            case ';':
+                return Token::Tok_Semicolon;
+            case ',':
+                return Token::Tok_Comma;
+            case '@':
+                return Token::Tok_Arob;
+            case '\'':
+                if (lastToken == Token::Tok_Ident)
+                    return Token::Tok_Tick;
+                else {
 
-case C is when NUL = > return Tok_Eof; when ' ' | HT = > null;
-    when LF = > Lineno:
-  = Lineno + 1;
-C:
-  = Get_Char;
-  if
-    C /= CR then goto Again;
-  end if;
-  when CR = > Lineno : = Lineno + 1;
-C:
-  = Get_Char;
-  if
-    C /= LF then goto Again;
-  end if;
-  when '+' = > return Tok_Plus;
-  when '-' = > C : = Get_Char;
-  if
-    C = '-' then C : = Get_Char;
-  if
-    C = '#' then return Tok_Line_Number;
-  elsif C = 'F' then Scan_Comment;
-  return Tok_File_Name;
-  elsif C = ' ' then Scan_Comment;
-  return Tok_Comment;
-  else Scan_Error("bad comment");
-  end if;
-  else Unget_Char;
-  return Tok_Minus;
-  end if;
-  when '/' = > C : = Get_Char;
-  if
-    C = '=' then return Tok_Not_Equal;
-  else
-    Unget_Char;
-  return Tok_Div;
-  end if;
-  when '*' = > return Tok_Star;
-  when '#' = > return Tok_Sharp;
-  when '=' = > C : = Get_Char;
-  if
-    C = '>' then return Tok_Arrow;
-  else
-    Unget_Char;
-  return Tok_Equal;
-  end if;
-  when '>' = > C : = Get_Char;
-  if
-    C = '=' then return Tok_Greater_Eq;
-  else
-    Unget_Char;
-  return Tok_Greater;
-  end if;
-  when '(' = > return Tok_Left_Paren;
-  when ')' = > return Tok_Right_Paren;
-  when '{' = > return Tok_Left_Brace;
-  when '}' = > return Tok_Right_Brace;
-  when '[' = > return Tok_Left_Brack;
-  when ']' = > return Tok_Right_Brack;
-  when '<' = > C : = Get_Char;
-  if
-    C = '=' then return Tok_Less_Eq;
-  else
-    Unget_Char;
-  return Tok_Less;
-  end if;
-  when ':' = > C : = Get_Char;
-  if
-    C = '=' then return Tok_Assign;
-  else
-    Unget_Char;
-  return Tok_Colon;
-  end if;
-  when '.' = > C : = Get_Char;
-  if
-    C = '.' then C : = Get_Char;
-  if
-    C = '.' then return Tok_Elipsis;
-  else
-    Scan_Error("'...' expected");
-  end if;
-  else Unget_Char;
-  return Tok_Dot;
-  end if;
-  when ';' = > return Tok_Semicolon;
-  when ',' = > return Tok_Comma;
-  when '@' = > return Tok_Arob;
-  when
+                }
+
+
+            default:
+                return Token::Tok_Eof;
+        }
+    }
+
+    when
     ''
     ' => if Tok_Previous = Tok_Ident then return Tok_Tick;
-  else Token_Number : = Character
+    else Token_Number : = Character
     'Pos (Get_Char); C : = Get_Char;
-  if
-    C /= ''
+    if
+        C /= ''
     ' then Scan_Error("ending single quote expected");
-  end if;
-  return Tok_Num;
-  end if;
-  when '"' = > --"
-                 --Eat double quote.C : = Get_Char;
-Token_Idlen:
-  = 0;
-  loop Scan_Char(C);
-C:
-  = Get_Char;
-  exit when C = '"';
-  --"
-      end loop;
-  return Tok_String;
-  when '0'..'9' = > return Scan_Number(C);
-  when 'a'..'z' | 'A'..'Z' | '_' = > Token_Idlen : = 0;
-Token_Hash:
-  = 0;
-  loop Token_Idlen : = Token_Idlen + 1;
-  Token_Ident(Token_Idlen) : = C;
-Token_Hash:
-  = Token_Hash * 31 + Character
+    end
+    if;
+    return Tok_Num;
+    end
+    if;
+    when
+    '"' = > --"
+            --
+    Eat
+    double quote.C : = Get_Char;
+    Token_Idlen:
+    = 0;
+    loop Scan_Char(C);
+    C:
+    = Get_Char;
+    exit
+    when C = '"';
+    --"
+    end loop;
+    return Tok_String;
+    when
+    '0'..
+    '9' = > return Scan_Number(C);
+    when
+    'a'..
+    'z' | 'A'..
+    'Z' | '_' = > Token_Idlen : = 0;
+    Token_Hash:
+    = 0;
+    loop Token_Idlen : = Token_Idlen + 1;
+    Token_Ident(Token_Idlen) : = C;
+    Token_Hash:
+    = Token_Hash * 31 + Character
     'Pos (C); C : = Get_Char;
-  exit when(C < 'A' or C > 'Z') and (C < 'a' or C > 'z') and
-      (C < '0' or C > '9') and (C /= '_');
-  end loop;
-  Unget_Char;
-  return Get_Ident_Token;
+    exit
+    when(C < 'A' or C > 'Z') and (C < 'a' or C > 'z') and
+    (C < '0' or C > '9') and (C /= '_');
+    end loop;
+    Unget_Char;
+    return Get_Ident_Token;
     when
     others =>
     Scan_Error("Bad character:"
@@ -223,7 +201,8 @@ Token_Hash:
     'Image (Character'Pos(C))
     &C);
     return Tok_Eof;
-    end case;
+    end
+    case;
     end loop;
     end Get_Token;
 }
