@@ -1,6 +1,6 @@
 /*
  * avlc: another vhdl language compiler
- * Copyright (C) 2016 Rishabh Rawat  <name of author>
+ * Copyright (C) 2016 Rishabh Rawat
  *
  * avlc is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "options.h"
+#include "CompilerOptions.h"
 
 int main(int argc, char *argv[]) {
 
-    Options configOptions;
-    configOptions.parse(argc, argv);
-    if (configOptions["help"].as<bool>())
-        configOptions.displayHelp();
+  LibraryOptions configOptions;
+  configOptions.parse(argc, argv);
+  if (configOptions["help"].as<bool>())
+    configOptions.displayHelp();
 }

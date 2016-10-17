@@ -4,7 +4,11 @@ project(avlc)
 set(CMAKE_CXX_STANDARD 14)
 
 set(SOURCE_FILES
-    src/main.cpp)
+        src/main.cpp
+        include/CompilerExceptions.h
+        include/CompilerOptions.h
+        src/Parser.cpp
+        include/Parser.h)
 
 
 set( CMAKE_CXX_FLAGS "-fstack-protector -fstack-protector-all" )

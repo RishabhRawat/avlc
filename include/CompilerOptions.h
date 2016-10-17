@@ -1,6 +1,6 @@
 /*
  * avlc: another vhdl language compiler
- * Copyright (C) 2016 Rishabh Rawat  <name of author>
+ * Copyright (C) 2016 Rishabh Rawat
  *
  * avlc is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,18 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef AVLC_OPTIONS_H
-#define AVLC_OPTIONS_H
+#ifndef AVLC_COMPILEROPTIONS_H
+#define AVLC_COMPILEROPTIONS_H
 
 #include "cxxopts.hpp"
 #include <iostream>
 #include <stdexcept>
 
-class Options {
+class LibraryOptions {
     cxxopts::Options optionHandler;
 
-  public:
-    Options() : optionHandler{"avlc", "Another VHDL language compiler"} {
+public:
+    LibraryOptions() : optionHandler{"avlc", "Another VHDL language compiler"} {
         auto addMainOption = optionHandler.add_options("Main Options");
         addMainOption("work", "use as work library", cxxopts::value<std::string>());
         addMainOption("workdir", "use for the file library", cxxopts::value<std::string>());
@@ -74,7 +74,7 @@ class Options {
 
     inline void displayHelp() {
         std::cout << optionHandler.help(
-            {"Main Options", "Warnings", "Extensions", "Compilation list", "Compilation dump"});
+                {"Main Options", "Warnings", "Extensions", "Compilation list", "Compilation dump"});
     }
 
     inline const cxxopts::OptionDetails &operator[](const std::string &option) const { return optionHandler[option]; }
@@ -87,6 +87,7 @@ class Options {
               standard == "08"))
             throw std::invalid_argument("standard can only be among 87, 93, 93c, 00, 02, 08");
     }
+
 };
 
-#endif // AVLC_OPTIONS_H
+#endif // AVLC_COMPILEROPTIONS_H
