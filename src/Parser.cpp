@@ -19,190 +19,204 @@
 #include "Parser.h"
 
 Parser::Parser(const std::string sourceFile)
-        : fileName(sourceFile), sourceFile(sourceFile) {}
+    : fileName(sourceFile), sourceFile(sourceFile) {}
 
 void Parser::parse() {}
 
-std::string Parser::ParseComment() {
-    std::string commment;
-    sourceFile.getline(comment, INT16_MAX);
-    if (sourceFile.fail())
-        throw SyntaxError(fileName, lineNumber, "Too long line, for gods sake dont "
-                "write the whole world in a single "
-                "line");
-    sourceFile.unget();
-    lastComment = commment;
-    return commment;
+// FIXME: What if sourcefile sets eof at some point!!
+Parser::Token Parser::parseNumericLiteral() {
+  int initialDigit = sourceFile.get();
+  if (initialDigit < 0 || !std::isdigit(static_cast<char>(initialDigit)))
+    throw std::runtime_error("Wrong call to Parser::parseNumericLiteral, "
+                             "ensure that the first character is a numeric "
+                             "literal");
+  std::string number1(1, static_cast<char>(initialDigit));
+
+  while (isdigit(sourceFile.peek()) || sourceFile.peek() == '_') {
+    if (isdigit(sourceFile.peek()))
+      number1.push_back(static_cast<char>(sourceFile.get()));
+  }
+
+  if (sourceFile.peek() == '#') {
+    int base = std::stoi(number1);
+    lastNumber = 0;
+    while (sourceFile.peek() != '#') {
+      int character = sourceFile.get();
+
+      int baseChar;
+      if (character >= 'A' && character <= 'F')
+        baseChar = 'A';
+      else if (character >= 'a' && character <= 'f')
+        baseChar = 'a';
+      else if (character >= '0' && character <= '9')
+        baseChar = '0';
+      else
+        throw SyntaxError(fileName, lineNumber,
+                          "invalid character in numeric literal");
+      lastNumber = lastNumber * base + (character - baseChar);
+    }
+    return Token::Tok_Num;
+
+  } else if (sourceFile.peek() == '.') {
+    while (isdigit(sourceFile.peek()))
+      number1.push_back(static_cast<char>(sourceFile.get()));
+    if (sourceFile.peek() == 'e' || sourceFile.peek() == 'E') {
+      number1.push_back('e');
+      while (isdigit(sourceFile.peek()))
+        number1.push_back(static_cast<char>(sourceFile.get()));
+    } else
+      SyntaxError(fileName, lineNumber, "Invalid numeric literal");
+    lastDouble = std::stod(number1);
+    return Token::Tok_Float_Num;
+  } else {
+    lastNumber = std::stoi(number1);
+    return Token::Tok_Num;
+  }
 }
+
+std::string Parser::parseComment() {
+  std::string commment;
+  sourceFile.getline(comment, INT16_MAX);
+  if (sourceFile.fail())
+    throw SyntaxError(fileName, lineNumber, "Too long line, for gods sake dont "
+                                            "write the whole world in a single "
+                                            "line");
+  sourceFile.unget();
+  lastComment = commment;
+  return commment;
+}
+
 Parser::Token Parser::getNextToken() {
 
-    while (1) {
-        int inputCharacter = sourceFile.get();
-        switch (inputCharacter) {
-            case -1:
-                return Token::Tok_Eof;
-            case '\r':
-                break;
-            case '\n':
-                lineNumber++;
-                break;
-            case '+':
-                return Token::Tok_Plus;
-            case '-':
-                if (sourceFile.get() == '-') {
-                    switch (sourceFile.get()) {
-                        case '#':
-                            return Token::Tok_Line_Number;
-                        case 'F':
-                            return Token::Tok_File_Name;
-                        case ' ':
-                            ParseComment();
-                            return Token::Tok_Comment;
-                        default:
-                            throw SyntaxError(fileName, lineNumber, "Invalid syntax for comments");_
-                    }
-                } else {
-                    sourceFile.unget();
-                    return Token::Tok_Minus;
-                }
-            case '/':
-                if(sourceFile.get() == '=')
-                    return Token::Tok_Not_Equal;
-                else {
-                    sourceFile.unget();
-                    return Token::Tok_Div;
-                }
-            case '*':
-                return Token::Tok_Star;
-            case '#':
-                return Token::Tok_Sharp;
-            case '=':
-                if (sourceFile.get()=='>')
-                    return Token::Tok_Arrow;
-                else {
-                    sourceFile.unget();
-                    return Token::Tok_Equal;
-                }
-            case '>':
-                if (sourceFile.get()=='=')
-                    return Token::Tok_Greater_Eq;
-                else {
-                    sourceFile.unget();
-                    return Token::Tok_Greater;
-                }
-            case '<':
-                if (sourceFile.get()=='=')
-                    return Token::Tok_Less_Eq;
-                else {
-                    sourceFile.unget();
-                    return Token::Tok_Less;
-                }
-            case '(':
-                return Token::Tok_Left_Paren;
-            case ')':
-                return Token::Tok_Right_Paren;
-            case '{':
-                return Token::Tok_Left_Brace;
-            case '}':
-                return Token::Tok_Right_Brace;
-            case '[':
-                return Token::Tok_Left_Brack;
-            case ']':
-                return Token::Tok_Right_Brack;
-            case ':':
-                if (sourceFile.get()=='=')
-                    return Token::Tok_Assign;
-                else {
-                    sourceFile.unget();
-                    return Token::Tok_Colon;
-                }
-            case '.':
-                if(sourceFile.get() == '.') {
-                    if(sourceFile.get() == '.')
-                        return Token::Tok_Elipsis;
-                    else
-                        throw SyntaxError(fileName, lineNumber, "Expecting ellipsis (...)");
-                }
-                else {
-                    sourceFile.unget();
-                    return Token::Tok_Colon;
-                }
-            case ';':
-                return Token::Tok_Semicolon;
-            case ',':
-                return Token::Tok_Comma;
-            case '@':
-                return Token::Tok_Arob;
-            case '\'':
-                if (lastToken == Token::Tok_Ident)
-                    return Token::Tok_Tick;
-                else {
-
-                }
-
-
-            default:
-                return Token::Tok_Eof;
+  while (1) {
+    int inputCharacter = sourceFile.get();
+    switch (inputCharacter) {
+    case -1:
+      return Token::Tok_Eof;
+    case '\r':
+      break;
+    case '\n':
+      lineNumber++;
+      break;
+    case '+':
+      return Token::Tok_Plus;
+    case '-':
+      if (sourceFile.get() == '-') {
+        switch (sourceFile.get()) {
+        case '#':
+          return Token::Tok_Line_Number;
+        case 'F':
+          return Token::Tok_File_Name;
+        case ' ':
+          parseComment();
+          return Token::Tok_Comment;
+        default:
+          throw SyntaxError(fileName, lineNumber,
+                            "Invalid syntax for comments");
         }
-    }
+      } else {
+        sourceFile.unget();
+        return Token::Tok_Minus;
+      }
+    case '/':
+      if (sourceFile.get() == '=')
+        return Token::Tok_Not_Equal;
+      else {
+        sourceFile.unget();
+        return Token::Tok_Div;
+      }
+    case '*':
+      return Token::Tok_Star;
+    case '#':
+      return Token::Tok_Sharp;
+    case '=':
+      if (sourceFile.get() == '>')
+        return Token::Tok_Arrow;
+      else {
+        sourceFile.unget();
+        return Token::Tok_Equal;
+      }
+    case '>':
+      if (sourceFile.get() == '=')
+        return Token::Tok_Greater_Eq;
+      else {
+        sourceFile.unget();
+        return Token::Tok_Greater;
+      }
+    case '<':
+      if (sourceFile.get() == '=')
+        return Token::Tok_Less_Eq;
+      else {
+        sourceFile.unget();
+        return Token::Tok_Less;
+      }
+    case '(':
+      return Token::Tok_Left_Paren;
+    case ')':
+      return Token::Tok_Right_Paren;
+    case '{':
+      return Token::Tok_Left_Brace;
+    case '}':
+      return Token::Tok_Right_Brace;
+    case '[':
+      return Token::Tok_Left_Brack;
+    case ']':
+      return Token::Tok_Right_Brack;
+    case ':':
+      if (sourceFile.get() == '=')
+        return Token::Tok_Assign;
+      else {
+        sourceFile.unget();
+        return Token::Tok_Colon;
+      }
+    case '.':
+      if (sourceFile.get() == '.') {
+        if (sourceFile.get() == '.')
+          return Token::Tok_Elipsis;
+        else
+          throw SyntaxError(fileName, lineNumber, "Expecting ellipsis (...)");
+      } else {
+        sourceFile.unget();
+        return Token::Tok_Colon;
+      }
+    case ';':
+      return Token::Tok_Semicolon;
+    case ',':
+      return Token::Tok_Comma;
+    case '@':
+      return Token::Tok_Arob;
+    case '\'':
+      if (lastToken == Token::Tok_Ident)
+        return Token::Tok_Tick;
+      else {
+        // TODO: Implement character??
+        throw std::runtime_error("unimplemented single quotes!!");
+        if (sourceFile.get() != '\'')
+          throw SyntaxError(fileName, lineNumber,
+                            "ending single quote expected");
+        else
+          return Token::Tok_Num;
+      }
+    case '\"':
+      // TODO: Implement double code handler??
+      while (sourceFile.get() != '\"')
+        if (sourceFile.eof())
+          throw throw SyntaxError(fileName, lineNumber,
+                                  "ending double quote expected");
+      return Token::Tok_String;
+    default:
+      if (inputCharacter >= '0' && inputCharacter <= '9') {
+        sourceFile.unget();
+        return parseNumericLiteral();
+      } else if ((inputCharacter >= 'A' && inputCharacter <= 'z') ||
+                 (inputCharacter >= 'A' && inputCharacter <= 'Z') ||
+                 inputCharacter == '_') {
+        // TODO: Implement character??
+        throw std::runtime_error("unimplemented single quotes!!");
 
-    when
-    ''
-    ' => if Tok_Previous = Tok_Ident then return Tok_Tick;
-    else Token_Number : = Character
-    'Pos (Get_Char); C : = Get_Char;
-    if
-        C /= ''
-    ' then Scan_Error("ending single quote expected");
-    end
-    if;
-    return Tok_Num;
-    end
-    if;
-    when
-    '"' = > --"
-            --
-    Eat
-    double quote.C : = Get_Char;
-    Token_Idlen:
-    = 0;
-    loop Scan_Char(C);
-    C:
-    = Get_Char;
-    exit
-    when C = '"';
-    --"
-    end loop;
-    return Tok_String;
-    when
-    '0'..
-    '9' = > return Scan_Number(C);
-    when
-    'a'..
-    'z' | 'A'..
-    'Z' | '_' = > Token_Idlen : = 0;
-    Token_Hash:
-    = 0;
-    loop Token_Idlen : = Token_Idlen + 1;
-    Token_Ident(Token_Idlen) : = C;
-    Token_Hash:
-    = Token_Hash * 31 + Character
-    'Pos (C); C : = Get_Char;
-    exit
-    when(C < 'A' or C > 'Z') and (C < 'a' or C > 'z') and
-    (C < '0' or C > '9') and (C /= '_');
-    end loop;
-    Unget_Char;
-    return Get_Ident_Token;
-    when
-    others =>
-    Scan_Error("Bad character:"
-               & Integer
-    'Image (Character'Pos(C))
-    &C);
-    return Tok_Eof;
-    end
-    case;
-    end loop;
-    end Get_Token;
+      } else
+        throw SyntaxError(fileName, lineNumber,
+                          "invalid character \'" + inputCharacter + '\'');
+    }
+  }
 }
