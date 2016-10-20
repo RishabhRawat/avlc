@@ -19,25 +19,17 @@
 #define AVLC_PARSER_H
 
 #include "CompilerExceptions.h"
+#include "Nodes.h"
+#include <algorithm>
+#include <bits/unordered_set.h>
 #include <fstream>
+#include <memory>
+#include <stack>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 class Parser {
-
-  const std::string fileName;
-  std::ifstream sourceFile;
-  unsigned int lineNumber = 0;
-  unsigned int position = 0;
-
-  std::string lastComment;
-  Token lastToken;
-  double lastDouble;
-  long lastNumber;
-
-  Token getNextToken();
-
-  std::string parseComment();
 
   enum class Token {
     Tok_Eof,
@@ -119,66 +111,220 @@ class Parser {
     Tok_Arrow,
     Tok_Null
   };
-  const std::unordered_map<std::string, Token> symbolTable = {
-      {"type", Token::Tok_Type},
-      {"return", Token::Tok_Return},
-      {"if", Token::Tok_If},
-      {"then", Token::Tok_Then},
-      {"else", Token::Tok_Else},
-      {"elsif", Token::Tok_Elsif},
-      {"loop", Token::Tok_Loop},
-      {"exit", Token::Tok_Exit},
-      {"next", Token::Tok_Next},
-      {"signed", Token::Tok_Signed},
-      {"unsigned", Token::Tok_Unsigned},
-      {"float", Token::Tok_Float},
-      {"is", Token::Tok_Is},
-      {"of", Token::Tok_Of},
-      {"all", Token::Tok_All},
-      {"not", Token::Tok_Not},
-      {"abs", Token::Tok_Abs},
-      {"or", Token::Tok_Or},
-      {"and", Token::Tok_And},
-      {"xor", Token::Tok_Xor},
-      {"mod", Token::Tok_Mod},
-      {"rem", Token::Tok_Rem},
-      {"array", Token::Tok_Array},
-      {"access", Token::Tok_Access},
-      {"record", Token::Tok_Record},
-      {"union", Token::Tok_Union},
-      {"end", Token::Tok_End},
-      {"boolean", Token::Tok_Boolean},
-      {"enum", Token::Tok_Enum},
-      {"external", Token::Tok_External},
-      {"private", Token::Tok_Private},
-      {"public", Token::Tok_Public},
-      {"local", Token::Tok_Local},
-      {"procedure", Token::Tok_Procedure},
-      {"function", Token::Tok_Function},
-      {"constant", Token::Tok_Constant},
-      {"var", Token::Tok_Var},
-      {"subarray", Token::Tok_Subarray},
-      {"declare", Token::Tok_Declare},
-      {"begin", Token::Tok_Begin},
-      {"end", Token::Tok_End},
-      {"null", Token::Tok_Null},
-      {"case", Token::Tok_Case},
-      {"when", Token::Tok_When},
-      {"default", Token::Tok_Default}};
-  //    Id_Address := New_Symbol ("address");
-  //    Id_Unchecked_Address := New_Symbol ("unchecked_address");
-  //    Id_Subprg_Addr := New_Symbol ("subprg_addr");
-  //    Id_Conv := New_Symbol ("conv");
-  //    Id_Sizeof := New_Symbol ("sizeof");
-  //    Id_Alignof := New_Symbol ("alignof");
-  //    Id_Alloca := New_Symbol ("alloca");
-  //    Id_Offsetof := New_Symbol ("offsetof");
+
+  enum class NodeType {
+    Decl_Keyword,
+    Decl_Type,
+    Decl_Param,
+    Node_Function,
+    Node_Procedure,
+    Node_Object,
+    Node_Field,
+    Node_Lit,
+    Type_Boolean,
+    Type_Enum,
+    Type_Unsigned,
+    Type_Signed,
+    Type_Float,
+    Type_Array,
+    Type_Subarray,
+    Type_Access,
+    Type_Record,
+    Type_Union
+  };
+
+  enum StorageType { External, Public, Private, Local };
+
+  struct Symbol;
+
+  using Scope = std::vector<Symbol *>;
+  using ScopeStack = std::stack<Scope *>;
+
+  ScopeStack scopeStack;
+
+  struct Node {};
+
+  using Identity = void *;
+
+  struct Name {
+    Node *interpretation;
+    Name *OuterInterpretation;
+    Scope *currentScope;
+
+    Name(Node *interpretation, Name *OuterInterpretation, Scope *currentScope);
+  };
+
+  struct Symbol {
+    std::string identity;
+    Name *name;
+
+    Symbol(const std::string &identity, Name *name);
+  };
+
+  struct DeclKeyword : Node {
+    Token keyword;
+
+    DeclKeyword(Token keyword);
+  };
+
+  struct DeclType : Node {
+    StorageType declStorage;
+    bool declDefined;
+    Node *declDtype;
+
+    DeclType(StorageType declStorage, bool declDefined, Node *declDtype);
+  };
+
+  struct DeclParam : Node {
+    StorageType declStorage;
+    bool declDefined;
+    Node *declDtype;
+    Symbol *paramName;
+    O_Dnode *paramNode;
+    Node *next; // TODO: FIX
+  };
+
+  /*
+      case Kind is
+                 when Node_Lit =>
+                    --  Name of the literal.
+                    Lit_Name : O_Ident;
+                    --  Enum literal
+                    Lit_Cnode : O_Cnode;
+                    --  Next literal for the type.
+                    Lit_Next : Node_Acc;
+                 when others =>
+                    null;
+              end case;
+  */
+  struct NodeFunction : Node {
+    StorageType declStorage;
+    bool declDefined;
+    Node *declDtype;
+    Symbol *subprgName;
+    Node *subprgParams;
+    O_Dnode *Subprg_Node;
+  };
+  struct NodeProcedure : Node {
+    StorageType declStorage;
+    bool declDefined;
+    Node *declDtype;
+    Symbol *subprgName;
+    Node *subprgParams;
+    O_Dnode *Subprg_Node;
+  };
+  struct NodeObject : Node {
+    StorageType declStorage;
+    bool declDefined;
+    Node *declDtype;
+    std::string objName;
+    O_Dnode *objNode;
+  };
+  struct NodeField : Node {
+    Symbol fieldIdent;
+    O_Fnode fieldFnode;
+    Node *fieldType;
+    Node *fieldNext;
+    Node *fieldHashNext;
+  };
+  struct NodeLit : Node {
+    StorageType declStorage;
+    bool declDefined;
+    Node *declDtype;
+    std::string litName;
+    O_Cnode *litCnode;
+    Node *litNext;
+  };
+  struct TypeBoolean : Node {
+    O_Tnode *typeNode;
+    Node *enumLits;
+  };
+  struct TypeEnum : Node {
+    O_Tnode *typeNode;
+    Node *enumLits;
+  };
+  struct TypeUnsigned : Node {
+    O_Tnode *typeNode;
+  };
+  struct TypeSigned : Node {
+    O_Tnode *typeNode;
+  };
+  struct TypeFloat : Node {
+    O_Tnode *typeNode;
+  };
+  struct TypeArray : Node {
+    O_Tnode *typeNode;
+    Node *arrayIndex;
+    Node *arrayElement;
+  };
+  struct TypeSubarray : Node {
+    O_Tnode *typeNode;
+    Node *subarrayBase;
+  };
+  struct TypeAccess : Node {
+    O_Tnode *typeNode;
+    Node *accessDType;
+  };
+  struct TypeRecord : Node {
+    O_Tnode *typeNode;
+    Node *Record_Union_Fields;
+    SymbolTable *Record_Union_Map; // TODO: Fix
+  };
+
+  struct TypeUnion : Node {
+    O_Tnode *typeNode;
+
+    Node *Record_Union_Fields;
+    SymbolTable *Record_Union_Map; // TODO: Fix
+  };
+
+  const std::string fileName;
+  std::ifstream sourceFile;
+  unsigned int lineNumber = 0;
+  unsigned int position = 0;
+
+  Token lastToken;
+  // TODO: Replace this using variant
+  std::string tokenString;
+  double tokenDouble;
+  long tokenNumber;
+
+  // TODO: Rename these
+  Symbol *Id_Address = new Symbol("address", nullptr);
+  Symbol *Id_Unchecked_Address = new Symbol("unchecked_address", nullptr);
+  Symbol *Id_Subprg_Addr = new Symbol("subprg_addr", nullptr);
+  Symbol *Id_Conv = new Symbol("conv", nullptr);
+  Symbol *Id_Sizeof = new Symbol("sizeof", nullptr);
+  Symbol *Id_Alignof = new Symbol("alignof", nullptr);
+  Symbol *Id_Alloca = new Symbol("alloca", nullptr);
+  Symbol *Id_Offsetof = new Symbol("offsetof", nullptr);
+
+  Token getNextToken();
+
+  std::string parseComment();
+
+  using SymbolTable = std::unordered_map<std::string, Symbol *>;
+
+  SymbolTable symbolTable;
+
+  inline Symbol *getFromSymbolTable(const std::string key) {
+    std::string lowerKey;
+    for (char k : key) {
+      lowerKey.push_back(tolower(k));
+    }
+    return symbolTable[lowerKey];
+  }
+
+  void pushScope();
+
 public:
   Parser(const std::string sourceFile);
 
   void parse();
 
   Token parseNumericLiteral();
+
+  void popScope();
 };
 
 #endif // AVLC_PARSER_H

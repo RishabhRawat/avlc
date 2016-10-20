@@ -8,12 +8,12 @@ set(SOURCE_FILES
         include/CompilerExceptions.h
         include/CompilerOptions.h
         src/Parser.cpp
-        include/Parser.h)
+        include/Parser.h include/Nodes.h)
 
 
-set( CMAKE_CXX_FLAGS "-fstack-protector -fstack-protector-all" )
-set( CMAKE_CXX_FLAGS_DEBUG "-Wall -ggdb" )
-set( CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall" )
+set( CMAKE_CXX_FLAGS "-fstack-protector -fstack-protector-all -Wall -Wextra -pedantic -Werror" )
+set( CMAKE_CXX_FLAGS_DEBUG "-ggdb" )
+set( CMAKE_CXX_FLAGS_RELEASE "-O3 " )
 
 include_directories(libs)
 include_directories(include)

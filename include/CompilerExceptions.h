@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstring>
 #include <exception>
+#include <string>
 
 class SyntaxError : std::exception {
   char fileName[50];
@@ -32,20 +33,17 @@ class SyntaxError : std::exception {
 public:
   SyntaxError(std::string file, unsigned int line, const char *error) noexcept
       : lineNumber(line) {
-    unsigned int i = 0;
-    strncpy(fileName, file, 49);
+    strncpy(fileName, file.c_str(), 49);
     fileName[49] = '\0';
     strncpy(errorMessage, error, 99);
     errorMessage[99] = '\0';
+    if (sprintf(completeErrorMessage, "%s:%d: %s", fileName, lineNumber,
+                errorMessage) <= 0)
+      strcpy(completeErrorMessage,
+             "Error in throwing error, god what the hell is wrong with me");
   }
 
-  const char *what() const noexcept override {
-    if (sprintf(completeErrorMessage, "%s:%d: %s", fileName, lineNumber,
-                errorMessage) > 0)
-      return completeErrorMessage;
-    else
-      return "Error in throwing error, god what the hell is wrong with me";
-  }
+  const char *what() const noexcept override { return completeErrorMessage; }
 };
 
 #endif // AVLC_COMPILEREXCEPTIONS_H
