@@ -7,7 +7,13 @@ set(SOURCE_FILES
         src/main.cpp
         include/CompilerExceptions.h
         include/CompilerOptions.h
+        include/State.h
+        include/Scanner.h
+        include/Token.h
+        include/types.h
+        include/Keywords.h
         src/Parser.cpp
+        src/Scanner.cpp
         include/Parser.h include/Nodes.h)
 
 
