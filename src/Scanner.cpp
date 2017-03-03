@@ -22,20 +22,10 @@
 #include <cassert>
 #include "Keywords.h"
 
-//with Ada.Characters.Handling;
-//with Errorout; use Errorout;
-//with Name_Table;
-//with Files_Map; use Files_Map;
-//with Std_Names;
-//with Str_Table;
-//with Flags; use Flags;
-
 // This classification is a simplification of the categories of LRM93 13.1
 // LRM93 13.1
 // The only characters allowed in the text of a VHDL description are the
 // graphic characters and format effector.
-
-
 enum class CharacterKindType {
 	Invalid, // Neither a format effector nor a graphic character.
 	Format_Effector,
@@ -59,10 +49,10 @@ enum class CharacterKindType {
 // Note: There is 191 graphic character.
 
 using GraphicCharacter = subtype<CharacterKindType,
-                                  CharacterKindType::Upper_Case_Letter,
-                                  CharacterKindType::Other_Special_Character>;
+                                 CharacterKindType::Upper_Case_Letter,
+                                 CharacterKindType::Other_Special_Character>;
 
-inline bool isGraphicCharacter (CharacterKindType c) {
+inline bool isGraphicCharacter(CharacterKindType c) {
 	return (c >= CharacterKindType::Upper_Case_Letter && c <= CharacterKindType::Other_Special_Character);
 };
 
@@ -73,47 +63,49 @@ inline bool isGraphicCharacter (CharacterKindType c) {
 
 // Note: This is Latin-1 encoding (ISO/IEC_8859-1)
 CharacterKindType getCharacterKind(unsigned char c) {
-	if ( c <= 8  || (c >= 14 && c <= 31) || (c >= 127 && c <= 159) )
+	if (c <= 8 || (c >= 14 && c <= 31) || (c >= 127 && c <= 159))
 		return CharacterKindType::Invalid;
 
-	// 1. upper case letters
+		// 1. upper case letters
 		// 'A' .. 'Z' | UC_A_Grave .. UC_O_Diaeresis | UC_O_Oblique_Stroke .. UC_Icelandic_Thorn
-	else if (( c >='A' && c <= 'Z') || ( c >=192 && c <= 222 && c != 215))
+	else if ((c >= 'A' && c <= 'Z') || (c >= 192 && c <= 222 && c != 215))
 		return CharacterKindType::Upper_Case_Letter;
 
 // 5. lower case letters
 //	'a' .. 'z' | LC_German_Sharp_S .. LC_O_Diaeresis | LC_O_Oblique_Stroke .. LC_Y_Diaeresis
-	else if (( c >='a' && c <= 'z') || ( c >=224 && c <= 255 && c != 247))
+	else if ((c >= 'a' && c <= 'z') || (c >= 224 && c <= 255 && c != 247))
 		return CharacterKindType::Lower_Case_Letter;
 
-	else if ( c >='0' && c <= '9')
+	else if (c >= '0' && c <= '9')
 		return CharacterKindType::Digit;
 
 // 3. special characters
 // '"' | '#' | '&' | ''' | '(' | ')' | '+' | ',' | '-' | '.' | '/' | ':'
 // ';' | '<' | '=' | '>' | '[' | ']' | '_' | '|' | '*'
 
-	else if (c == 34 || c == 35 || c == 38 || c == 39 || c == 40 || c == 41 || c == 42 || c == 43 || c == 44 || c == 45 || c == 46 || c == 47 || c == 58 || c == 59 || c == 60 || c == 61 || c == 62 || c == 91 || c == 93 || c == 95 || c == 124 )
+	else if (c == 34 || c == 35 || c == 38 || c == 39 || c == 40 || c == 41 || c == 42 || c == 43 || c == 44 || c == 45
+			|| c == 46 || c == 47 || c == 58 || c == 59 || c == 60 || c == 61 || c == 62 || c == 91 || c == 93
+			|| c == 95 || c == 124)
 		return CharacterKindType::Special_Character;
 
-	// Format effectors are the ISO (and ASCII) characters called horizontal
-	// tabulation, vertical tabulation, carriage return, line feed, and form
-	// feed.
-	else if ( c >=9 && c <= 13)
+		// Format effectors are the ISO (and ASCII) characters called horizontal
+		// tabulation, vertical tabulation, carriage return, line feed, and form
+		// feed.
+	else if (c >= 9 && c <= 13)
 		return CharacterKindType::Format_Effector;
-	else if ( c == 32 || c == 160)  // SP or NSBP
+	else if (c == 32 || c == 160)  // SP or NSBP
 		return CharacterKindType::Space_Character;
-	else if ( c <= 214)
+	else if (c <= 214)
 		return CharacterKindType::Format_Effector;
 // 6. other special characters
 //	'!' | '$' | '%' | '@' | '?' | '\' | '^' | '`' | '{' | '}' | '~' and others
 
-	else if (c == 33 ||	c == 36 ||	c == 37 ||	c == 64 ||	c == 63 ||	c == 92 ||	c == 94 ||	c == 96 ||	c == 123 ||	c == 125 ||	c == 126 ||	( c >=161 && c <= 191) || c == 215 || c == 247)
+	else if (c == 33 || c == 36 || c == 37 || c == 64 || c == 63 || c == 92 || c == 94 || c == 96 || c == 123
+			|| c == 125 || c == 126 || (c >= 161 && c <= 191) || c == 215 || c == 247)
 		return CharacterKindType::Other_Special_Character;
 	else
 		throw std::runtime_error("Invalid character");
 }
-
 
 // The context contains the whole internal state of the Scanner, ie
 // it can be used to push/pop a lexical analysis, to restart the
@@ -124,12 +116,12 @@ struct ScanContext {
 	unsigned int Line_Pos = 0;
 	unsigned int Token_Pos = 0;
 	unsigned int File_Len = 0;
-	Token token = Token::Invalid;
-	Token prevToken = Token::Invalid;
-//	Name_Id Identifier = 0; // 0 is invalid
+	Token::Token token = Token::Invalid;
+	Token::Token prevToken = Token::Invalid;
 	std::string Identifier;
 	Iir_Int64 Int64 = 0;
 	Iir_Fp64 Fp64 = 0;
+
 	inline unsigned char cChar() {
 		return currentChar;
 	}
@@ -138,50 +130,50 @@ struct ScanContext {
 		Source.get();
 		return currentChar = Source.peek();
 	}
+
 	inline unsigned char decChar() {
 		return currentChar = Source.unget().peek();
 	}
+
 	inline unsigned char nextChar() {
 		Source.get();
 		auto c = Source.peek();
 		Source.unget();
 		return c;
 	}
+
 	// newLine() must be called after each end-of-line to register to next line number. This is called by
 	// Scan_CR_Newline and Scan_LF_Newline.
 	inline void newLine() {
 		Line_Number++;
 		Line_Pos = Source.tellg() + 1;
 	}
+
 private:
 	std::ifstream Source;
 	unsigned char currentChar = 0;
 public:
-	ScanContext(State state , unsigned int fileId)
-			:Source_File(fileId), Source(state.fileList.at(fileId).first){ }
+	ScanContext(State state, unsigned int fileId)
+			:Source_File(fileId), Source(state.fileList.at(fileId).first) { }
 };
+
 ScanContext currentContext;
+
 /*
 Source: File_Buffer_Acc renames currentContext.Source;
 Pos: Source_Ptr renames currentContext.Pos;
 */
 
-void invalidateCurrentToken(){
-	if (currentContext.token != Token::Invalid){
+void invalidateCurrentToken() {
+	if (currentContext.token != Token::Invalid) {
 		currentContext.prevToken = currentContext.token;
 		currentContext.token = Token::Invalid;
 	}
 }
 
-// When currentContext.token is an identifier, its name_id is stored into
-// this global variable.
-// Function current_text can be used to convert it into an iir.
-Name_Id currentIdentifier() {
-	return currentContext.Identifier;
-}
 
 void invalidateCurrentIdentifier() {
-	currentContext.Identifier = 0;
+	currentContext.Identifier = "";
 }
 //Iir_Int64 currentIirInt64() ;
 //Iir_Fp64 currentIirFp64() ;
@@ -379,15 +371,15 @@ end std::runtime_error ("extended identifiers not allowed in vhdl87");;
 // (possibly none) enclosed between two quotation marks used as string
 // brackets.
 // STRING_LITERAL ::= " { GRAPHIC_CHARACTER } "
-		//
-		// IN: for a string, at the call of this procedure, the current character
+//
+// IN: for a string, at the call of this procedure, the current character
 // must be either '"' or '%'.
 
-void scanString () {
+void scanString() {
 	assert(currentContext.cChar() == '\"' || currentContext.cChar() == '%');
 	char mark = currentContext.cChar();
 	std::string str = "";
-	while(1) {
+	while (1) {
 		unsigned char c = currentContext.incChar();
 		if (c == mark) {
 			// LRM93 13.6
@@ -401,20 +393,20 @@ void scanString () {
 			// as a single percent sign value.
 			// The same replacement is allowed for a bit string literal,
 			// provieded that both bit string brackets are replaced.
-			if ( currentContext.cChar() != mark) return;
+			if (currentContext.cChar() != mark) return;
 		}
 		switch (getCharacterKind(c)) {
 		case CharacterKindType::Format_Effector:
 			if (mark == '%')
-			// No matching '%' has been found.  Consider '%' was used
-			// as the remainder operator, instead of 'rem'.  This will
-			// improve the error message.
+				// No matching '%' has been found.  Consider '%' was used
+				// as the remainder operator, instead of 'rem'.  This will
+				// improve the error message.
 				throw std::runtime_error("% is not a vhdl operator, use 'rem'");
 			throw std::runtime_error("format effector not allowed in a string");
 		case CharacterKindType::Invalid:
 			throw std::runtime_error("invalid character not allowed, even in a string");
 		default:
-			if( state.options.standard == Vhdl_Std::Vhdl_87 && c > 127 )
+			if (state.options.standard == Vhdl_Std::Vhdl_87 && c > 127)
 				("8 bits characters not allowed in vhdl87");
 		}
 		if (c == '\"' && mark == '%') {
@@ -440,8 +432,8 @@ void scanString () {
 // brackets, preceded by a base specifier.
 // BIT_STRING_LITERAL ::= BASE_SPECIFIER " [ BIT_VALUE ] "
 // BIT_VALUE ::= EXTENDED_DIGIT { [ UNDERLINE ] EXTENDED_DIGIT }
-		//
-		// The current character must be a base specifier, followed by '"' or '%'.
+//
+// The current character must be a base specifier, followed by '"' or '%'.
 // The base must be valid.
 // TODO: Implement vhdl 2008 standard
 void Scanner::scanBitString(unsigned int baseLog) {
@@ -451,7 +443,7 @@ void Scanner::scanBitString(unsigned int baseLog) {
 	unsigned char mark = currentContext.cChar(); // Should be " or %
 	int base = 1 << baseLog;
 	std::string bitString = "";
-	while(currentContext.cChar() != mark) {
+	while (currentContext.cChar() != mark) {
 		unsigned char c = currentContext.incChar();
 		uint8_t val = 0;
 		// LRM93 13.7
@@ -462,11 +454,11 @@ void Scanner::scanBitString(unsigned int baseLog) {
 		// system, ie, the digits 0 through 7.
 		// If the base specifier is 'X', the extended digits are all digits
 		// together with the letters A through F.
-		if (c >= '0' && c <= '9' )
+		if (c >= '0' && c <= '9')
 			val = c - '0';
-		else if (c >= 'a' && c <= 'f' )
+		else if (c >= 'a' && c <= 'f')
 			val = c - 'a' + 10;
-		else if (c >= 'A' && c <= 'F' )
+		else if (c >= 'A' && c <= 'F')
 			val = c - 'A' + 10;
 		else if (c == '_') {
 			if (currentContext.cChar() == '_')
@@ -483,8 +475,8 @@ void Scanner::scanBitString(unsigned int baseLog) {
 		else if (c == '\"')
 			throw std::runtime_error("\" cannot close a bit string opened by %");
 		else {
-			if( isGraphicCharacter(getCharacterKind(c))) {
-				if( state.options.standard >= Vhdl_Std::Vhdl_08)
+			if (isGraphicCharacter(getCharacterKind(c))) {
+				if (state.options.standard >= Vhdl_Std::Vhdl_08)
 					val = 255;
 				else
 					throw std::runtime_error("invalid character in bit string");
@@ -498,9 +490,9 @@ void Scanner::scanBitString(unsigned int baseLog) {
 		}
 
 		// Expand bit value
-		if ( state.options.standard >= Vhdl_Std::Vhdl_08 && val == 255) {
+		if (state.options.standard >= Vhdl_Std::Vhdl_08 && val == 255) {
 			// Graphic Character
-			for (int i = 0; i<baseLog; ++i)
+			for (int i = 0; i < baseLog; ++i)
 				bitString.push_back(c);
 		}
 		else {
@@ -512,19 +504,19 @@ void Scanner::scanBitString(unsigned int baseLog) {
 			case 8:
 				if (val > base - 1)
 					throw std::runtime_error("invalid character in a binary bit string");
-				bitString.push_back(val >> 2 ? '1': '0');
+				bitString.push_back(val >> 2 ? '1' : '0');
 				val &= ~(0x04);
-				bitString.push_back(val >> 1 ? '1': '0');
+				bitString.push_back(val >> 1 ? '1' : '0');
 				val &= ~(0x02);
-				bitString.push_back(val ? '1': '0');
+				bitString.push_back(val ? '1' : '0');
 			case 16:
-				bitString.push_back(val >> 3 ? '1': '0');
+				bitString.push_back(val >> 3 ? '1' : '0');
 				val &= ~(0x08);
-				bitString.push_back(val >> 2 ? '1': '0');
+				bitString.push_back(val >> 2 ? '1' : '0');
 				val &= ~(0x04);
-				bitString.push_back(val >> 1 ? '1': '0');
+				bitString.push_back(val >> 1 ? '1' : '0');
 				val &= ~(0x02);
-				bitString.push_back(val ? '1': '0');
+				bitString.push_back(val ? '1' : '0');
 			default:
 				throw std::runtime_error("invalid base, NOTE: VHDL 2008 not implemented");
 			}
@@ -538,26 +530,25 @@ void Scanner::scanBitString(unsigned int baseLog) {
 // is rather different: all the graphic characters shall be digits, and we
 // need to use a (not very efficient) arbitrary precision multiplication.
 void Scanner::scanDecimalBitString() {
-	//NOTE: I have removed "%" as a marker here because I am not too sure whether it can be used
+	// NOTE: I have removed "%" as a marker here because I am not too sure whether it can be used
 	// LRM2008 15.8 Bit string literals
 	// A bit string literal is formed by a sequence of characters (possibly none) enclosed between two
 	// quotation marks used as bit string brackets, preceded by a base specifier.
 	assert(currentContext.cChar() == '\"');
-	auto startPosition = currentContext.Source.tellg();
 	unsigned char mark = currentContext.cChar(); // Should be "
 	int decimalString = 0;
-	while(currentContext.cChar() != mark) {
+	while (currentContext.cChar() != mark) {
 		unsigned char c = currentContext.incChar();
 		uint8_t val = 0;
 
-		if (c>='0' && c<='9')
-			val = c-'0';
-		else if (c=='_') {
-			if (currentContext.cChar()=='_')
+		if (currentContext.cChar() >= '0' && currentContext.cChar() <= '9')
+			val = currentContext.cChar() - '0';
+		else if (currentContext.cChar() == '_') {
+			if (currentContext.nextChar() == '_')
 				throw std::runtime_error("double underscore not allowed in a bit string");
-			else if (currentContext.Source.tellg()==startPosition+2)
+			else if (currentContext.decChar() == '\"' && currentContext.incChar() == '_')
 				throw std::runtime_error("underscore not allowed at the start of a bit string");
-			else if (currentContext.cChar()==mark)
+			else if (currentContext.nextChar() == mark)
 				throw std::runtime_error("underscore not allowed at the end of a bit string");
 			else
 				continue;
@@ -590,7 +581,7 @@ void Scanner::scanDecimalBitString() {
 //
 // NB: At the call of this procedure, the current character must be a legal
 // character for a basic identifier.
-void Scanner::scanIdentifier(){
+void Scanner::scanIdentifier() {
 	// LRM93 13.3.1
 	//  All characters if a basic identifier are signifiant, including
 	//  any underline character inserted between a letter or digit and
@@ -602,29 +593,29 @@ void Scanner::scanIdentifier(){
 	// The opposite (converting in lower case letters) is not possible,
 	// because two characters have no upper-case equivalent.
 	currentContext.Identifier = "";
-	while(1) {
+	while (1) {
 		bool exitLoop = false;
 		unsigned char c = currentContext.cChar();
-		if(c >= 'A' && c <= 'Z')
+		if (c >= 'A' && c <= 'Z')
 			c = Ada_Chars::toLower(c);
 		else if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'));
-		else if (c=='_') {
-			if (currentContext.nextChar()=='_')
+		else if (c == '_') {
+			if (currentContext.nextChar() == '_')
 				throw std::runtime_error("two underscores can't be consecutive");
 		}
-		else if ( c == ' ' || c == ')' || c == '.' || c == ';' || c == ':')
+		else if (c == ' ' || c == ')' || c == '.' || c == ';' || c == ':')
 			break;
 		else {
 			// Uncommon cases
 			switch (getCharacterKind(c)) {
 			case CharacterKindType::Upper_Case_Letter:
 			case CharacterKindType::Lower_Case_Letter:
-				if( state.options.standard == Vhdl_Std::Vhdl_87)
-					std::runtime_error ("8 bits characters not allowed in vhdl87");
+				if (state.options.standard == Vhdl_Std::Vhdl_87)
+					std::runtime_error("8 bits characters not allowed in vhdl87");
 				c = Ada_Chars::toLower(c);
 				break;
 			case CharacterKindType::Digit:
-				throw std::runtime_error ("name this error better: this character is not allowed here");
+				throw std::runtime_error("name this error better: this character is not allowed here");
 			default:
 				exitLoop = true;
 			}
@@ -654,8 +645,9 @@ void Scanner::scanIdentifier(){
 		throw std::logic_error("Should not happen");
 	case CharacterKindType::Special_Character:
 	case CharacterKindType::Other_Special_Character:
-		if ((currentContext.cChar()=='\"' || currentContext.cChar()=='%') && currentContext.Identifier.length()<=2) {
-			if (currentContext.cChar()=='%' && state.options.standard>=Vhdl_Std::Vhdl_08)
+		if ((currentContext.cChar() == '\"' || currentContext.cChar() == '%')
+				&& currentContext.Identifier.length() <= 2) {
+			if (currentContext.cChar() == '%' && state.options.standard >= Vhdl_Std::Vhdl_08)
 				throw std::runtime_error("'%%' not allowed in vhdl 2008 (was replacement character)");
 			// Must be a bit string
 			// Good candidate for bit string.
@@ -696,12 +688,12 @@ void Scanner::scanIdentifier(){
 			//NOTE: Is the earlier if ever false?
 
 		}
-		else if ( state.options.standard >= Vhdl_Std::Vhdl_87 && currentContext.cChar() == '\\')
-			throw std::runtime_error ("a separator is required here");;
+		else if (state.options.standard >= Vhdl_Std::Vhdl_87 && currentContext.cChar() == '\\')
+			throw std::runtime_error("a separator is required here");;
 		break;
 	case CharacterKindType::Invalid:
 		//TODO: Currently I am just using going to be a asshole and crash the compiler here
-		throw std::runtime_error ("invalid use of UTF8 character, plz use latin-1 encoding, brah you got some  issues");
+		throw std::runtime_error("invalid use of UTF8 character, plz use latin-1 encoding, brah you got some  issues");
 		/*
 		// Improve error message for use of UTF-8 quote marks.
 		// It's possible because in the sequence of UTF-8 bytes for the  quote marks, there are invalid character
@@ -754,8 +746,6 @@ void Scanner::scanIdentifier(){
 	}
 
 	currentContext.token = Token::Identifier;
-	if(*currentContext.Identifier.rbegin() == '_' && !state.psl)
-		std::runtime_error ("identifier cannot finish with '_'");
 	if (Keywords::isKeyword(currentContext.Identifier)) {
 		// LRM93 13.9
 		// The identifiers listed below are called reserved words and are
@@ -765,125 +755,88 @@ void Scanner::scanIdentifier(){
 				Token::Mod + (Keywords::KeywordTable.at(currentContext.Identifier) - Keywords::Name_First_Keyword);
 
 		if (Keywords::isAMSReservedWord(currentContext.Identifier)) {
-
+			if (!state.options.AMS_Vhdl)
+				SyntaxWarning("using" + currentContext.Identifier + "AMS-VHDL reserved word as an identifier"
+								+ currentContext.Identifier,
+						state.options.Warnid_Reserved_Word);
+			currentContext.token = Token::Identifier;
+		}
+		else if (Keywords::isVHDL08ReservedWord(currentContext.Identifier)) {
+			if (state.options.standard < Vhdl_Std::Vhdl_08)
+				SyntaxWarning("using" + currentContext.Identifier + "vhdl-2008 reserved word as an identifier",
+						state.options.Warnid_Reserved_Word);
+			currentContext.token = Token::Identifier;
+		}
+		else if (Keywords::isVHDL00ReservedWord(currentContext.Identifier)) {
+			if (state.options.standard < Vhdl_Std::Vhdl_00)
+				SyntaxWarning("using" + currentContext.Identifier + "vhdl-2000 reserved word as an identifier",
+						state.options.Warnid_Reserved_Word);
+			currentContext.token = Token::Identifier;
+		}
+		else if (Keywords::isVHDL93ReservedWord(currentContext.Identifier)) {
+			if (state.options.standard < Vhdl_Std::Vhdl_93)
+				SyntaxWarning("using" + currentContext.Identifier
+								+ "vhdl93 reserved word as a vhdl87 identifier, (use option --std=93 to compile as vhdl93)",
+						state.options.Warnid_Reserved_Word);
+			currentContext.token = Token::Identifier;
+		}
+		else {
+			assert(Keywords::isVHDL87ReservedWord(currentContext.Identifier));
 		}
 	}
+	else if(Flag_Psl) {
+		if (currentContext.Identifier == Keywords::Name_Clock)
+			currentContext.token = Token::Psl_Clock;
+		else if (currentContext.Identifier == Keywords::Name_Const)
+			currentContext.token = Token::Psl_Const;
+		else if (currentContext.Identifier == Keywords::Name_Boolean)
+			currentContext.token = Token::Psl_Boolean;
+		else if (currentContext.Identifier == Keywords::Name_Sequence)
+			currentContext.token = Token::Psl_Sequence;
+		else if (currentContext.Identifier == Keywords::Name_Property)
+			currentContext.token = Token::Psl_Property;
+		else if (currentContext.Identifier == Keywords::Name_Endpoint)
+			currentContext.token = Token::Psl_Endpoint;
+		else if (currentContext.Identifier == Keywords::Name_Cover)
+			currentContext.token = Token::Psl_Cover;
+		else if (currentContext.Identifier == Keywords::Name_Default)
+			currentContext.token = Token::Psl_Default;
+		else if (currentContext.Identifier == Keywords::Name_Inf)
+			currentContext.token = Token::Inf;
+		else if (currentContext.Identifier == Keywords::Name_Within)
+			currentContext.token = Token::Within;
+		else if (currentContext.Identifier == Keywords::Name_Abort)
+			currentContext.token = Token::Abort;
+		else if (currentContext.Identifier == Keywords::Name_Before)
+			currentContext.token = Token::Before;
+		else if (currentContext.Identifier == Keywords::Name_Always)
+			currentContext.token = Token::Always;
+		else if (currentContext.Identifier == Keywords::Name_Never)
+			currentContext.token = Token::Never;
+		else if (currentContext.Identifier == Keywords::Name_Eventually)
+			currentContext.token = Token::Eventually;
+		else if (currentContext.Identifier == Keywords::Name_Next_A)
+			currentContext.token = Token::Next_A;
+		else if (currentContext.Identifier == Keywords::Name_Next_E)
+			currentContext.token = Token::Next_E;
+		else if (currentContext.Identifier == Keywords::Name_Next_Event)
+			currentContext.token = Token::Next_Event;
+		else if (currentContext.Identifier == Keywords::Name_Next_Event_A)
+			currentContext.token = Token::Next_Event_A;
+		else if (currentContext.Identifier == Keywords::Name_Next_Event_E)
+			currentContext.token = Token::Next_Event_E;
+		else if (currentContext.Identifier == Keywords::Name_Until)
+			currentContext.token = Token::Until;
+		else {
+			currentContext.token = Token::Identifier;
+			//TODO: test what if this is there in one of the PSL Tokens
+			if (currentContext.cChar() == '_')
+				throw std::runtime_error("identifiers cannot finish with '_'");
+		}
+	}
+	else
+		currentContext.token = Token::Identifier;
 }
-
-
-// Hash it.
-currentContext.Identifier := Name_Table.Get_Identifier;
-if Current_Identifier in Std_Names.Name_Id_Keywords then
-// LRM93 13.9
-// The identifiers listed below are called reserved words and are
-// reserved for signifiances in the language.
-// IN: this is also achieved in packages std_names and tokens.
-currentContext.token := Token_Type'Val
-(Token_Type'Pos (Tok_First_Keyword)
-+ Current_Identifier - Std_Names.Name_First_Keyword);
-case Current_Identifier is
-when Std_Names.Name_Id_AMS_Reserved_Words =>
-if not AMS_Vhdl then
-if Is_Warning_Enabled (Warnid_Reserved_Word) then
-		Warning_Msg_Scan
-		(Warnid_Reserved_Word,
-				"using %i AMS-VHDL reserved word as an identifier",
-				+Current_Identifier);
-end if;
-currentContext.token := Token::Identifier;
-end if;
-when Std_Names.Name_Id_Vhdl08_Reserved_Words =>
-if Vhdl_Std < Vhdl_08 then
-if Is_Warning_Enabled (Warnid_Reserved_Word) then
-		Warning_Msg_Scan
-		(Warnid_Reserved_Word,
-				"using %i vhdl-2008 reserved word as an identifier",
-				+Current_Identifier);
-end if;
-currentContext.token := Token::Identifier;
-end if;
-when Std_Names.Name_Id_Vhdl00_Reserved_Words =>
-if Vhdl_Std < Vhdl_00 then
-if Is_Warning_Enabled (Warnid_Reserved_Word) then
-		Warning_Msg_Scan
-		(Warnid_Reserved_Word,
-				"using %i vhdl-2000 reserved word as an identifier",
-				+Current_Identifier);
-end if;
-currentContext.token := Token::Identifier;
-end if;
-when Std_Names.Name_Id_Vhdl93_Reserved_Words =>
-if state.options.standard == Vhdl_87 then
-if Is_Warning_Enabled (Warnid_Reserved_Word) then
-		Warning_Msg_Scan
-		(Warnid_Reserved_Word,
-				"using %i vhdl93 reserved word as a vhdl87 identifier",
-				+Current_Identifier, True);
-Warning_Msg_Scan
-(Warnid_Reserved_Word,
-"(use option //std=93 to compile as vhdl93)");
-end if;
-currentContext.token := Token::Identifier;
-end if;
-when Std_Names.Name_Id_Vhdl87_Reserved_Words =>
-null;
-when others =>
-raise Program_Error;
-end case;
-elsif Flag_Psl then
-case Current_Identifier is
-when Std_Names.Name_Clock =>
-currentContext.token := Token::Psl_Clock;
-when Std_Names.Name_Const =>
-currentContext.token := Token::Psl_Const;
-when Std_Names.Name_Boolean =>
-currentContext.token := Token::Psl_Boolean;
-when Std_Names.Name_Sequence =>
-currentContext.token := Token::Psl_Sequence;
-when Std_Names.Name_Property =>
-currentContext.token := Token::Psl_Property;
-when Std_Names.Name_Endpoint =>
-currentContext.token := Token::Psl_Endpoint;
-when Std_Names.Name_Cover =>
-currentContext.token := Token::Psl_Cover;
-when Std_Names.Name_Default =>
-currentContext.token := Token::Psl_Default;
-when Std_Names.Name_Inf =>
-currentContext.token := Token::Inf;
-when Std_Names.Name_Within =>
-currentContext.token := Token::Within;
-when Std_Names.Name_Abort =>
-currentContext.token := Token::Abort;
-when Std_Names.Name_Before =>
-currentContext.token := Token::Before;
-when Std_Names.Name_Always =>
-currentContext.token := Token::Always;
-when Std_Names.Name_Never =>
-currentContext.token := Token::Never;
-when Std_Names.Name_Eventually =>
-currentContext.token := Token::Eventually;
-when Std_Names.Name_Next_A =>
-currentContext.token := Token::Next_A;
-when Std_Names.Name_Next_E =>
-currentContext.token := Token::Next_E;
-when Std_Names.Name_Next_Event =>
-currentContext.token := Token::Next_Event;
-when Std_Names.Name_Next_Event_A =>
-currentContext.token := Token::Next_Event_A;
-when Std_Names.Name_Next_Event_E =>
-currentContext.token := Token::Next_Event_E;
-when Std_Names.Name_Until =>
-currentContext.token := Token::Until;
-when others =>
-currentContext.token := Token::Identifier;
-if C = '_' then
-		throw std::runtime_error ("identifiers cannot finish with '_'");
-end if;
-end case;
-else
-currentContext.token := Token::Identifier;
-end if;
-end Scan_Identifier;
 
 // LRM93 13.3.2
 // EXTENDED_IDENTIFIER ::= \ GRAPHIC_CHARACTER { GRAPHIC_CHARACTER } \
@@ -894,31 +847,31 @@ void Scanner::scanExtendedIdentifier() {
 	// Moreover, every extended identifiers is distinct from any basic
 	// identifier. They all begin with a '\' in the name table.
 	currentContext.Identifier = "\\";
-	assert(currentContext.cChar()=='\\');
+	assert(currentContext.cChar() == '\\');
 	currentContext.incChar();
 	while (1) {
-		if (currentContext.cChar()=='\\') {
+		if (currentContext.cChar() == '\\') {
 			// LRM93 13.3.2
 			// If a backslash is to be used as one of the graphic characters
 			// of an extended literal, it must be doubled.
 			// LRM93 13.3.2
 			// (a doubled backslash couting as one character)
 			currentContext.Identifier += '\\';
-			if (currentContext.incChar()!='\\')
+			if (currentContext.incChar() != '\\')
 				break;
 			continue;
 		}
 		else {
 			auto kind = getCharacterKind(currentContext.cChar());
-			if (kind==CharacterKindType::Format_Effector)
+			if (kind == CharacterKindType::Format_Effector)
 				throw std::runtime_error("format effector in extended identifier");
-			else if (kind==CharacterKindType::Invalid)
+			else if (kind == CharacterKindType::Invalid)
 				throw std::runtime_error("invalid character in extended identifier");
 			currentContext.Identifier += currentContext.cChar();
 			currentContext.incChar();
 		}
 	}
-	if (currentContext.Identifier.size()==2)
+	if (currentContext.Identifier.size() == 2)
 		throw std::runtime_error("empty extended identifier is not allowed");
 
 
@@ -926,8 +879,8 @@ void Scanner::scanExtendedIdentifier() {
 	// At least one separator is required between an identifier or an
 	// abstract literal and an adjacent identifier or abstract literal.
 	auto kind = getCharacterKind(currentContext.cChar());
-	if (kind==CharacterKindType::Digit || kind==CharacterKindType::Upper_Case_Letter
-			|| kind==CharacterKindType::Lower_Case_Letter)
+	if (kind == CharacterKindType::Digit || kind == CharacterKindType::Upper_Case_Letter
+			|| kind == CharacterKindType::Lower_Case_Letter)
 		throw std::runtime_error("a separator is required here");;
 	currentContext.token = Token::Identifier;
 }
@@ -937,7 +890,7 @@ bool Scanner::convertIdentifier(std::string& input, Vhdl_Std standard) {
 	if (input[0] == '\\') {
 		// Extended Identifier
 		if (standard == Vhdl_Std::Vhdl_87)
-				throw std::runtime_error("extended identifiers not allowed in vhdl87");
+			throw std::runtime_error("extended identifiers not allowed in vhdl87");
 
 		if (input.size() < 3)
 			throw std::runtime_error("extended identifier is too short");
@@ -949,7 +902,7 @@ bool Scanner::convertIdentifier(std::string& input, Vhdl_Std standard) {
 			auto kind = getCharacterKind(static_cast<unsigned char>(input[i]));
 			if (isGraphicCharacter(kind)) {
 				if (input[i] == '\\') {
-					if (input[i+1] != '\\' || i == input.size() - 2)
+					if (input[i + 1] != '\\' || i == input.size() - 2)
 						throw std::runtime_error("anti-slash must be doubled in extended identifier");
 				}
 			}
@@ -957,29 +910,29 @@ bool Scanner::convertIdentifier(std::string& input, Vhdl_Std standard) {
 				throw std::runtime_error("format effector in extended identifier");
 			else
 				throw std::runtime_error("bad character in identifier");
-			}
-
 		}
+
+	}
 	else {
 		// Normal Identifier
 		for (unsigned int i = 0; i < input.size(); ++i) {
 			unsigned char c = input[i];
 			switch (getCharacterKind(c)) {
 			case CharacterKindType::Upper_Case_Letter:
-				if(standard == Vhdl_Std::Vhdl_87 && c > 'Z')
-					throw std::runtime_error ("8 bits characters not allowed in vhdl87");
+				if (standard == Vhdl_Std::Vhdl_87 && c > 'Z')
+					throw std::runtime_error("8 bits characters not allowed in vhdl87");
 				input[i] = std::tolower(c);
 				break;
 			case CharacterKindType::Lower_Case_Letter:
 			case CharacterKindType::Digit:
-				if(standard == Vhdl_Std::Vhdl_87 && c > 'z')
-					throw std::runtime_error ("8 bits characters not allowed in vhdl87");
+				if (standard == Vhdl_Std::Vhdl_87 && c > 'z')
+					throw std::runtime_error("8 bits characters not allowed in vhdl87");
 				break;
 			case CharacterKindType::Special_Character:
 				if (c != '_') {
 					if (i == 0)
 						throw std::runtime_error("identifier cannot start with an underscore");
-					if (input[i-1] == '_')
+					if (input[i - 1] == '_')
 						throw std::runtime_error("two underscores can't be consecutive");
 					if (i == input.size() - 1)
 						throw std::runtime_error("identifier cannot finish with an underscore");
@@ -994,24 +947,23 @@ bool Scanner::convertIdentifier(std::string& input, Vhdl_Std standard) {
 	}
 }
 
-
 // Scan an identifier within a comment.  Only lower case letters are allowed.
 bool Scanner::scanCommentIdentifier() {
 	currentContext.Identifier = "";
 	// ' ' or HT
-	while (currentContext.cChar()==' ' || currentContext.cChar()==9)
+	while (currentContext.cChar() == ' ' || currentContext.cChar() == 9)
 		currentContext.incChar();
 	// The identifier shall start with a lower case letter.
-	if (currentContext.cChar()<'a' || currentContext.cChar()>'z')
+	if (currentContext.cChar() < 'a' || currentContext.cChar() > 'z')
 		return false;
 	// Scan the identifier (in lower cases).
-	while (currentContext.cChar()>='a' && currentContext.cChar()<='z' && currentContext.cChar()!='_') {
+	while (currentContext.cChar() >= 'a' && currentContext.cChar() <= 'z' && currentContext.cChar() != '_') {
 		currentContext.Identifier = currentContext.cChar();
 		currentContext.incChar();
 	}
 
-	return !(currentContext.cChar()!=' ' || currentContext.cChar()!=9 || currentContext.cChar()!=10 ||
-			currentContext.cChar()!=13);
+	return !(currentContext.cChar() != ' ' || currentContext.cChar() != 9 || currentContext.cChar() != 10 ||
+			currentContext.cChar() != 13);
 };
 
 // Scan tokens within a comment.  Return TRUE if currentContext.token was set,
@@ -1020,7 +972,7 @@ bool Scanner::scanComment() {
 	if (!scanCommentIdentifier())
 		return false;
 
-	if (currentContext.Identifier == Keywords::Name_Psl){
+	if (currentContext.Identifier == Keywords::Name_Psl) {
 		Flag_Psl = true;
 		Flag_Scan_In_Comment = true;
 		return true;
@@ -1029,11 +981,69 @@ bool Scanner::scanComment() {
 
 }
 
+inline unsigned int extendedDigit(unsigned char c) {
+	if ( c - '0' > 0 && c - '0' < 10)
+		return c - '0';
+	else if ( Ada_Chars::toLower(c) - 'a' < 6 )
+		return static_cast<unsigned int>(Ada_Chars::toLower(c) - 'a' + 10);
+	else
+		throw std::runtime_error("Extended digit can only be between 0 to f");
+}
+
+
+// LRM 13.4.1
+// INTEGER ::= DIGIT { [ UNDERLINE ] DIGIT }
+// The first character must be a digit.
+int Scanner::scanBasedInteger(int base = 10) {
+	assert(extendedDigit(currentContext.cChar()) < base);
+	int num = 0;
+	while(currentContext.cChar() != '_' && Ada_Chars::isExtendedDigit(currentContext.cChar())){
+		if (currentContext.cChar() == '_') {
+			if (!Ada_Chars::isExtendedDigit(currentContext.nextChar()))
+				throw std::runtime_error("underscore must be followed by a digit");
+		}
+		else {
+			auto val = extendedDigit(currentContext.cChar());
+			if (val > base)
+				throw std::runtime_error("digit beyond base");
+			num = num*base + val;
+			currentContext.incChar();
+		}
+	}
+	return num;
+}
+
+
+
+// scan a decimal literal or a based literal.
+//
+// LRM93 13.4.1
+// DECIMAL_LITERAL ::= INTEGER [ . INTEGER ] [ EXPONENT ]
+// EXPONENT ::= E [ + ] INTEGER | E - INTEGER
+//
+// LRM93 13.4.2
+// BASED_LITERAL ::= BASE # BASED_INTEGER [ . BASED_INTEGER ] # EXPONENT
+// BASE ::= INTEGER
+void Scanner::scanLiteral() {
+	// Can be integer or base
+	int num_1 = scanBasedInteger(10);
+
+	if (currentContext.cChar() == '.') {
+		// Decimal Integer
+		currentContext.incChar();
+		if (!Ada_Chars::isExtendedDigit(currentContext.cChar()) || extendedDigit(currentContext.cChar()) > 10)
+			throw std::runtime_error("a dot must be followed by a digit");
+		int num_2 = scanBasedInteger(10);
+	}
+
+}
+
+
 void Scanner::scan() {
 	if (currentContext.token != Token::Invalid)
 		currentContext.prevToken = currentContext.token;
 
-	while(1) {
+	while (1) {
 		//NOTE: Can possibly skip whitespace earlier to speed stuff up
 		currentContext.Identifier = 0;
 
@@ -1045,7 +1055,7 @@ void Scanner::scan() {
 			break;
 		case 160://NSBP
 			if (state.options.standard == Vhdl_Std::Vhdl_87)
-				throw std::runtime_error ("NBSP character not allowed in vhdl87");
+				throw std::runtime_error("NBSP character not allowed in vhdl87");
 			break;
 		case 10: //LF
 			scanLFCR();
@@ -1076,7 +1086,7 @@ void Scanner::scan() {
 				if (Flag_Scan_In_Comment)
 					break;
 
-				// Handle keywords in comment (PSL).
+					// Handle keywords in comment (PSL).
 				else if (state.options.Flag_Comment_Keyword && scanComment())
 					break;
 
@@ -1133,7 +1143,7 @@ void Scanner::scan() {
 					throw std::runtime_error("block comment are not allowed before vhdl 2008");
 				currentContext.incChar();
 				bool endLoop = false;
-				while(!endLoop) {
+				while (!endLoop) {
 					switch (currentContext.cChar()) {
 					case '/':
 						// LRM08 15.9
@@ -1142,11 +1152,11 @@ void Scanner::scan() {
 						// within a delimited comment is not interpreted as
 						// the start of a nested delimited comment.
 						if (currentContext.incChar() == '*') {
-							Warning_Msg_Scan(Warnid_Nested_Comment, "'/*' found within a block comment");
+							SyntaxWarning("'/*' found within a block comment", state.options.Warnid_Nested_Comment);
 						}
 						break;
 					case '*':
-						if (currentContext.incChar() == '/'){
+						if (currentContext.incChar() == '/') {
 							currentContext.incChar();
 							endLoop = true;
 						}
@@ -1183,17 +1193,17 @@ void Scanner::scan() {
 			currentContext.incChar();
 			return;
 		case '|':
-			if (Flag_Psl){
+			if (Flag_Psl) {
 				if (currentContext.incChar() == '|') {
 					currentContext.token = Token::Bar_Bar;
 					currentContext.incChar();
 				}
-				else if (currentContext.cChar()== '-' &&  currentContext.nextChar() == '>') {
+				else if (currentContext.cChar() == '-' && currentContext.nextChar() == '>') {
 					currentContext.token = Token::Bar_Arrow;
 					currentContext.incChar();
 					currentContext.incChar();
 				}
-				else if (currentContext.cChar()== '=' &&  currentContext.nextChar() == '>') {
+				else if (currentContext.cChar() == '=' && currentContext.nextChar() == '>') {
 					currentContext.token = Token::Bar_Double_Arrow;
 					currentContext.incChar();
 					currentContext.incChar();
@@ -1308,7 +1318,8 @@ void Scanner::scan() {
 			currentContext.incChar();
 			// Handle cases such as character'('a')
 			// FIXME: what about f ()'length ? or .all'length
-			if (currentContext.prevToken != Token::Identifier && currentContext.prevToken != Token::Character && currentContext.nextChar() == '\'') {
+			if (currentContext.prevToken != Token::Identifier && currentContext.prevToken != Token::Character
+					&& currentContext.nextChar() == '\'') {
 				// LRM93 13.5
 				// A character literal is formed by enclosing one of the 191
 				// graphic character (...) between two apostrophe characters.
@@ -1316,11 +1327,11 @@ void Scanner::scan() {
 				if (!isGraphicCharacter(getCharacterKind(currentContext.cChar())))
 					throw std::runtime_error("a character literal can only be a graphic character");
 				else if (currentContext.cChar() > 127 && state.options.standard == Vhdl_Std::Vhdl_87)
-					throw std::runtime_error ("extended identifiers not allowed in vhdl87");
+					throw std::runtime_error("extended identifiers not allowed in vhdl87");
 				else {
 					currentContext.token = Token::Character;
-					//TODO: Fix this name table business
-					currentContext.Identifier = ;
+					// TODO: Fix this name table business
+					currentContext.Identifier = currentContext.cChar();
 				}
 				currentContext.nextChar();
 				currentContext.nextChar();
@@ -1362,14 +1373,14 @@ void Scanner::scan() {
 			case CharacterKindType::Other_Special_Character:
 				if (state.options.standard > Vhdl_Std::Vhdl_87 && currentContext.cChar() == '\'')
 					// Start of extended identifier.
-					throw std::runtime_error ("a separator is required here");;
+					throw std::runtime_error("a separator is required here");;
 				break;
 			default:
 				break;
 			}
 			return;
 		case '#':
-			throw std::runtime_error ("'#' is used for based literals and must be preceded by a base");
+			throw std::runtime_error("'#' is used for based literals and must be preceded by a base");
 		case '"':
 			scanString();
 			return;
@@ -1403,7 +1414,7 @@ void Scanner::scan() {
 				return;
 			}
 			else {
-				if (state.options.standard ==Vhdl_Std::Vhdl_87)
+				if (state.options.standard == Vhdl_Std::Vhdl_87)
 					throw std::runtime_error("'[' is an invalid character in vhdl87, replaced by '('");
 				currentContext.token = Token::Left_Bracket;
 				currentContext.incChar();
@@ -1417,35 +1428,35 @@ void Scanner::scan() {
 			return;
 		case '{':
 			if (!Flag_Psl)
-				throw std::runtime_error ("'{' is an invalid character, replaced by '('");
+				throw std::runtime_error("'{' is an invalid character, replaced by '('");
 			currentContext.token = Token::Left_Curly;
 			currentContext.incChar();
 			return;
 		case '}':
 			if (!Flag_Psl)
-				throw std::runtime_error ("'}' is an invalid character, replaced by ')'");
+				throw std::runtime_error("'}' is an invalid character, replaced by ')'");
 			currentContext.token = Token::Right_Curly;
 			currentContext.incChar();
 			return;
 		case '\'':
 			if (state.options.standard == Vhdl_Std::Vhdl_87)
 				throw std::runtime_error("extended identifiers are not allowed in vhdl87");
-			Scan_Extended_Identifier();
+			scanExtendedIdentifier();
 			return;
 		case '^':
 			if (state.options.standard >= Vhdl_Std::Vhdl_08)
 				currentContext.token = Token::Caret;
 			else
-				throw std::runtime_error ("'^' is not a VHDL operator, use 'xor'");
+				throw std::runtime_error("'^' is not a VHDL operator, use 'xor'");
 			currentContext.incChar();
 			return;
 		case '~':
-			throw std::runtime_error ("'~' is not a VHDL operator, use 'not'");
+			throw std::runtime_error("'~' is not a VHDL operator, use 'not'");
 		case '?':
 			if (state.options.standard < Vhdl_Std::Vhdl_08)
-				throw std::runtime_error ("'?' can only be used in strings or comments");
+				throw std::runtime_error("'?' can only be used in strings or comments");
 			if (currentContext.incChar() == '<') {
-				if (currentContext.nextChar() == '=' ) {
+				if (currentContext.nextChar() == '=') {
 					currentContext.token = Token::Match_Less_Equal;
 					currentContext.incChar();
 				}
@@ -1454,7 +1465,7 @@ void Scanner::scan() {
 				currentContext.incChar();
 			}
 			else if (currentContext.cChar() == '>') {
-				if (currentContext.nextChar() == '=' ) {
+				if (currentContext.nextChar() == '=') {
 					currentContext.token = Token::Match_Greater_Equal;
 					currentContext.incChar();
 				}
@@ -1476,7 +1487,7 @@ void Scanner::scan() {
 				currentContext.incChar();
 			}
 			else
-				throw std::runtime_error ("unknown matching operator");
+				throw std::runtime_error("unknown matching operator");
 			return;
 		case '$':
 		case '`':
@@ -1524,7 +1535,7 @@ void Scanner::scan() {
 			else
 				throw std::runtime_error("character %c can only be used in strings or comments");
 		case '_':
-			throw std::runtime_error ("an identifier can't start with '_'");
+			throw std::runtime_error("an identifier can't start with '_'");
 		case 'A':
 		case 'B':
 		case 'C':
@@ -1577,7 +1588,7 @@ void Scanner::scan() {
 		case 'x':
 		case 'y':
 		case 'z':
-			Scan_Identifier();
+			scanIdentifier();
 			return;
 			// UC_A_Grave(192) .. UC_O_Diaeresis (214)
 		case 192:
@@ -1714,7 +1725,7 @@ void Scanner::scan() {
 			// FIXME: should conditionnaly emit a warning if the file is not terminated by an end of line.
 			// FIXME: should return Eof token? or nextChar should handle it??
 			// currentContext.token = Token::Eof;
-			throw std::runtime_error ("EOT is not allowed inside the file");
+			throw std::runtime_error("EOT is not allowed inside the file");
 		}
 		currentContext.incChar();
 	}
@@ -1732,7 +1743,7 @@ end Get_Token_Location;
 
 inline bool Scanner::isWhitespace(char c) {
 	// whitespace and nbsp
-	return  (c == 32 || state.options.standard > Vhdl_Std::Vhdl_87 && c == 160);
+	return (c == 32 || state.options.standard > Vhdl_Std::Vhdl_87 && c == 160);
 }
 
 inline void Scanner::scanLFCR() {

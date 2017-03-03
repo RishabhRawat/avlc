@@ -409,8 +409,7 @@ std::string image(Token token) {
 	case Token::Rem :
 		return "rem";
 
-		//relation
-	token:
+		//relation token:
 	case Token::And :
 		return "and";
 	case Token::Or :

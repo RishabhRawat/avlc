@@ -128,8 +128,10 @@ const std::string Name_Srl = "srl";
 const std::string Name_Rol = "rol";
 const std::string Name_Ror = "ror";
 
+// VHDL00 keywords
 const std::string Name_Protected = "protected";
 
+// VHDL08 keywords
 const std::string Name_Context = "context";
 const std::string Name_Parameter = "parameter";
 
@@ -605,7 +607,6 @@ const unsigned int Name_Last_Keyword = Name_First_Keyword + 99;
 const unsigned int Name_First_AMS_Keyword = Name_Last_Keyword + 1;
 const unsigned int Name_Last_AMS_Keyword = Name_First_AMS_Keyword + 12;
 
-
 const unsigned int Name_First_Operator = Name_Last_AMS_Keyword + 1;
 const unsigned int Name_Last_Operator = Name_First_Operator + 18;
 
@@ -752,7 +753,7 @@ const std::unordered_map<std::string, unsigned int> KeywordTable{
 		{Name_While, Name_First_Keyword + 79},
 		{Name_With, Name_First_Keyword + 80},
 
-// VHDL93 reserved words.
+		// VHDL 93 reserved words.
 		{Name_Xnor, Name_First_Keyword + 81},
 		{Name_Group, Name_First_Keyword + 82},
 		{Name_Impure, Name_First_Keyword + 83},
@@ -771,8 +772,10 @@ const std::unordered_map<std::string, unsigned int> KeywordTable{
 		{Name_Rol, Name_First_Keyword + 95},
 		{Name_Ror, Name_First_Keyword + 96},
 
+		// VHDL 00 reserved words.
 		{Name_Protected, Name_First_Keyword + 97},
 
+		// VHDL 08 Keywords
 		{Name_Context, Name_First_Keyword + 98},
 		{Name_Parameter, Name_First_Keyword + 99},
 
@@ -811,7 +814,7 @@ const std::unordered_map<std::string, unsigned int> KeywordTable{
 		{Name_Op_Match_Greater, Name_First_Operator + 17},
 		{Name_Op_Match_Greater_Equal, Name_First_Operator + 18},
 
-// Create Attributes.
+		// Create Attributes.
 		{Name_Base, Name_First_Attribute + 0},
 		{Name_Left, Name_First_Attribute + 1},
 		{Name_Right, Name_First_Attribute + 2},
@@ -1241,16 +1244,37 @@ const std::unordered_map<std::string, unsigned int> KeywordTable{
 		{Name_X, Name_First_PSL + 42}
 };
 
-inline bool isKeyword (std::string id) {
+inline bool isKeyword(std::string id) {
 	auto i = KeywordTable.find(id);
-	return  (i != KeywordTable.end() && i->second >= Name_First_Keyword && i->second <= Name_Last_AMS_Keyword);
+	return (i != KeywordTable.end() && i->second >= Name_First_Keyword && i->second <= Name_Last_AMS_Keyword);
 }
 
-inline bool isAMSReservedWord (std::string id) {
+inline bool isAMSReservedWord(std::string id) {
 	auto i = KeywordTable.find(id);
-	return  (i != KeywordTable.end() && i->second >= Name_First_AMS_Keyword && i->second <= Name_Last_AMS_Keyword);
+	return (i != KeywordTable.end() && i->second >= Name_First_AMS_Keyword && i->second <= Name_Last_AMS_Keyword);
 }
 
+inline bool isVHDL08ReservedWord(std::string id) {
+	auto i = KeywordTable.find(id);
+	return (i != KeywordTable.end() && i->second >= (Name_First_Keyword + 98)
+			&& i->second <= (Name_First_Keyword + 99));
+}
+
+inline bool isVHDL00ReservedWord(std::string id) {
+	auto i = KeywordTable.find(id);
+	return (i != KeywordTable.end() && i->second == (Name_First_Keyword + 97));
+}
+
+inline bool isVHDL93ReservedWord(std::string id) {
+	auto i = KeywordTable.find(id);
+	return (i != KeywordTable.end() && i->second >= (Name_First_Keyword + 81)
+			&& i->second <= (Name_First_Keyword + 96));
+}
+
+inline bool isVHDL87ReservedWord(std::string id) {
+	auto i = KeywordTable.find(id);
+	return (i != KeywordTable.end() && i->second >= Name_First_Keyword && i->second <= (Name_First_Keyword + 80));
+}
 
 }
 #endif //AVLC_KEYWORDS_H

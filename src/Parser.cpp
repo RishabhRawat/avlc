@@ -329,3 +329,4 @@ Parser::Name::Name(Parser::Node *interpretation,
 
 Parser::Symbol::Symbol(const std::string &identity, Parser::Name *name)
     : identity(identity), name(name) {}
+

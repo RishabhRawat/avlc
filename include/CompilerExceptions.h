@@ -23,6 +23,7 @@
 #include <cstring>
 #include <exception>
 #include <string>
+#include <iostream>
 
 class SyntaxError: std::exception {
 	char fileName[50];
@@ -45,5 +46,10 @@ public:
 
 	const char* what() const noexcept override { return completeErrorMessage; }
 };
+
+inline void SyntaxWarning (const std::string message, const bool warnSwitch) {
+	if (warnSwitch)
+		std::cout<<message<<"\n";
+}
 
 #endif // AVLC_COMPILEREXCEPTIONS_H

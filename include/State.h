@@ -36,7 +36,75 @@ struct Options {
 	//Enable AMS-VHDL extensions
 	bool AMS_Vhdl = false;
 
-	// TODO: Msgid type warnings
+	//  Any note
+	bool Msgid_Note = false;
+
+	// Any warning
+	bool Msgid_Warning = false;
+
+	// Specific warnings
+
+	// Design unit redefines another design unit.
+	bool Warnid_Library = false;
+
+	// Missing Xref in pretty print.
+	bool Warnid_Missing_Xref = false;
+
+	// No default binding for a component instantiation.
+	bool Warnid_Default_Binding = false;
+
+	// Unbound component.
+	bool Warnid_Binding = false;
+
+	// Vhdl93 reserved word is used as a vhdl87 identifier.
+	bool Warnid_Reserved_Word = false;
+
+	// Start of block comment ('/*') appears in a block comment.
+	bool Warnid_Nested_Comment = false;
+
+	// Weird use of parenthesis.
+	bool Warnid_Parenthesis = false;
+
+	// Generic of a vital entity is not a vital name.
+	bool Warnid_Vital_Generic = false;
+
+	// Delayed checks (checks performed at elaboration time).
+	bool Warnid_Delayed_Checks = false;
+
+	// Package body is not required but is analyzed.
+	bool Warnid_Body = false;
+
+	// An all/others specification does not apply, because there is no such
+	// named entities.
+	bool Warnid_Specs = false;
+
+	// Incorrect use of universal value.
+	bool Warnid_Universal = false;
+
+	// Mismatch of bounds between actual and formal in a scalar port association
+	bool Warnid_Port_Bounds = false;
+
+	// Runtime error detected at analysis time.
+	bool Warnid_Runtime_Error = false;
+
+	// Signal assignment creates a delta cycle in a postponed process.
+	bool Warnid_Delta_Cycle = false;
+
+	// Declaration of a shared variable with a non-protected type.
+	bool Warnid_Shared = false;
+
+	// Emit a warning when a declaration is never used.
+	// FIXME: currently only subprograms are handled.
+	bool Warnid_Unused = false;
+
+	// Violation of pure rules.
+	bool Warnid_Pure = false;
+
+	// Any error
+	bool Msgid_Error = false;
+
+	// Any fatal error
+	bool Msgid_Fatal = false;
 
 	// If set, a multi-bytes sequence can appear in a comment, ie, all characters except VT, CR, LF and FF are
 	// allowed in a comment. Set by -C and //mb-comments

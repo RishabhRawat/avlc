@@ -130,17 +130,29 @@ private:
 	bool scanCommentIdentifier();
 
 	void scanExtendedIdentifier();
+
+	void scanLiteral();
+
+	int scanInteger();
+
+	int scanInteger(int base);
+
+	int scanBasedInteger(int base);
 };
 namespace Ada_Chars {
-	inline unsigned char toLower(unsigned char c) {
-		if(c >= 'A' && c <= 'Z')
-			return c + ('a' - 'A');
-		else if(c >= 192 && c <= 214)
-			return c + (224 - 192);
-		else if(c >= 216 && c <= 222)
-			return c + (248 - 216);
-		else
-			return c;
-	}
+inline unsigned char toLower(unsigned char c) const {
+	if (c >= 'A' && c <= 'Z')
+		return c + ('a' - 'A');
+	else if (c >= 192 && c <= 214)
+		return static_cast<unsigned char>(c + (224 - 192));
+	else if (c >= 216 && c <= 222)
+		return static_cast<unsigned char>(c + (248 - 216));
+	else
+		return c;
+}
+
+inline bool isExtendedDigit(unsigned char c) const {
+	return (( c <= '9' && c >= '0') || ( c <= 'f' && c >= 'a') || ( c <= 'F' && c > 'A'));
+}
 }
 #endif //AVLC_SCANNER_H
