@@ -17,8 +17,6 @@
  */
 #include "Scanner.h"
 #include "CompilerExceptions.h"
-#include <fstream>
-#include <iir.h>
 #include <cassert>
 #include "Keywords.h"
 
@@ -105,75 +103,6 @@ CharacterKindType getCharacterKind(unsigned char c) {
 		return CharacterKindType::Other_Special_Character;
 	else
 		throw std::runtime_error("Invalid character");
-}
-
-// The context contains the whole internal state of the Scanner, ie
-// it can be used to push/pop a lexical analysis, to restart the
-// Scanner from a context marking a previous point.
-struct ScanContext {
-	int Source_File = 0;
-	unsigned int Line_Number = 0;
-	unsigned int Line_Pos = 0;
-	unsigned int Token_Pos = 0;
-	unsigned int File_Len = 0;
-	Token::Token token = Token::Invalid;
-	Token::Token prevToken = Token::Invalid;
-	std::string Identifier;
-	Iir_Int64 Int64 = 0;
-	Iir_Fp64 Fp64 = 0;
-
-	inline unsigned char cChar() {
-		return currentChar;
-	}
-
-	inline unsigned char incChar() {
-		Source.get();
-		return currentChar = Source.peek();
-	}
-
-	inline unsigned char decChar() {
-		return currentChar = Source.unget().peek();
-	}
-
-	inline unsigned char nextChar() {
-		Source.get();
-		auto c = Source.peek();
-		Source.unget();
-		return c;
-	}
-
-	// newLine() must be called after each end-of-line to register to next line number. This is called by
-	// Scan_CR_Newline and Scan_LF_Newline.
-	inline void newLine() {
-		Line_Number++;
-		Line_Pos = Source.tellg() + 1;
-	}
-
-private:
-	std::ifstream Source;
-	unsigned char currentChar = 0;
-public:
-	ScanContext(State state, unsigned int fileId)
-			:Source_File(fileId), Source(state.fileList.at(fileId).first) { }
-};
-
-ScanContext currentContext;
-
-/*
-Source: File_Buffer_Acc renames currentContext.Source;
-Pos: Source_Ptr renames currentContext.Pos;
-*/
-
-void invalidateCurrentToken() {
-	if (currentContext.token != Token::Invalid) {
-		currentContext.prevToken = currentContext.token;
-		currentContext.token = Token::Invalid;
-	}
-}
-
-
-void invalidateCurrentIdentifier() {
-	currentContext.Identifier = "";
 }
 //Iir_Int64 currentIirInt64() ;
 //Iir_Fp64 currentIirFp64() ;
@@ -375,7 +304,7 @@ end std::runtime_error ("extended identifiers not allowed in vhdl87");;
 // IN: for a string, at the call of this procedure, the current character
 // must be either '"' or '%'.
 
-void scanString() {
+void Scanner::scanString() {
 	assert(currentContext.cChar() == '\"' || currentContext.cChar() == '%');
 	char mark = currentContext.cChar();
 	std::string str = "";

@@ -18,313 +18,120 @@
 #ifndef AVLC_PARSER_H
 #define AVLC_PARSER_H
 
-#include "CompilerExceptions.h"
-#include "Nodes.h"
-#include <algorithm>
-#include <bits/unordered_set.h>
-#include <fstream>
-#include <memory>
-#include <stack>
-#include <string>
-#include <unordered_map>
-#include <vector>
+#include <tuple>
+#include "iir.h"
+#include "Scanner.h"
+
+//  Recursive descendant parser.
+//  Each subprogram (should) parse one production rules.
+//  Rules are written in a comment just before the subprogram.
+//  terminals are written in upper case.
+//  non-terminal are written in lower case.
+//  syntaxic category of a non-terminal are written in upper case.
+//  eg: next_statement ::= [ label : ] NEXT [ LOOP_label ] [ WHEN condition ] ;
+//  Or (|) must be aligned by the previous or, or with the '=' character.
+//  Indentation is 4.
+//
+//  To document what is expected for input and what is left as an output
+//  concerning token stream, a precond and a postcond comment shoud be
+//  added before the above rules.
+//    a token (such as IF or ';') means the current token is this token.
+//    'a token' means the current token was analysed.
+//    'next token' means the current token is to be analysed.
 
 class Parser {
-
-  enum class Token {
-    Tok_Eof,
-    Tok_Line_Number,
-    Tok_File_Name,
-    Tok_Comment,
-    Tok_Ident,
-    Tok_Num,
-    Tok_String,
-    Tok_Float_Num,
-    Tok_Plus,
-    Tok_Minus,
-    Tok_Star,
-    Tok_Div,
-    Tok_Mod,
-    Tok_Rem,
-    Tok_Sharp,
-    Tok_Not,
-    Tok_Abs,
-    Tok_Or,
-    Tok_And,
-    Tok_Xor,
-    Tok_Equal,
-    Tok_Not_Equal,
-    Tok_Greater,
-    Tok_Greater_Eq,
-    Tok_Less,
-    Tok_Less_Eq,
-    Tok_Colon,
-    Tok_Semicolon,
-    Tok_Comma,
-    Tok_Dot,
-    Tok_Tick,
-    Tok_Arob,
-    Tok_Elipsis,
-    Tok_Assign,
-    Tok_Left_Paren,
-    Tok_Right_Paren,
-    Tok_Left_Brace,
-    Tok_Right_Brace,
-    Tok_Left_Brack,
-    Tok_Right_Brack,
-    Tok_Unsigned,
-    Tok_Signed,
-    Tok_Float,
-    Tok_Array,
-    Tok_Subarray,
-    Tok_Access,
-    Tok_Record,
-    Tok_Union,
-    Tok_Boolean,
-    Tok_Enum,
-    Tok_If,
-    Tok_Then,
-    Tok_Else,
-    Tok_Elsif,
-    Tok_Loop,
-    Tok_Exit,
-    Tok_Next,
-    Tok_Is,
-    Tok_Of,
-    Tok_All,
-    Tok_Return,
-    Tok_Type,
-    Tok_External,
-    Tok_Private,
-    Tok_Public,
-    Tok_Local,
-    Tok_Procedure,
-    Tok_Function,
-    Tok_Constant,
-    Tok_Var,
-    Tok_Declare,
-    Tok_Begin,
-    Tok_End,
-    Tok_Case,
-    Tok_When,
-    Tok_Default,
-    Tok_Arrow,
-    Tok_Null
-  };
-
-  enum class NodeType {
-    Decl_Keyword,
-    Decl_Type,
-    Decl_Param,
-    Node_Function,
-    Node_Procedure,
-    Node_Object,
-    Node_Field,
-    Node_Lit,
-    Type_Boolean,
-    Type_Enum,
-    Type_Unsigned,
-    Type_Signed,
-    Type_Float,
-    Type_Array,
-    Type_Subarray,
-    Type_Access,
-    Type_Record,
-    Type_Union
-  };
-
-  enum StorageType { External, Public, Private, Local };
-
-  struct Symbol;
-
-  using Scope = std::vector<Symbol *>;
-  using ScopeStack = std::stack<Scope *>;
-
-  ScopeStack scopeStack;
-
-  struct Node {};
-
-  using Identity = void *;
-
-  struct Name {
-    Node *interpretation;
-    Name *OuterInterpretation;
-    Scope *currentScope;
-
-    Name(Node *interpretation, Name *OuterInterpretation, Scope *currentScope);
-  };
-
-  struct Symbol {
-    std::string identity;
-    Name *name;
-
-    Symbol(const std::string &identity, Name *name);
-  };
-
-  struct DeclKeyword : Node {
-    Token keyword;
-
-    DeclKeyword(Token keyword);
-  };
-
-  struct DeclType : Node {
-    StorageType declStorage;
-    bool declDefined;
-    Node *declDtype;
-
-    DeclType(StorageType declStorage, bool declDefined, Node *declDtype);
-  };
-
-  struct DeclParam : Node {
-    StorageType declStorage;
-    bool declDefined;
-    Node *declDtype;
-    Symbol *paramName;
-    O_Dnode *paramNode;
-    Node *next; // TODO: FIX
-  };
-
-  /*
-      case Kind is
-                 when Node_Lit =>
-                    --  Name of the literal.
-                    Lit_Name : O_Ident;
-                    --  Enum literal
-                    Lit_Cnode : O_Cnode;
-                    --  Next literal for the type.
-                    Lit_Next : Node_Acc;
-                 when others =>
-                    null;
-              end case;
-  */
-  struct NodeFunction : Node {
-    StorageType declStorage;
-    bool declDefined;
-    Node *declDtype;
-    Symbol *subprgName;
-    Node *subprgParams;
-    O_Dnode *Subprg_Node;
-  };
-  struct NodeProcedure : Node {
-    StorageType declStorage;
-    bool declDefined;
-    Node *declDtype;
-    Symbol *subprgName;
-    Node *subprgParams;
-    O_Dnode *Subprg_Node;
-  };
-  struct NodeObject : Node {
-    StorageType declStorage;
-    bool declDefined;
-    Node *declDtype;
-    std::string objName;
-    O_Dnode *objNode;
-  };
-  struct NodeField : Node {
-    Symbol fieldIdent;
-    O_Fnode fieldFnode;
-    Node *fieldType;
-    Node *fieldNext;
-    Node *fieldHashNext;
-  };
-  struct NodeLit : Node {
-    StorageType declStorage;
-    bool declDefined;
-    Node *declDtype;
-    std::string litName;
-    O_Cnode *litCnode;
-    Node *litNext;
-  };
-  struct TypeBoolean : Node {
-    O_Tnode *typeNode;
-    Node *enumLits;
-  };
-  struct TypeEnum : Node {
-    O_Tnode *typeNode;
-    Node *enumLits;
-  };
-  struct TypeUnsigned : Node {
-    O_Tnode *typeNode;
-  };
-  struct TypeSigned : Node {
-    O_Tnode *typeNode;
-  };
-  struct TypeFloat : Node {
-    O_Tnode *typeNode;
-  };
-  struct TypeArray : Node {
-    O_Tnode *typeNode;
-    Node *arrayIndex;
-    Node *arrayElement;
-  };
-  struct TypeSubarray : Node {
-    O_Tnode *typeNode;
-    Node *subarrayBase;
-  };
-  struct TypeAccess : Node {
-    O_Tnode *typeNode;
-    Node *accessDType;
-  };
-  struct TypeRecord : Node {
-    O_Tnode *typeNode;
-    Node *Record_Union_Fields;
-    SymbolTable *Record_Union_Map; // TODO: Fix
-  };
-
-  struct TypeUnion : Node {
-    O_Tnode *typeNode;
-
-    Node *Record_Union_Fields;
-    SymbolTable *Record_Union_Map; // TODO: Fix
-  };
-
-  const std::string fileName;
-  std::ifstream sourceFile;
-  unsigned int lineNumber = 0;
-  unsigned int position = 0;
-
-  Token lastToken;
-  // TODO: Replace this using variant
-  std::string tokenString;
-  double tokenDouble;
-  long tokenNumber;
-
-  // TODO: Rename these
-  Symbol *Id_Address = new Symbol("address", nullptr);
-  Symbol *Id_Unchecked_Address = new Symbol("unchecked_address", nullptr);
-  Symbol *Id_Subprg_Addr = new Symbol("subprg_addr", nullptr);
-  Symbol *Id_Conv = new Symbol("conv", nullptr);
-  Symbol *Id_Sizeof = new Symbol("sizeof", nullptr);
-  Symbol *Id_Alignof = new Symbol("alignof", nullptr);
-  Symbol *Id_Alloca = new Symbol("alloca", nullptr);
-  Symbol *Id_Offsetof = new Symbol("offsetof", nullptr);
-
-  Token getNextToken();
-
-  std::string parseComment();
-
-  using SymbolTable = std::unordered_map<std::string, Symbol *>;
-
-  SymbolTable symbolTable;
-
-  inline Symbol *getFromSymbolTable(const std::string key) {
-    std::string lowerKey;
-    for (char k : key) {
-      lowerKey.push_back(tolower(k));
-    }
-    return symbolTable[lowerKey];
-  }
-
-  void pushScope();
-
+    Scanner scanner;
 public:
-  Parser(const std::string sourceFile);
+    //  If True, create nodes for parenthesis expressions.
+    bool Flag_Parse_Parenthesis = false;
 
-  void parse();
+// Parse an expression.
+// (Used by PSL).
+    Iir* Parse_Expression ();
+    Iir* Parse_Expression_Rhs (Iir* Left);
 
-  Token parseNumericLiteral();
+// Parse an relationnal operator and its rhs.
+    Iir* Parse_Relation_Rhs (Iir* Left);
 
-  void popScope();
+//  Convert the STR (0 .. LEN - 1) into a operator symbol identifier.
+//  Emit an error message if the name is not an operator name.
+    unsigned int Str_To_Operator_Name(std::string str);
+
+//  Convert string literal STR to an operator symbol.
+//  Emit an error message if the string is not an operator name.
+    Iir* String_To_Operator_Symbol (Iir* Str);
+
+// Parse a single design unit.
+// The scanner must have been initialized, however, the current_token
+// shouldn't have been set.
+// At return, the last token accepted is the semi_colon that terminates
+// the library unit.
+// Return Null_Iir when end of file.
+    Iir_Design_Unit* Parse_Design_Unit ();
+
+//  Parse a file.
+//  The scanner must habe been initialized as for parse_design_unit.
+//  Return Null_Iir in case of error.
+    Iir_Design_File* Parse_Design_File ();
+
+private:
+
+    Iir* currentNode;
+
+    // current_token must be valid.
+    // Leaves a token.
+    Iir_Expression* Parse_Simple_Expression (Iir* Primary = nullptr);
+    Iir_Expression* Parse_Primary();
+    Iir_Use_Clause* Parse_Use_Clause();
+
+    Iir* Parse_Association_List();
+    Iir* Parse_Association_List_In_Parenthesis();
+
+    Iir* Parse_Sequential_Statements (Iir* parent);
+    Iir* Parse_Configuration_Item();
+    Iir_Block_Configuration* Parse_Block_Configuration();
+    void Parse_Concurrent_Statements (Iir* parent);
+    Iir* Parse_Subprogram_Declaration();
+    Iir* Parse_Subtype_Indication (Iir* Name = nullptr);
+    Iir* Parse_Interface_List (Ctxt : Interface_Kind_Type; Iir* parent);
+    void Parse_Component_Specification (Res : Iir);
+    Iir_Binding_Indication Parse_Binding_Indication();
+    Iir* Parse_Aggregate();
+    Iir_Signature Parse_Signature();
+    void Parse_Declarative_Part (Iir* parent);
+    Iir* Parse_Tolerance_Aspect_Opt();
+    Iir* Parse_Package (Iir* parent);
+
+    Iir* Parse_Context_Reference(Location_Type Loc, Iir* Name);
+
+    void Expect(Token::Token token, std::string message);
+
+    void Scan_Expect(Token::Token token, std::string message);
+
+    void Check_End_Name(std::string name, Iir* decl);
+
+    void Check_End_Name(Iir* Decl);
+
+    void Check_End_Name(Token::Token token, Iir* Decl);
+
+    void Eat_Tokens_Until_Semi_Colon();
+
+    void Scan_Semi_Colon(std::string Msg);
+
+    Iir_Mode Parse_Mode();
+
+    std::tuple<bool, Iir_Signal_Kind> Parse_Signal_Kind();
+
+    Iir* Parse_Range_Expression(Iir* Left);
+
+    Iir* Parse_Range();
+
+    Iir* Parse_Range_Constraint_Of_Subtype_Indication(Iir* Type_Mark, Iir* Resolution_Indication);
+
+    Iir* Parse_Range_Constraint();
+
+    Iir* Parse_Discrete_Range();
+
+    unsigned int Scan_To_Operator_Name();
 };
-
 #endif // AVLC_PARSER_H

@@ -23,6 +23,7 @@
 
 #include <exception>
 #include <stdexcept>
+#include "strong_typedef.hpp"
 
 // A tri state type.
 enum class triStateType {
@@ -39,50 +40,52 @@ public:
 
 template<typename T, T min, T max>
 class subtype {
+    using className = subtype;
 	T val;
 public:
 	subtype(T value) {
 		if (value>max || value<min)
 			throw subtypeException("out of subtype range");
+        val = value;
 	}
 
-	bool operator<(const subtype& rhs) const {
+	bool operator<(const className& rhs) const {
 		return val<rhs.val;
 	}
 
-	bool operator>(const subtype& rhs) const {
-		return rhs<*this;
+	bool operator>(const className& rhs) const {
+		return rhs<rhs.val;
 	}
 
-	bool operator<=(const subtype& rhs) const {
-		return !(rhs<*this);
+	bool operator<=(const className& rhs) const {
+		return rhs<=rhs.val;
 	}
 
-	bool operator>=(const subtype& rhs) const {
-		return !(*this<rhs);
+	bool operator>=(const className& rhs) const {
+		return rhs>=rhs.val;
 	}
 
-	bool operator==(const subtype& rhs) const {
+	bool operator==(const className& rhs) const {
 		return val==rhs.val;
 	}
 
-	bool operator!=(const subtype& rhs) const {
-		return !(rhs==*this);
+	bool operator!=(const className& rhs) const {
+		return val!=rhs.val;
 	}
 
-	subtype<T, min, max> operator+(const subtype& rhs) const {
+	className operator+(const className& rhs) const {
 		return val+rhs.val;
 	}
 
-	subtype<T, min, max> operator-(const subtype& rhs) const {
+	className<T, min, max> operator-(const className& rhs) const {
 		return val-rhs.val;
 	}
 
-	subtype<T, min, max> operator*(const subtype& rhs) const {
+	className<T, min, max> operator*(const className& rhs) const {
 		return val*rhs.val;
 	}
 
-	subtype<T, min, max> operator/(const subtype& rhs) const {
+	className<T, min, max> operator/(const className& rhs) const {
 		return val/rhs.val;
 	}
 };
