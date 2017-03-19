@@ -22,10 +22,10 @@
 #include "State.h"
 #include <fstream>
 #include <cassert>
-
 struct Location_Type {
     uint32_t Line = 0;
-    uint32_t Column = 0;
+    uint32_t Line_Pos = 0;
+    uint32_t Pos = 0;
 };
 
 // The context contains the whole internal state of the Scanner, ie
@@ -95,7 +95,7 @@ Pos: Source_Ptr renames currentContext.Pos;
     }
 
     Location_Type getCurrentLocation() {
-        return Location_Type {Line_Number, Source.tellg() - Line_Pos};
+        return Location_Type {Line_Number, Line_Pos, Source.tellg()};
     }
 };
 

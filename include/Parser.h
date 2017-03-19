@@ -80,8 +80,8 @@ private:
 
     // current_token must be valid.
     // Leaves a token.
-    Iir_Expression* Parse_Simple_Expression (Iir* Primary = nullptr);
-    Iir_Expression* Parse_Primary();
+    Iir* Parse_Simple_Expression (Iir* Primary = nullptr);
+    Iir* Parse_Primary();
     Iir_Use_Clause* Parse_Use_Clause();
 
     Iir* Parse_Association_List();
@@ -133,5 +133,15 @@ private:
     Iir* Parse_Discrete_Range();
 
     unsigned int Scan_To_Operator_Name();
+
+    Iir* Parse_Name_Suffix(Iir* Pfx, bool Allow_Indexes);
+
+    Iir* Parse_External_Pathname();
+
+    Iir* Parse_External_Name();
+
+    Iir* Parse_Term(Iir* Primary);
+
+    Iir* Build_Unary_Factor(Iir* Primary, Vhdl_Std standard);
 };
 #endif // AVLC_PARSER_H

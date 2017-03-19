@@ -685,28 +685,28 @@ void Scanner::scanIdentifier() {
 
 		if (Keywords::isAMSReservedWord(currentContext.Identifier)) {
 			if (!state.options.AMS_Vhdl)
-				SyntaxWarning("using" + currentContext.Identifier + "AMS-VHDL reserved word as an identifier"
-								+ currentContext.Identifier,
-						state.options.Warnid_Reserved_Word);
+                Warning("using" + currentContext.Identifier + "AMS-VHDL reserved word as an identifier"
+                                + currentContext.Identifier,
+                        state.options.Warnid_Reserved_Word);
 			currentContext.token = Token::Identifier;
 		}
 		else if (Keywords::isVHDL08ReservedWord(currentContext.Identifier)) {
 			if (state.options.standard < Vhdl_Std::Vhdl_08)
-				SyntaxWarning("using" + currentContext.Identifier + "vhdl-2008 reserved word as an identifier",
-						state.options.Warnid_Reserved_Word);
+                Warning("using" + currentContext.Identifier + "vhdl-2008 reserved word as an identifier",
+                        state.options.Warnid_Reserved_Word);
 			currentContext.token = Token::Identifier;
 		}
 		else if (Keywords::isVHDL00ReservedWord(currentContext.Identifier)) {
 			if (state.options.standard < Vhdl_Std::Vhdl_00)
-				SyntaxWarning("using" + currentContext.Identifier + "vhdl-2000 reserved word as an identifier",
-						state.options.Warnid_Reserved_Word);
+                Warning("using" + currentContext.Identifier + "vhdl-2000 reserved word as an identifier",
+                        state.options.Warnid_Reserved_Word);
 			currentContext.token = Token::Identifier;
 		}
 		else if (Keywords::isVHDL93ReservedWord(currentContext.Identifier)) {
 			if (state.options.standard < Vhdl_Std::Vhdl_93)
-				SyntaxWarning("using" + currentContext.Identifier
-								+ "vhdl93 reserved word as a vhdl87 identifier, (use option --std=93 to compile as vhdl93)",
-						state.options.Warnid_Reserved_Word);
+                Warning("using" + currentContext.Identifier
+                                + "vhdl93 reserved word as a vhdl87 identifier, (use option --std=93 to compile as vhdl93)",
+                        state.options.Warnid_Reserved_Word);
 			currentContext.token = Token::Identifier;
 		}
 		else {
@@ -1081,7 +1081,7 @@ void Scanner::scan() {
 						// within a delimited comment is not interpreted as
 						// the start of a nested delimited comment.
 						if (currentContext.incChar() == '*') {
-							SyntaxWarning("'/*' found within a block comment", state.options.Warnid_Nested_Comment);
+                            Warning("'/*' found within a block comment", state.options.Warnid_Nested_Comment);
 						}
 						break;
 					case '*':

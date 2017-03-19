@@ -19,15 +19,24 @@
 #define AVLC_IIR_H
 
 #include <string>
+#include <vector>
 #include "iir_types.h"
+#include "Scanner.h"
+#include <variant>
 
-struct Iir { };
+struct Iir {
+    Location_Type Location;
+};
 
 struct Iir_Unused: public virtual Iir {
 };
 
 struct Iir_Type_Abs: public virtual Iir {
     Iir* Type;
+};
+
+struct Iir_Parent_Design_Unit_Abs : public virtual Iir {
+    Iir_Design_Unit* Parent_Design_Unit;
 };
 
 struct Iir_Type_Declarator_Abs: public virtual Iir {
@@ -70,16 +79,23 @@ struct Iir_Elab_Flag_Abs: public virtual Iir {
     bool Elab_Flag;
 };
 
-struct Iir_Design_File: public Iir_Chain_Abs, public Iir_Elab_Flag_Abs {
-    Iir* Last_Design_Unit;
+struct Iir_Design_File: public Iir_Elab_Flag_Abs {
+    std::vector<Iir_Design_Unit*> Design_Units;
     Time_Stamp_Id Analysis_Time_Stamp;
     File_Checksum_Id File_Checksum;
-    Iir* Library;
-    Iir_List File_Dependence_List;
-    std::string Design_File_Directory;
+    Iir_Library_Declaration* Library;
+    std::vector<Iir*> File_Dependence_List;
+    std::filesystem::path Design_File_Directory;
     std::string Design_File_Filename;
-    Iir* First_Design_Unit;
 };
+
+using Iir_Design_Unit_n = std::variant<Iir_Entity_Declaration*,
+                                       Iir_Architecture_Body*,
+                                       Iir_Package_Declaration*,
+                                       Iir_Package_Instantiation_Declaration*,
+                                       Iir_Package_Body*,
+                                       Iir_Configuration_Declaration*,
+                                       Iir_Context_Declaration*>
 
 struct Iir_Date_Abs: public virtual Iir {
     Date_Type Date;
@@ -104,12 +120,12 @@ struct Iir_Design_Unit
     Location_Type End_Location;
     bool Configuration_Mark_Flag;
     int Design_Unit_Source_Col;
-    Iir* Design_File;
+    Iir_Design_File* Design_File;
     Iir* Library_Unit;
     Date_State_Type Date_State;
-    Iir_List Analysis_Checks_List;
+    std::vector<Iir*> Analysis_Checks_List;
     Iir* Hash_Chain;
-    Iir_List Dependence_List;
+    std::vector<Iir*> Dependence_List;
     bool Configuration_Done_Flag;
 };
 
@@ -170,12 +186,11 @@ struct Iir_String_Literal8
           public Iir_Literal_Subtype_Abs,
           public Iir_Type_Abs,
           public Iir_Expr_Staticness_Abs {
-    String8_Id String8_Id;
+    std::string str;
     bool Has_Length;
     bool Has_Sign;
     Number_Base_Type Bit_String_Base;
     bool Has_Signed;
-    int String_Length;
 };
 
 struct Iir_Physical_Unit_Abs: public virtual Iir {
@@ -208,7 +223,7 @@ struct Iir_Simple_Aggregate
           public Iir_Literal_Subtype_Abs,
           public Iir_Type_Abs,
           public Iir_Expr_Staticness_Abs {
-    Iir_List Simple_Aggregate_List;
+    std::vector<Iir*> Simple_Aggregate_List;
 };
 
 struct Iir_Overflow_Literal: public Iir_Literal_Origin_Abs, public Iir_Type_Abs, public Iir_Expr_Staticness_Abs {
@@ -388,7 +403,7 @@ struct Iir_Entity_Aspect_Open: public virtual Iir {
 };
 
 struct Iir_Declaration_Chain_Abs: public virtual Iir {
-    Iir* Declaration_Chain;
+    std::vector<Iir*> Declaration_Chain;
 };
 
 struct Iir_Block_Configuration: public Iir_Chain_Abs, public Iir_Declaration_Chain_Abs, public Iir_Parent_Abs {
@@ -425,7 +440,7 @@ struct Iir_Block_Configuration_Abs: public virtual Iir {
 };
 
 struct Iir_Component_Name_Abs: public virtual Iir {
-    Iir_List Instantiation_List;
+    std::vector<Iir*> Instantiation_List;
     Iir* Binding_Indication;
     Iir* Component_Name;
 };
@@ -485,7 +500,7 @@ struct Iir_Return_Type_Mark_Abs: public virtual Iir {
 
 struct Iir_Signature: public Iir_Return_Type_Mark_Abs {
     Iir* Signature_Prefix;
-    Iir_List Type_Marks_List;
+    std::vector<Iir*> Type_Marks_List;
 };
 
 struct Iir_Aggregate_Info: public virtual Iir {
@@ -564,7 +579,7 @@ struct Iir_Attribute_Specification
         : public Iir_Entity_Class_Abs, public Iir_Chain_Abs, public Iir_Expression_Abs, public Iir_Parent_Abs {
     Iir* Attribute_Value_Spec_Chain;
     Iir* Attribute_Specification_Chain;
-    Iir_List Entity_Name_List;
+    std::vector<Iir*> Entity_Name_List;
     Iir* Attribute_Designator;
 };
 
@@ -578,7 +593,7 @@ struct Iir_Disconnection_Specification
           public Iir_Parent_Abs,
           public Iir_Type_Mark_Abs,
           public Iir_Is_Ref_Abs {
-    Iir_List Signal_List;
+    std::vector<Iir*> Signal_List;
 };
 
 struct Iir_Configuration_Specification
@@ -672,7 +687,7 @@ struct Iir_Constraint_State_Abs: public virtual Iir {
 };
 
 struct Iir_Elements_Declaration_List_Abs: public virtual Iir {
-    Iir_List Elements_Declaration_List;
+    std::vector<Iir*> Elements_Declaration_List;
 };
 
 struct Iir_Record_Type_Definition
@@ -689,7 +704,7 @@ struct Iir_Record_Type_Definition
 };
 
 struct Iir_Index_Subtype_List_Abs: public virtual Iir {
-    Iir_List Index_Subtype_List;
+    std::vector<Iir*> Index_Subtype_List;
     Iir* Element_Subtype;
     bool Index_Constraint_Flag;
 };
@@ -710,7 +725,7 @@ struct Iir_Array_Type_Definition
           public Iir_Signal_Type_Flag_Abs,
           public Iir_Has_Signal_Flag_Abs,
           public Iir_Index_Constraint_Flag_Abs {
-    Iir_List Index_Subtype_Definition_List;
+    std::vector<Iir*> Index_Subtype_Definition_List;
 };
 
 struct Iir_Tolerance_Abs: public virtual Iir {
@@ -735,7 +750,7 @@ struct Iir_Array_Subtype_Definition
           public Iir_Has_Signal_Flag_Abs,
           public Iir_Index_Constraint_Flag_Abs,
           public Iir_Subtype_Type_Mark_Abs {
-    Iir_List Index_Constraint_List;
+    std::vector<Iir*> Index_Constraint_List;
     Iir* Array_Element_Constraint;
 };
 
@@ -830,7 +845,7 @@ struct Iir_Enumeration_Type_Definition
           public Iir_Signal_Type_Flag_Abs,
           public Iir_Has_Signal_Flag_Abs,
           public Iir_Is_Ref_Abs {
-    Iir_List Enumeration_Literal_List;
+    std::vector<Iir_Enumeration_Literal*> Enumeration_Literal_List;
     bool Only_Characters_Flag;
 };
 
@@ -913,7 +928,7 @@ struct Iir_Scalar_Nature_Definition: public virtual Iir {
 };
 
 struct Iir_Overload_List: public virtual Iir {
-    Iir_List Overload_List;
+    std::vector<Iir*> Overload_List;
 };
 
 struct Iir_Type_Definition_Abs: public virtual Iir {
@@ -997,7 +1012,7 @@ struct Iir_Package_Declaration
           public Iir_Declaration_Chain_Abs,
           public Iir_Identifier_Abs,
           public Iir_Visible_Flag_Abs,
-          public Iir_Parent_Abs,
+          public Iir_Parent_Design_Unit_Abs,
           public Iir_End_Has_Reserved_Id_Abs,
           public Iir_End_Has_Identifier_Abs {
     bool Macro_Expanded_Flag;
@@ -1025,7 +1040,7 @@ struct Iir_Package_Instantiation_Declaration
           public Iir_Generic_Map_Aspect_Chain_Abs,
           public Iir_Uninstantiated_Package_Name_Abs,
           public Iir_Uninstantiated_Package_Decl_Abs,
-          public Iir_Parent_Abs,
+          public Iir_Parent_Design_Unit_Abs,
           public Iir_End_Has_Reserved_Id_Abs,
           public Iir_End_Has_Identifier_Abs {
 };
@@ -1035,7 +1050,7 @@ struct Iir_Package_Body
           public Iir_Chain_Abs,
           public Iir_Declaration_Chain_Abs,
           public Iir_Identifier_Abs,
-          public Iir_Parent_Abs,
+          public Iir_Parent_Design_Unit_Abs,
           public Iir_End_Has_Reserved_Id_Abs,
           public Iir_End_Has_Identifier_Abs {
     Iir* Package;
@@ -1048,7 +1063,7 @@ struct Iir_Configuration_Declaration
           public Iir_Declaration_Chain_Abs,
           public Iir_Identifier_Abs,
           public Iir_Visible_Flag_Abs,
-          public Iir_Parent_Abs,
+          public Iir_Parent_Design_Unit_Abs,
           public Iir_End_Has_Reserved_Id_Abs,
           public Iir_End_Has_Identifier_Abs {
 };
@@ -1073,7 +1088,7 @@ struct Iir_Entity_Declaration
           public Iir_Declaration_Chain_Abs,
           public Iir_Identifier_Abs,
           public Iir_Visible_Flag_Abs,
-          public Iir_Parent_Abs,
+          public Iir_Parent_Design_Unit_Abs,
           public Iir_Is_Within_Flag_Abs,
           public Iir_End_Has_Reserved_Id_Abs,
           public Iir_End_Has_Identifier_Abs,
@@ -1092,7 +1107,7 @@ struct Iir_Architecture_Body
           public Iir_Identifier_Abs,
           public Iir_Visible_Flag_Abs,
           public Iir_Foreign_Flag_Abs,
-          public Iir_Parent_Abs,
+          public Iir_Parent_Design_Unit_Abs,
           public Iir_Is_Within_Flag_Abs,
           public Iir_End_Has_Reserved_Id_Abs,
           public Iir_End_Has_Identifier_Abs {
@@ -1103,7 +1118,7 @@ struct Iir_Context_Declaration
         : public Iir_Context_Items_Abs,
           public Iir_Identifier_Abs,
           public Iir_Visible_Flag_Abs,
-          public Iir_Parent_Abs,
+          public Iir_Parent_Design_Unit_Abs,
           public Iir_End_Has_Reserved_Id_Abs,
           public Iir_End_Has_Identifier_Abs {
 };
@@ -1128,8 +1143,8 @@ struct Iir_Library_Declaration
           public Iir_Identifier_Abs,
           public Iir_Visible_Flag_Abs,
           public Iir_Elab_Flag_Abs {
-    Iir* Design_File_Chain;
-    std::string Library_Directory;
+    std::vector<Iir_Design_File*> Design_Files;
+    std::filesystem::path Library_Directory;
 };
 
 struct Iir_Has_Is_Abs: public virtual Iir {
@@ -1174,7 +1189,7 @@ struct Iir_Group_Declaration
           public Iir_Visible_Flag_Abs,
           public Iir_Parent_Abs,
           public Iir_Use_Flag_Abs {
-    Iir_List Group_Constituent_List;
+    std::vector<Iir*> Group_Constituent_List;
     Iir* Group_Template_Name;
 };
 
@@ -1229,7 +1244,7 @@ struct Iir_Psl_Declaration
 struct Iir_PSL_Nbr_States_Abs: public virtual Iir {
     bool PSL_EOS_Flag;
     int PSL_Nbr_States;
-    Iir_List PSL_Clock_Sensitivity;
+    std::vector<Iir*> PSL_Clock_Sensitivity;
 };
 
 using Iir_PSL_Clock_Sensitivity_Abs = Iir_PSL_Nbr_States_Abs;
@@ -1457,7 +1472,7 @@ struct Iir_Sequential_Statement_Chain_Abs: public virtual Iir {
 using Iir_Impure_Depth_Abs = Iir_Subprogram_Specification_Abs;
 
 struct Iir_Callees_List_Abs: public virtual Iir {
-    Iir_List Callees_List;
+    std::vector<Iir*> Callees_List;
 };
 
 struct Iir_Function_Body
@@ -1552,7 +1567,7 @@ struct Iir_Guard_Signal_Declaration
           public Iir_Has_Active_Flag_Abs,
           public Iir_Use_Flag_Abs {
     Iir* Block_Statement;
-    Iir_List Guard_Sensitivity_List;
+    std::vector<Iir*> Guard_Sensitivity_List;
     Iir* Guard_Expression;
 };
 
@@ -1739,7 +1754,7 @@ struct Iir_Interface_Package_Declaration
           public Iir_Generic_Map_Aspect_Chain_Abs,
           public Iir_Uninstantiated_Package_Name_Abs,
           public Iir_Uninstantiated_Package_Decl_Abs,
-          public Iir_Parent_Abs,
+          public Iir_Parent_Design_Unit_Abs,
           public Iir_Is_Within_Flag_Abs {
 };
 
@@ -2187,7 +2202,7 @@ struct Iir_Indexed_Name
           public Iir_Expr_Staticness_Abs,
           public Iir_Name_Staticness_Abs,
           public Iir_Prefix_Abs {
-    Iir_List Index_List;
+    std::vector<Iir*> Index_List;
 };
 
 struct Iir_Psl_Expression: public Iir_Type_Abs {
@@ -2199,7 +2214,7 @@ struct Iir_Label_Abs: public virtual Iir {
 };
 
 struct Iir_Sensitivity_List_Abs: public virtual Iir {
-    Iir_List Sensitivity_List;
+    std::vector<Iir*> Sensitivity_List;
 };
 
 struct Iir_Process_Origin_Abs: public virtual Iir {

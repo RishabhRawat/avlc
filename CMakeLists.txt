@@ -13,9 +13,13 @@ set(SOURCE_FILES
         include/Token.h
         include/types.h
         include/Keywords.h
+        include/packageHandler.h
+        src/packageHandler.cpp
         src/Parser.cpp
         src/Scanner.cpp
         include/Parser.h include/Nodes.h
+        src/standardPackage.cpp
+        src/iir_utils.cpp
         include/iir.h)
 
 

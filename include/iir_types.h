@@ -23,7 +23,7 @@ enum Date_State_Type {
 };
 
 // A date is used for analysis order. All design units from a library are ordered according to the date.
-enum Date_Type {
+/*enum Date_Type {
     // The unit is obsoleted (ie replaced) by a more recently analyzed design unit.another design unit.
     // If another design unit depends (directly or not) on an obseleted design unit, it is also obsolete,
     // and cannot be defined.
@@ -40,8 +40,9 @@ enum Date_Type {
             Date_Analyzed = 6,
     // Used only for default configuration. Such units are always up-to-date.
             Date_Uptodate = 7
-};
-
+    // All Dates type above 10 are valid
+}*/
+using Date_Type = unsigned int;
 enum Iir_Mode {
     Iir_Unknown_Mode,
     Iir_Linkage_Mode,
@@ -71,5 +72,7 @@ enum Iir_Direction {
     Iir_To,
     Iir_Downto
 };
+
+enum class Iir_Staticness { Unknown, None, Globally, Locally };
 
 #endif //AVLC_IIR_TYPES_H

@@ -47,7 +47,7 @@ public:
 	const char* what() const noexcept override { return completeErrorMessage; }
 };
 
-inline void SyntaxWarning (const std::string message, const bool warnSwitch) {
+inline void Warning(const std::string message, const bool warnSwitch = true) {
 	if (warnSwitch)
 		std::cout<<message<<"\n";
 }
