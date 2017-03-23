@@ -649,7 +649,7 @@ const unsigned int Name_Last_Comment = Name_First_Comment + 1;
 const unsigned int Name_First_PSL = Name_Last_Comment + 1;
 const unsigned int Name_Last_PSL = Name_First_PSL + 42;
 
-const std::unordered_map<std::string, unsigned int> KeywordTable{
+const std::unordered_map<const std::string, unsigned int> KeywordTable{
 		{Name_Mod, Name_First_Keyword + 0},
 		{Name_Rem, Name_First_Keyword + 1},
 

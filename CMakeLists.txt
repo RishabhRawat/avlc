@@ -19,6 +19,7 @@ set(SOURCE_FILES
         src/Scanner.cpp
         include/Parser.h include/Nodes.h
         src/standardPackage.cpp
+        include/iir_utils.h
         src/iir_utils.cpp
         include/iir.h)
 

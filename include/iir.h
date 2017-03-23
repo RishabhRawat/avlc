@@ -195,7 +195,7 @@ struct Iir_String_Literal8
 
 struct Iir_Physical_Unit_Abs: public virtual Iir {
     Iir* Unit_Name;
-    Iir* Physical_Unit;
+    Iir_Unit_Declaration* Physical_Unit;
 };
 
 using Iir_Unit_Name_Abs = Iir_Physical_Unit_Abs;
@@ -882,7 +882,7 @@ struct Iir_Physical_Type_Definition
           public Iir_End_Has_Reserved_Id_Abs,
           public Iir_End_Has_Identifier_Abs,
           public Iir_Is_Ref_Abs {
-    Iir* Unit_Chain;
+    std::vector<Iir*> Unit_Chain;
 };
 
 struct Iir_Range_Expression: public Iir_Type_Abs, public Iir_Expr_Staticness_Abs {

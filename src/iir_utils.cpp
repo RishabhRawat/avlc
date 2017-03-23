@@ -924,25 +924,22 @@ else
 return Name;
 end if;
 end Strip_Denoting_Name;
+*/
 
-function Build_Simple_Name (Ref : Iir; Loc : Location_Type) return Iir
-        is
-Res : Iir;
-begin
-        Res := Create_Iir (Iir_Kind_Simple_Name);
-Set_Location (Res, Loc);
-Set_Identifier (Res, Get_Identifier (Ref));
-Set_Named_Entity (Res, Ref);
-Set_Base_Name (Res, Res);
+Iir_Simple_Name* Build_Simple_Name(Iir_Identifier_Abs* Ref, Location_Type Loc) {
+    auto Res = new Iir_Simple_Name;
+    Res->Location = Loc;
+    Res->Identifier = Ref->Identifier;
+    Res->Named_Entity = Ref;
+    Res->Base_Name = Res;
 //  FIXME: set type and expr staticness ?
-return Res;
-end Build_Simple_Name;
+    return Res;
+}
 
-function Build_Simple_Name (Ref : Iir; Loc : Iir) return Iir is
-begin
-return Build_Simple_Name (Ref, Get_Location (Loc));
-end Build_Simple_Name;
-
+inline Iir_Simple_Name* Build_Simple_Name(Iir_Identifier_Abs* Ref, Iir* Loc) {
+    return Build_Simple_Name(Ref, Loc->Location);
+}
+/*
 function Build_Reference_Name (Name : Iir) return Iir
         is
 Res : Iir;
@@ -1474,17 +1471,14 @@ when others =>
 Error_Kind ("get_actual_or_default", Assoc);
 end case;
 end Get_Actual_Or_Default;
-
-function Create_Error (Orig : Iir) return Iir
-        is
-Res : Iir;
-begin
-        Res := Create_Iir (Iir_Kind_Error);
-Set_Error_Origin (Res, Orig);
-Location_Copy (Res, Orig);
-return Res;
-end Create_Error;
-
+*/
+inline Iir_Error* Create_Error (Iir* Orig) {
+    auto Res = new Iir_Error;
+    Res->Error_Origin = Orig;
+    Res->Location = Orig->Location;
+    return Res;
+}
+/*
 function Create_Error_Expr (Orig : Iir; Atype : Iir) return Iir
         is
 Res : Iir;
@@ -1494,20 +1488,17 @@ Set_Expr_Staticness (Res, None);
 Set_Type (Res, Atype);
 return Res;
 end Create_Error_Expr;
-
-function Create_Error_Type (Orig : Iir) return Iir
-        is
-Res : Iir;
-begin
-        Res := Create_Error (Orig);
+*/
+Iir_Error* Create_Error_Type (Iir* Orig) {
+    auto Res = Create_Error(Orig);
 //Set_Expr_Staticness (Res, Locally);
-Set_Base_Type (Res, Res);
-Set_Type_Declarator (Res, Null_Iir);
-Set_Resolved_Flag (Res, True);
-Set_Signal_Type_Flag (Res, True);
-return Res;
-end Create_Error_Type;
-
+    Res->Base_Type = Res;
+    Res->Type_Declarator = nullptr;
+    Res->Resolved_Flag = true;
+    Res->Signal_Type_Flag = true;
+    return Res;
+}
+/*
 //  Extract the entity from ASPECT.
 //  Note: if ASPECT is a component declaration, returns ASPECT.
 function Get_Entity_From_Entity_Aspect (Aspect : Iir) return Iir

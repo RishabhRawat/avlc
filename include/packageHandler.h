@@ -17,7 +17,7 @@ private:
     Options options;
 
     std::string Library_To_File_Name(Iir_Library_Declaration* Library);
-    void Search_Library_In_Path(Iir_Library_Declaration* Library);
+    bool Search_Library_In_Path(Iir_Library_Declaration* Library);
 public:
     // This package defines the library manager.
     // The purpose of the library manager is to associate library logical names

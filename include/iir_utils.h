@@ -166,11 +166,12 @@ pragma Inline (Is_Procedure_Declaration);
 //  If NAME is a simple or an expanded name, return the denoted declaration.
 //  Otherwise, return NAME.
 function Strip_Denoting_Name (Name : Iir) return Iir;
-
+*/
 //  Build a simple name node whose named entity is REF and location LOC.
-function Build_Simple_Name (Ref : Iir; Loc : Location_Type) return Iir;
-function Build_Simple_Name (Ref : Iir; Loc : Iir) return Iir;
+Iir_Simple_Name* Build_Simple_Name(Iir* Ref, Location_Type Loc);
 
+Iir_Simple_Name* Build_Simple_Name(Iir* Ref, Iir* Loc);
+/*
 //  Create a name that referenced the same named entity as NAME.
 function Build_Reference_Name (Name : Iir) return Iir;
 
@@ -296,17 +297,17 @@ function Get_Method_Type (Spec : Iir) return Iir;
 //  For Association_Element_Open: return the default value of the
 //    interface INTER.
 function Get_Actual_Or_Default (Assoc : Iir; Inter : Iir) return Iir;
-
+*/
 //  Create an error node for node ORIG.
-function Create_Error (Orig : Iir) return Iir;
-
+inline Iir_Error* Create_Error (Iir* Orig);
+/*
 //  Create an error node for node ORIG, and set its type to ATYPE.
 //  Set its staticness to locally.
 function Create_Error_Expr (Orig : Iir; Atype : Iir) return Iir;
-
+*/
 //  Create an error node for node ORIG, which is supposed to be a type.
-function Create_Error_Type (Orig : Iir) return Iir;
-
+Iir_Error* Create_Error_Type (Iir* Orig);
+/*
 //  Extract the entity from ASPECT.
 //  Note: if ASPECT is a component declaration, returns ASPECT.
 //        if ASPECT is open, return Null_Iir;
