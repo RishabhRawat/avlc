@@ -3,6 +3,7 @@
 //
 
 #include <CompilerExceptions.h>
+#include <Parser.h>
 #include "packageHandler.h"
 #include "json.hpp"
 
@@ -21,7 +22,7 @@ namespace fs = std::filesystem;
 //with Str_Table;
 //with Tokens;
 //with Files_Map;
-//with Flags;
+//with state.options;
 //with Std_Package;
 //with Disp_Tree;
 //with Disp_Vhdl;
@@ -30,10 +31,6 @@ namespace fs = std::filesystem;
 //with Canon;
 //with Nodes_GC;
 //
-
-//  Chain of known libraries.  This is also the top node of all iir node.
-Libraries_List : Iir_Library_Declaration := Null_Iir;
-Libraries_List_Last : Iir_Library_Declaration := Null_Iir;
 
 //  A location for any implicit declarations (such as library WORK).
 Implicit_Location: Location_Type;
@@ -49,17 +46,7 @@ procedure Error_Lib_Msg (Msg : String; Arg1 : Earg_Type) is
 Report_Msg (Msgid_Error, Library, No_Location, Msg, (1 => Arg1));
 end Error_Lib_Msg;
 
-
-function Path_To_Id (Path : String) return Name_Id is
-begin
-if Path (Path'Last) /= GNAT.OS_Lib.Directory_Separator then
-return Get_Identifier (Path & GNAT.OS_Lib.Directory_Separator);
-else
-return Get_Identifier (Path);
-end if;
-end Path_To_Id;
-
-void packageHandler::Add_Library_Path(std::filesystem::path Path) {
+void packageHandler::Add_Library_Path(fs::path Path) {
     paths.push_back(Path);
 }
 
@@ -67,7 +54,7 @@ void packageHandler::Add_Library_Path(std::filesystem::path Path) {
 // where VV is the version.
 
 std::string packageHandler::Library_To_File_Name(Iir_Library_Declaration* Library) {
-    switch (options.standard) {
+    switch (state.options.standard) {
     case Vhdl_Std::Vhdl_87:
         return Library->Identifier + "-obj87.cf";
     case Vhdl_Std::Vhdl_93c:
@@ -85,7 +72,7 @@ bool packageHandler::Search_Library_In_Path(Iir_Library_Declaration* Library) {
     auto libraryName = Library_To_File_Name(Library);
 
     std::string str;
-    switch (options.standard) {
+    switch (state.options.standard) {
     case Vhdl_Std::Vhdl_87:
         str = "v87";
         break;
@@ -116,77 +103,15 @@ bool packageHandler::Search_Library_In_Path(Iir_Library_Declaration* Library) {
 void packageHandler::Set_Work_Library_Path(fs::path Path) {
     //  This is a warning, since 'clean' action should not fail in this cases.
     if (!fs::is_directory(Path))
-        Warning("Directory '" + Path + "' set by --workdir= does not exist", options.Warnid_Library);
+        Warning("Directory '" + Path + "' set by --workdir= does not exist", state.options.Warnid_Library);
     Work_Directory = Path;
 }
 
-//  Every design unit is put in this hash table to be quickly found by
-//  its (primary) identifier.
-Unit_Hash_Length : constant Name_Id := 127;
-subtype Hash_Id is Name_Id range 0 .. Unit_Hash_Length - 1;
-Unit_Hash_Table : array (Hash_Id) of Iir := (others => Null_Iir);
+//  Every design unit is put in this hash table to be quickly found by its (primary) identifier.
+std::unordered_map<std::string, Iir_Design_Unit*> Primary_Units;
+std::unordered_map<std::string, Iir_Design_Unit*> Secondary_Units;
 
-//  Get the hash value for DESIGN_UNIT.
-//  Architectures use the entity name.
-function Get_Hash_Id_For_Unit (Design_Unit : Iir_Design_Unit)
-return Hash_Id
-        is
-Lib_Unit : Iir;
-Id : Name_Id;
-begin
-        Lib_Unit := Get_Library_Unit (Design_Unit);
-case Get_Kind (Lib_Unit) is
-        when Iir_Kind_Entity_Declaration
-| Iir_Kind_Configuration_Declaration
-| Iir_Kind_Package_Declaration
-| Iir_Kind_Package_Body
-| Iir_Kind_Package_Instantiation_Declaration
-| Iir_Kind_Context_Declaration =>
-Id := Get_Identifier (Lib_Unit);
-when Iir_Kind_Architecture_Body =>
-//  Architectures are put with the entity identifier.
-Id := Get_Entity_Identifier_Of_Architecture (Lib_Unit);
-when others =>
-Error_Kind ("get_Hash_Id_For_Unit", Lib_Unit);
-end case;
-return Id mod Unit_Hash_Length;
-end Get_Hash_Id_For_Unit;
-
-//  Put DESIGN_UNIT into the unit hash table.
-procedure Add_Unit_Hash (Design_Unit : Iir)
-is
-        Id : Hash_Id;
-begin
-        Id := Get_Hash_Id_For_Unit (Design_Unit);
-Set_Hash_Chain (Design_Unit, Unit_Hash_Table (Id));
-Unit_Hash_Table (Id) := Design_Unit;
-end Add_Unit_Hash;
-
-//  Remove DESIGN_UNIT from the unit hash table.
-procedure Remove_Unit_Hash (Design_Unit : Iir)
-is
-        Id : Hash_Id;
-Unit, Prev, Next : Iir_Design_Unit;
-begin
-        Id := Get_Hash_Id_For_Unit (Design_Unit);
-Unit := Unit_Hash_Table (Id);
-Prev := Null_Iir;
-while Unit /= Null_Iir loop
-Next := Get_Hash_Chain (Unit);
-if Unit = Design_Unit then
-if Prev = Null_Iir then
-        Unit_Hash_Table (Id) := Next;
-else
-Set_Hash_Chain (Prev, Next);
-end if;
-return;
-end if;
-Prev := Unit;
-Unit := Next;
-end loop;
-//  Not found.
-raise Internal_Error;
-end Remove_Unit_Hash;
+// NOTE: Architectures are put with the entity identifier. (How to handle both??)
 
 void packageHandler::Purge_Design_File(Iir_Design_File* Design_File) {
     auto it = std::find(Work_Library.Design_Files.begin(), Work_Library.Design_Files.end(), Design_File);
@@ -419,14 +344,13 @@ is
 Implicit_Source_File : Source_File_Entry;
 Command_Source_File : Source_File_Entry;
 begin
-        Implicit_Source_File := Create_Virtual_Source_File
-        (Get_Identifier ("*implicit*"));
-Command_Source_File := Create_Virtual_Source_File
-        (Get_Identifier ("*command line*"));
-Command_Line_Location := Source_File_To_Location (Command_Source_File);
-Implicit_Location := Source_File_To_Location (Implicit_Source_File);
+        Implicit_Source_File = Create_Virtual_Source_File("*implicit*");
+Command_Source_File = Create_Virtual_Source_File("*command line*");
+Command_Line_Location = Source_File_To_Location (Command_Source_File);
+Implicit_Location = Source_File_To_Location (Implicit_Source_File);
 end Create_Virtual_Locations;
 */
+/*
 // Note: the scanner shouldn't be in use, since this procedure uses it.
 void packageHandler::Load_Std_Library (bool Build_Standard = true) {
 // NOTES:        use Std_Package;
@@ -435,33 +359,33 @@ void packageHandler::Load_Std_Library (bool Build_Standard = true) {
 //  This procedure must not be called twice.
 throw std::logic_error("cannot call twice");
 
-//TODO: Flags.Create_Flag_String;
+//TODO: state.options.Create_Flag_String;
 //Create_Virtual_Locations;
 
 Std_Package.Create_First_Nodes;
 
 //  Create the library.
-Std_Library := Create_Iir (Iir_Kind_Library_Declaration);
+Std_Library = Create_Iir (Iir_Kind_Library_Declaration);
 Set_Identifier (Std_Library, Std_Names.Name_Std);
 Set_Location (Std_Library, Implicit_Location);
-Libraries_List := Std_Library;
-Libraries_List_Last := Std_Library;
+Libraries_List = Std_Library;
+Libraries_List_Last = Std_Library;
 
 if Build_Standard then
 Create_Std_Standard_Package (Std_Library);
 Add_Unit_Hash (Std_Standard_Unit);
 end if;
 
-if Flags.Bootstrap
+if state.options.Bootstrap
         and then Work_Library_Name = Std_Names.Name_Std
 then
-        Dir := Work_Directory;
+        Dir = Work_Directory;
 else
-Dir := Null_Identifier;
+Dir = Null_Identifier;
 end if;
 Set_Library_Directory (Std_Library, Dir);
 if Load_Library (Std_Library) = False
-        and then not Flags.Bootstrap
+        and then not state.options.Bootstrap
         then
 Error_Msg_Option ("cannot find ""std"" library");
 end if;
@@ -478,18 +402,18 @@ end if;
 Set_Visible_Flag (Std_Library, True);
 end Load_Std_Library;
 
-procedure Load_Work_Library (Empty : Boolean := False)
+procedure Load_Work_Library (Empty : Boolean = False)
 is
         use Std_Names;
 begin
 if Work_Library_Name = Name_Std then
-if not Flags.Bootstrap then
+if not state.options.Bootstrap then
 Error_Msg_Option ("the WORK library cannot be STD");
 return;
 end if;
-Work_Library := Std_Library;
+Work_Library = Std_Library;
 else
-Work_Library := Create_Iir (Iir_Kind_Library_Declaration);
+Work_Library = Create_Iir (Iir_Kind_Library_Declaration);
 Set_Location (Work_Library, Implicit_Location);
 //Set_Visible_Flag (Work_Library, True);
 Set_Library_Directory (Work_Library, Work_Directory);
@@ -504,7 +428,7 @@ end if;
 
 //  Add it to the list of libraries.
 Set_Chain (Libraries_List_Last, Work_Library);
-Libraries_List_Last := Work_Library;
+Libraries_List_Last = Work_Library;
 end if;
 Set_Visible_Flag (Work_Library, True);
 end Load_Work_Library;
@@ -523,7 +447,7 @@ return Work_Library;
 end if;
 
 //  Check if the library has already been loaded.
-Library := Iirs_Utils.Find_Name_In_Chain (Libraries_List, Ident);
+Library = Iirs_Utils.Find_Name_In_Chain (Libraries_List, Ident);
 if Library /= Null_Iir then
 return Library;
 end if;
@@ -534,7 +458,7 @@ if Ident = Std_Names.Name_Std then
 raise Internal_Error;
 end if;
 
-Library := Create_Iir (Iir_Kind_Library_Declaration);
+Library = Create_Iir (Iir_Kind_Library_Declaration);
 Set_Location (Library, Loc);
 Set_Library_Directory (Library, Null_Identifier);
 Set_Identifier (Library, Ident);
@@ -544,15 +468,16 @@ end if;
 Set_Visible_Flag (Library, True);
 
 Set_Chain (Libraries_List_Last, Library);
-Libraries_List_Last := Library;
+Libraries_List_Last = Library;
 
 return Library;
 end Get_Library;
 
+
 // Return TRUE if LIBRARY_UNIT and UNIT have identifiers for the same
 // design unit identifier.
 // eg: 'entity A' and 'package A' returns TRUE.
-function Is_Same_Library_Unit (Library_Unit, Unit: Iir) return Boolean
+bool Is_Same_Library_Unit (Iir* Library_Unit, Iir* Unit) return Boolean
         is
 Entity_Name1, Entity_Name2: Name_Id;
 Library_Unit_Kind, Unit_Kind : Iir_Kind;
@@ -561,8 +486,8 @@ if Get_Identifier (Unit) /= Get_Identifier (Library_Unit) then
 return False;
 end if;
 
-Library_Unit_Kind := Get_Kind (Library_Unit);
-Unit_Kind := Get_Kind (Unit);
+Library_Unit_Kind = Get_Kind (Library_Unit);
+Unit_Kind = Get_Kind (Unit);
 
 //  Package and package body are never the same library unit.
 if Library_Unit_Kind = Iir_Kind_Package_Declaration
@@ -581,8 +506,8 @@ end if;
 if Unit_Kind = Iir_Kind_Architecture_Body
         and then Library_Unit_Kind = Iir_Kind_Architecture_Body
 then
-        Entity_Name1 := Get_Entity_Identifier_Of_Architecture (Unit);
-Entity_Name2 := Get_Entity_Identifier_Of_Architecture (Library_Unit);
+        Entity_Name1 = Get_Entity_Identifier_Of_Architecture (Unit);
+Entity_Name2 = Get_Entity_Identifier_Of_Architecture (Library_Unit);
 if Entity_Name1 /= Entity_Name2 then
 return False;
 end if;
@@ -602,26 +527,9 @@ end if;
 return True;
 end Is_Same_Library_Unit;
 
-procedure Free_Dependence_List (Design : Iir_Design_Unit)
-is
-        List : Iir_List;
-El : Iir;
-begin
-        List := Get_Dependence_List (Design);
-if List /= Null_Iir_List then
-for I in Natural loop
-El := Get_Nth_Element (List, I);
-exit when El = Null_Iir;
-Iirs_Utils.Free_Recursive (El);
-end loop;
-Destroy_Iir_List (List);
-end if;
-end Free_Dependence_List;
-
-//  This procedure is called when the DESIGN_UNIT (either the stub created
-//  when a library is read or created from a previous unit in a source
-//  file) has been replaced by a new unit.  Free everything but DESIGN_UNIT,
-//  has it may be referenced in other units (dependence...)
+//  This procedure is called when the DESIGN_UNIT (either the stub created when a library is read or created
+// from a previous unit in a source file) has been replaced by a new unit.  Free everything but DESIGN_UNIT, has
+// it may be referenced in other units (dependence...)
 //  FIXME: Isn't the library unit also referenced too ?
 procedure Free_Design_Unit (Design_Unit : Iir_Design_Unit)
 is
@@ -630,17 +538,17 @@ Unit : Iir_Design_Unit;
 Dep_List : Iir_List;
 begin
 //  Free dependence list.
-Dep_List := Get_Dependence_List (Design_Unit);
+Dep_List = Get_Dependence_List (Design_Unit);
 Destroy_Iir_List (Dep_List);
 Set_Dependence_List (Design_Unit, Null_Iir_List);
 
 //  Free default configuration of architecture (if any).
-Lib := Get_Library_Unit (Design_Unit);
+Lib = Get_Library_Unit (Design_Unit);
 if Lib /= Null_Iir
         and then Get_Kind (Lib) = Iir_Kind_Architecture_Body
 then
         Free_Iir (Get_Entity_Name (Lib));
-Unit := Get_Default_Configuration_Declaration (Lib);
+Unit = Get_Default_Configuration_Declaration (Lib);
 if Unit /= Null_Iir then
 Free_Design_Unit (Unit);
 end if;
@@ -650,106 +558,83 @@ end if;
 Free_Iir (Lib);
 Set_Library_Unit (Design_Unit, Null_Iir);
 end Free_Design_Unit;
-
-procedure Remove_Unit_From_File
-        (Unit_Ref : Iir_Design_Unit; File : Iir_Design_File)
-is
-        Prev : Iir_Design_Unit;
-Unit, Next : Iir_Design_Unit;
-begin
-        Prev := Null_Iir;
-Unit := Get_First_Design_Unit (File);
-while Unit /= Null_Iir loop
-Next := Get_Chain (Unit);
-if Unit = Unit_Ref then
-if Prev = Null_Iir then
-        Set_First_Design_Unit (File, Next);
-else
-Set_Chain (Prev, Next);
-end if;
-if Next = Null_Iir then
-        Set_Last_Design_Unit (File, Prev);
-end if;
-return;
-end if;
-Prev := Unit;
-Unit := Next;
-end loop;
-//  Not found.
-raise Internal_Error;
-end Remove_Unit_From_File;
-
-//  Last design_file used.  Kept to speed-up operations.
-Last_Design_File : Iir_Design_File := Null_Iir;
-
+*/
+void Remove_Unit_From_File(Iir_Design_Unit* Unit_Ref,Iir_Design_File* File) {
+    auto iter = std::find(File->Design_Units.begin(), File->Design_Units.end(), Unit_Ref);
+    assert(iter != File->Design_Units.end());
+    File->Design_Units.erase(iter);
+}
+/*
 // Add or replace a design unit in the working library.
-procedure Add_Design_Unit_Into_Library
-        (Unit : in Iir_Design_Unit; Keep_Obsolete : Boolean := False)
-is
-        Design_File: Iir_Design_File;
-Design_Unit, Prev_Design_Unit : Iir_Design_Unit;
-Last_Unit : Iir_Design_Unit;
-Library_Unit: Iir;
-New_Library_Unit: Iir;
-Unit_Id : Name_Id;
-Date: Date_Type;
-New_Lib_Checksum : File_Checksum_Id;
-Id : Hash_Id;
+void packageHandler::Add_Design_Unit_Into_Library(Iir_Design_Unit* Unit, bool Keep_Obsolete = false) {
+//        Design_File: Iir_Design_File;
+//Design_Unit, Prev_Design_Unit : Iir_Design_Unit;
+//Last_Unit : Iir_Design_Unit;
+//Library_Unit: Iir;
+//New_Library_Unit: Iir;
+//Unit_Id : Name_Id;
+//Date: Date_Type;
+//New_Lib_Checksum : File_Checksum_Id;
+//Id : Hash_Id;
+//
+////  File name and dir name of DECL.
+//File_Name : Name_Id;
+//Dir_Name : Name_Id;
 
-//  File name and dir name of DECL.
-File_Name : Name_Id;
-Dir_Name : Name_Id;
-begin
 //  As specified, the Chain must be not set.
-pragma Assert (Get_Chain (Unit) = Null_Iir);
+    assert(Unit->Chain == nullptr);
 
 //  The unit must not be in the library.
-pragma Assert (Get_Date_State (Unit) = Date_Extern);
+    assert(Unit->Date_State == Date_Extern);
 
 //  Mark this design unit as being loaded.
-New_Library_Unit := Get_Library_Unit (Unit);
-Unit_Id := Get_Identifier (New_Library_Unit);
+auto New_Library_Unit = Unit->Library_Unit;
+
+//Unit_Id = Get_Identifier (New_Library_Unit);
 
 //  Set the date of the design unit as the most recently analyzed
 //  design unit.
-case Get_Date (Unit) is
-        when Date_Parsed =>
-Set_Date_State (Unit, Date_Parse);
-when Date_Analyzed =>
-Date := Get_Date (Work_Library) + 1;
-Set_Date (Unit, Date);
-Set_Date (Work_Library, Date);
-Set_Date_State (Unit, Date_Analyze);
-when Date_Valid =>
-raise Internal_Error;
-when others =>
-raise Internal_Error;
-end case;
+
+if (Unit->Date == 4) {
+    Unit->Date_State = Date_Parse;
+}
+    else if (Unit->Date == 6) {
+    auto Date = ++(Work_Library->Date);
+    Unit->Date = Date;
+    Unit->Date_State = Date_Analyze;
+}
+    else if (Unit->Date > 10) {
+    throw std::logic_error("this 10");
+}
+    else
+    throw std::logic_error("this bad");
 
 //  Set file time stamp.
+    /*
 declare
         File : Source_File_Entry;
 Pos : Source_Ptr;
 begin
+    std::filesystem::path = New_Library_Unit->Location.filePath;
         Files_Map.Location_To_File_Pos (Get_Location (New_Library_Unit),
         File, Pos);
-New_Lib_Checksum := Files_Map.Get_File_Checksum (File);
-File_Name := Files_Map.Get_File_Name (File);
+New_Lib_Checksum = Files_Map.Get_File_Checksum (File);
+File_Name = Files_Map.Get_File_Name (File);
 Image (File_Name);
 if GNAT.OS_Lib.Is_Absolute_Path (Nam_Buffer (1 .. Nam_Length)) then
-        Dir_Name := Null_Identifier;
+        Dir_Name = Null_Identifier;
 else
-Dir_Name := Files_Map.Get_Home_Directory;
+Dir_Name = Files_Map.Get_Home_Directory;
 end if;
 end;
 
 //  Try to find a design unit with the same name in the work library.
-Id := Get_Hash_Id_For_Unit (Unit);
-Design_Unit := Unit_Hash_Table (Id);
-Prev_Design_Unit := Null_Iir;
+
+    Design_Unit = Primary_Units.find(Unit->Identifier);
+Prev_Design_Unit = Null_Iir;
 while Design_Unit /= Null_Iir loop
-Design_File := Get_Design_File (Design_Unit);
-Library_Unit := Get_Library_Unit (Design_Unit);
+Design_File = Get_Design_File (Design_Unit);
+Library_Unit = Get_Library_Unit (Design_Unit);
 if Get_Identifier (Design_Unit) = Unit_Id
         and then Get_Library (Design_File) = Work_Library
         and then Is_Same_Library_Unit (New_Library_Unit, Library_Unit)
@@ -761,9 +646,9 @@ declare
         Next_Design : Iir;
 begin
 //  Remove DESIGN_UNIT from the unit_hash.
-Next_Design := Get_Hash_Chain (Design_Unit);
+Next_Design = Get_Hash_Chain (Design_Unit);
 if Prev_Design_Unit = Null_Iir then
-        Unit_Hash_Table (Id) := Next_Design;
+        Primary_Units (Id) = Next_Design;
 else
 Set_Hash_Chain (Prev_Design_Unit, Next_Design);
 end if;
@@ -780,7 +665,7 @@ then
         Remove_Unit_From_File (Design_Unit, Design_File);
 
 Set_Chain (Design_Unit, Obsoleted_Design_Units);
-Obsoleted_Design_Units := Design_Unit;
+Obsoleted_Design_Units = Design_Unit;
 end if;
 end;
 
@@ -829,8 +714,8 @@ end if;
 end if;
 exit;
 else
-Prev_Design_Unit := Design_Unit;
-Design_Unit := Get_Hash_Chain (Design_Unit);
+Prev_Design_Unit = Design_Unit;
+Design_Unit = Get_Hash_Chain (Design_Unit);
 end if;
 end loop;
 
@@ -841,19 +726,19 @@ if Last_Design_File /= Null_Iir
         and then Get_Design_File_Filename (Last_Design_File) = File_Name
         and then Get_Design_File_Directory (Last_Design_File) = Dir_Name
 then
-        Design_File := Last_Design_File;
+        Design_File = Last_Design_File;
 else
 //  Search.
-Design_File := Get_Design_File_Chain (Work_Library);
+Design_File = Get_Design_File_Chain (Work_Library);
 while Design_File /= Null_Iir loop
 if Get_Design_File_Filename (Design_File) = File_Name
         and then Get_Design_File_Directory (Design_File) = Dir_Name
 then
         exit;
 end if;
-Design_File := Get_Chain (Design_File);
+Design_File = Get_Chain (Design_File);
 end loop;
-Last_Design_File := Design_File;
+Last_Design_File = Design_File;
 end if;
 
 if Design_File /= Null_Iir
@@ -866,7 +751,7 @@ then
 // Design file is updated.
 // Outdate all other units, overwrite the design_file.
 Set_File_Checksum (Design_File, New_Lib_Checksum);
-Design_Unit := Get_First_Design_Unit (Design_File);
+Design_Unit = Get_First_Design_Unit (Design_File);
 while Design_Unit /= Null_Iir loop
 if Design_Unit /= Unit then
 //  Mark other design unit as obsolete.
@@ -875,11 +760,11 @@ Remove_Unit_Hash (Design_Unit);
 else
 raise Internal_Error;
 end if;
-Prev_Design_Unit := Design_Unit;
-Design_Unit := Get_Chain (Design_Unit);
+Prev_Design_Unit = Design_Unit;
+Design_Unit = Get_Chain (Design_Unit);
 
 Set_Chain (Prev_Design_Unit, Obsoleted_Design_Units);
-Obsoleted_Design_Units := Prev_Design_Unit;
+Obsoleted_Design_Units = Prev_Design_Unit;
 end loop;
 Set_First_Design_Unit (Design_File, Null_Iir);
 Set_Last_Design_Unit (Design_File, Null_Iir);
@@ -887,7 +772,7 @@ end if;
 
 if Design_File = Null_Iir then
 // This is the first apparition of the design file.
-Design_File := Create_Iir (Iir_Kind_Design_File);
+Design_File = Create_Iir (Iir_Kind_Design_File);
 Location_Copy (Design_File, Unit);
 
 Set_Design_File_Filename (Design_File, File_Name);
@@ -900,7 +785,7 @@ Set_Design_File_Chain (Work_Library, Design_File);
 end if;
 
 //  Add DECL to DESIGN_FILE.
-Last_Unit := Get_Last_Design_Unit (Design_File);
+Last_Unit = Get_Last_Design_Unit (Design_File);
 if Last_Unit = Null_Iir then
 if Get_First_Design_Unit (Design_File) /= Null_Iir then
 raise Internal_Error;
@@ -916,33 +801,19 @@ Set_Last_Design_Unit (Design_File, Unit);
 Set_Design_File (Unit, Design_File);
 
 //  Add DECL in unit hash table.
-Set_Hash_Chain (Unit, Unit_Hash_Table (Id));
-Unit_Hash_Table (Id) := Unit;
+Set_Hash_Chain (Unit, Primary_Units (Id));
+Primary_Units (Id) = Unit;
 
 //  Update the analyzed time stamp.
 Set_Analysis_Time_Stamp (Design_File, Files_Map.Get_Os_Time_Stamp);
 end Add_Design_Unit_Into_Library;
+*/
 
-procedure Add_Design_File_Into_Library (File : in out Iir_Design_File)
-is
-        Unit : Iir_Design_Unit;
-Next_Unit : Iir_Design_Unit;
-First_Unit : Iir_Design_Unit;
-begin
-        Unit := Get_First_Design_Unit (File);
-First_Unit := Unit;
-Set_First_Design_Unit (File, Null_Iir);
-Set_Last_Design_Unit (File, Null_Iir);
-while Unit /= Null_Iir loop
-Next_Unit := Get_Chain (Unit);
-Set_Chain (Unit, Null_Iir);
-Libraries.Add_Design_Unit_Into_Library (Unit, True);
-Unit := Next_Unit;
-end loop;
-if First_Unit /= Null_Iir then
-File := Get_Design_File (First_Unit);
-end if;
-end Add_Design_File_Into_Library;
+void packageHandler::Add_Design_File_Into_Library (Iir_Design_File* File) {
+    for (auto&& unit : File->Design_Units) {
+        Add_Design_Unit_Into_Library(unit, true);
+    }
+}
 
 struct Save_Design_Unit {
 
@@ -1025,7 +896,7 @@ struct Save_Design_Unit {
 
     }
 };
-
+/*
 // Save the file map of library LIBRARY.
 void packageHandler::Save_Library(Iir_Library_Declaration* Library) {
     nlohmann::json data;
@@ -1065,28 +936,28 @@ Library_Unit: Iir;
 Res: Iir_Design_Unit;
 begin
 //  FIXME: use hash
-        Entity_Id := Get_Identifier (Entity);
-Lib := Get_Library (Get_Design_File (Get_Design_Unit (Entity)));
-Design_File := Get_Design_File_Chain (Lib);
-Res := Null_Iir;
+        Entity_Id = Get_Identifier (Entity);
+Lib = Get_Library (Get_Design_File (Get_Design_Unit (Entity)));
+Design_File = Get_Design_File_Chain (Lib);
+Res = Null_Iir;
 while Design_File /= Null_Iir loop
-Design_Unit := Get_First_Design_Unit (Design_File);
+Design_Unit = Get_First_Design_Unit (Design_File);
 while Design_Unit /= Null_Iir loop
-Library_Unit := Get_Library_Unit (Design_Unit);
+Library_Unit = Get_Library_Unit (Design_Unit);
 
 if Get_Kind (Library_Unit) = Iir_Kind_Architecture_Body
         and then
 Get_Entity_Identifier_Of_Architecture (Library_Unit) = Entity_Id
 then
 if Res = Null_Iir then
-        Res := Design_Unit;
+        Res = Design_Unit;
 elsif Get_Date (Design_Unit) > Get_Date (Res) then
-        Res := Design_Unit;
+        Res = Design_Unit;
 end if;
 end if;
-Design_Unit := Get_Chain (Design_Unit);
+Design_Unit = Get_Chain (Design_Unit);
 end loop;
-Design_File := Get_Chain (Design_File);
+Design_File = Get_Chain (Design_File);
 end loop;
 if Res = Null_Iir then
 return Null_Iir;
@@ -1103,9 +974,9 @@ begin
 if Scanner.Detect_Encoding_Errors then
 //  Don't even try to parse such a file.  The BOM will be interpreted
 //  as an identifier, which is not valid at the beginning of a file.
-Res := Null_Iir;
+Res = Null_Iir;
 else
-Res := Parse.Parse_Design_File;
+Res = Parse.Parse_Design_File;
 end if;
 Scanner.Close_File;
 
@@ -1123,7 +994,7 @@ function Load_File (File_Name: Name_Id) return Iir_Design_File
         is
 Fe : Source_File_Entry;
 begin
-        Fe := Files_Map.Load_Source_File (Local_Directory, File_Name);
+        Fe = Files_Map.Load_Source_File (Local_Directory, File_Name);
 if Fe = No_Source_File_Entry then
         Error_Msg_Option ("cannot open " & Image (File_Name));
 return Null_Iir;
@@ -1140,7 +1011,7 @@ when Iir_Kind_Selected_Name =>
 declare
         Lib : Iir_Library_Declaration;
 begin
-        Lib := Get_Library (Get_Identifier (Get_Prefix (Unit)),
+        Lib = Get_Library (Get_Identifier (Get_Prefix (Unit)),
         Get_Location (Unit));
 return Find_Primary_Unit (Lib, Get_Identifier (Unit));
 end;
@@ -1158,7 +1029,7 @@ return Boolean
         is
 procedure Error_Obsolete (Msg : String; Arg1 : Earg_Type) is
         begin
-if not Flags.Flag_Elaborate_With_Outdated then
+if not state.options.Flag_Elaborate_With_Outdated then
 if Loc = Null_Iir then
         Error_Msg_Sem (Command_Line_Location, Msg, Arg1);
 else
@@ -1169,7 +1040,7 @@ end Error_Obsolete;
 
 procedure Error_Obsolete (Msg : String; Args : Earg_Arr) is
         begin
-if not Flags.Flag_Elaborate_With_Outdated then
+if not state.options.Flag_Elaborate_With_Outdated then
 if Loc = Null_Iir then
         Error_Msg_Sem (Command_Line_Location, Msg, Args);
 else
@@ -1188,17 +1059,17 @@ if Get_Date (Design_Unit) = Date_Obsolete then
         Error_Obsolete ("%n is obsolete", +Design_Unit);
 return True;
 end if;
-List := Get_Dependence_List (Design_Unit);
+List = Get_Dependence_List (Design_Unit);
 if List = Null_Iir_List then
 return False;
 end if;
-Du_Ts := Get_Analysis_Time_Stamp (Get_Design_File (Design_Unit));
+Du_Ts = Get_Analysis_Time_Stamp (Get_Design_File (Design_Unit));
 for I in Natural loop
-El := Get_Nth_Element (List, I);
+El = Get_Nth_Element (List, I);
 exit when El = Null_Iir;
-Unit := Find_Design_Unit (El);
+Unit = Find_Design_Unit (El);
 if Unit /= Null_Iir then
-U_Ts := Get_Analysis_Time_Stamp (Get_Design_File (Unit));
+U_Ts = Get_Analysis_Time_Stamp (Get_Design_File (Unit));
 if Files_Map.Is_Gt (U_Ts, Du_Ts) then
         Error_Obsolete ("%n is obsoleted by %n", (+Design_Unit, +Unit));
 return True;
@@ -1210,359 +1081,233 @@ end if;
 end loop;
 return False;
 end Is_Obsolete;
+*/
+void packageHandler::Finish_Compilation(Iir_Design_Unit* Unit, bool Main = false) {
+    auto Lib_Unit = Unit->Library_Unit;
 
-procedure Finish_Compilation
-        (Unit : Iir_Design_Unit; Main : Boolean := False)
-is
-        Lib_Unit : Iir;
-begin
-        Lib_Unit := Get_Library_Unit (Unit);
-if (Main or Flags.Dump_All) and then Flags.Dump_Parse then
-Disp_Tree.Disp_Tree (Unit);
-end if;
+    if (Main || state.options.Dump_All || state.options.Dump_Parse) {
+//    Disp_Tree.Disp_Tree(Unit);
+    }
 
-if Flags.Check_Ast_Level > 0 then
-        Nodes_GC.Check_Tree (Unit);
-end if;
+    if (state.options.Check_Ast_Level > 0) {
+//    Nodes_GC.Check_Tree(Unit);
+    }
 
-if Flags.Verbose then
-Report_Msg (Msgid_Note, Semantic, +Lib_Unit,
-"analyze %n", (1 => +Lib_Unit));
-end if;
+//TODO:
+//if (state.options.Verbose) then
+//Report_Msg (Msgid_Note, Semantic, +Lib_Unit,
+//"analyze %n", (1 => +Lib_Unit));
+//end if;
 
-Sem.Semantic (Unit);
+//FIXME: Sem.Semantic (Unit);
 
-if (Main or Flags.Dump_All) and then Flags.Dump_Sem then
-Disp_Tree.Disp_Tree (Unit);
-end if;
+    if ((Main or state.options.Dump_All) && state.options.Dump_Sem) {
+//    Disp_Tree.Disp_Tree(Unit);
+    }
 
-if Errorout.Nbr_Errors > 0 then
-        raise Compilation_Error;
-end if;
 
-if (Main or Flags.List_All) and then Flags.List_Sem then
-Disp_Vhdl.Disp_Vhdl (Unit);
-end if;
+//FIXME:
+//if Errorout.Nbr_Errors > 0 then
+//        raise Compilation_Error;
+//end if;
 
-if Flags.Check_Ast_Level > 0 then
-        Nodes_GC.Check_Tree (Unit);
-end if;
+    if ((Main or state.options.List_All) && state.options.List_Sem) {
+//        Disp_Vhdl.Disp_Vhdl(Unit);
+    }
+
+    if (state.options.Check_Ast_Level > 0) {
+//    Nodes_GC.Check_Tree(Unit);
+    }
 
 //  Post checks
 //--------------
 
-Post_Sems.Post_Sem_Checks (Unit);
-
-if Errorout.Nbr_Errors > 0 then
-        raise Compilation_Error;
-end if;
+//FIXME: Post_Sems.Post_Sem_Checks (Unit);
 
 //  Canonalisation.
 //----------------
 
-if Flags.Verbose then
-Report_Msg (Msgid_Note, Semantic, +Lib_Unit,
-"canonicalize %n", (1 => +Lib_Unit));
-end if;
+//FIXME:
+//if state.options.Verbose then
+//Report_Msg (Msgid_Note, Semantic, +Lib_Unit,
+//"canonicalize %n", (1 => +Lib_Unit));
+//}
 
-Canon.Canonicalize (Unit);
+//FIXME: Canon.Canonicalize (Unit);
 
-if (Main or Flags.Dump_All) and then Flags.Dump_Canon then
-Disp_Tree.Disp_Tree (Unit);
-end if;
+    if ((Main or state.options.Dump_All) && state.options.Dump_Canon) {
+//Disp_Tree.Disp_Tree (Unit);
+    }
+//TODO:
+//if (Errorout.Nbr_Errors > 0 then
+//        raise Compilation_Error;
+//}
 
-if Errorout.Nbr_Errors > 0 then
-        raise Compilation_Error;
-end if;
+    if ((Main or state.options.List_All) && state.options.List_Canon) {
+//Disp_Vhdl.Disp_Vhdl (Unit);
+    }
 
-if (Main or Flags.List_All) and then Flags.List_Canon then
-Disp_Vhdl.Disp_Vhdl (Unit);
-end if;
+    if (state.options.Check_Ast_Level > 0) {
+//        Nodes_GC.Check_Tree (Unit);
+    }
+}
 
-if Flags.Check_Ast_Level > 0 then
-        Nodes_GC.Check_Tree (Unit);
-end if;
-end Finish_Compilation;
 
-procedure Load_Parse_Design_Unit (Design_Unit: Iir_Design_Unit; Loc : Iir)
-is
-        use Scanner;
-Line, Off: Natural;
-Pos: Source_Ptr;
-Res: Iir;
-Design_File : Iir_Design_File;
-Fe : Source_File_Entry;
-begin
-//  The unit must not be loaded.
-pragma Assert (Get_Date_State (Design_Unit) = Date_Disk);
+void packageHandler::Load_Parse_Design_Unit(Iir_Design_Unit* Design_Unit, Iir* Loc) {
+    assert (Design_Unit->Date_State == Date_Disk);
 
 //  Load the file in memory.
-Design_File := Get_Design_File (Design_Unit);
-Fe := Files_Map.Load_Source_File
-        (Get_Design_File_Directory (Design_File),
-                Get_Design_File_Filename (Design_File));
-if Fe = No_Source_File_Entry then
-        Error_Lib_Msg ("cannot load %n", +Get_Library_Unit (Design_Unit));
-raise Compilation_Error;
-end if;
-Set_File (Fe);
+    auto Design_File = Design_Unit->Design_File;
+    std::ifstream ifs(Design_File->Design_File_Directory / Design_File->Design_File_Filename);
+    if (ifs.fail())
+        CompilationError("cannot load " + Design_Unit->Library_Unit->Identifier);
 
-//  Check if the file has changed.
-if not Files_Map.Is_Eq
-(Files_Map.Get_File_Checksum (Get_Current_Source_File),
-        Get_File_Checksum (Design_File))
-then
-        Error_Msg_Sem (+Loc, "file %i has changed and must be reanalysed",
-        +Get_Design_File_Filename (Design_File));
-raise Compilation_Error;
-elsif Get_Date (Design_Unit) = Date_Obsolete then
-        Error_Msg_Sem (+Design_Unit, "%n is not anymore its source file",
-        +Get_Library_Unit (Design_Unit));
-raise Compilation_Error;
-end if;
+    if (Design_File->File_Checksum != Calculate_Checksum(ifs))
+        CompilationError("file " + Design_File->Design_File_Filename + "has changed and must be reanalysed");
+    else if (Design_Unit->Date == 0)
+        SemanticError(Design_Unit->Design_File->Design_File_Filename + "is not anymore its source file");
+    ifs.close();
 
 //  Set the position of the lexer
-Pos := Get_Design_Unit_Source_Pos (Design_Unit);
-Line := Natural (Get_Design_Unit_Source_Line (Design_Unit));
-Off := Natural (Get_Design_Unit_Source_Col (Design_Unit));
-Files_Map.File_Add_Line_Number (Get_Current_Source_File, Line, Pos);
-Set_Current_Position (Pos + Source_Ptr (Off));
+    Parser parser(state, Design_Unit->Source_Pos);
+    auto result = parser.Parse_Design_Unit(Design_Unit->Source_Pos);
 
-//  Parse
-        Res := Parse.Parse_Design_Unit;
-Close_File;
-if Res = Null_Iir then
-        raise Compilation_Error;
-end if;
+    if (!result)
+        throw CompilationError("");
 
-Set_Date_State (Design_Unit, Date_Parse);
+    Design_Unit->Date_State = Date_Parse;
 
 //  FIXME: check the library unit read is the one expected.
 
 //  Move the unit in the library: keep the design_unit of the library,
 //  but replace the library_unit by the one that has been parsed.  Do
 //  not forget to relocate parents.
-Iirs_Utils.Free_Recursive (Get_Library_Unit (Design_Unit));
-Set_Library_Unit (Design_Unit, Get_Library_Unit (Res));
-Set_Design_Unit (Get_Library_Unit (Res), Design_Unit);
-Set_Parent (Get_Library_Unit (Res), Design_Unit);
-declare
-        Item : Iir;
-begin
-        Item := Get_Context_Items (Res);
-Set_Context_Items (Design_Unit, Item);
-while Is_Valid (Item) loop
-        Set_Parent (Item, Design_Unit);
-Item := Get_Chain (Item);
-end loop;
-end;
-Location_Copy (Design_Unit, Res);
-Free_Dependence_List (Design_Unit);
-Set_Dependence_List (Design_Unit, Get_Dependence_List (Res));
-Set_Dependence_List (Res, Null_Iir_List);
-Free_Iir (Res);
-end Load_Parse_Design_Unit;
+//FIXME: Iirs_Utils.Free_Recursive (Get_Library_Unit (Design_Unit));
+    Design_Unit->Library_Unit = result->Library_Unit;
+    //FIXME:
+    result->Library_Unit->Parent_Design_Unit = Design_Unit;
+//Set_Design_Unit (Get_Library_Unit (result), Design_Unit);
+//Set_Parent (Get_Library_Unit (result), Design_Unit);
+
+    for (auto&& contextItem : result->Context_Items) {
+        Design_Unit->Context_Items.push_back(contextItem);
+    }
+
+    Design_Unit->Location = result->Location;
+
+    for (auto&& item :Design_Unit->Dependence_List) {
+        delete item;
+    }
+
+    Design_Unit->Dependence_List = result->Dependence_List;
+
+    delete result;
+}
 
 // Load, parse, analyze, back-end a design_unit if necessary.
-procedure Load_Design_Unit (Design_Unit: Iir_Design_Unit; Loc : Iir)
-is
-        Warnings : Warnings_Setting;
-begin
-if Get_Date_State (Design_Unit) = Date_Disk then
-        Load_Parse_Design_Unit (Design_Unit, Loc);
-end if;
 
-if Get_Date_State (Design_Unit) = Date_Parse then
+void packageHandler::Load_Design_Unit (Iir_Design_Unit* Design_Unit, Iir* Loc) {
+
+    if (Design_Unit->Date_State == Date_Disk)
+        Load_Parse_Design_Unit(Design_Unit, Loc);
+
+    if (Design_Unit->Date_State == Date_Parse) {
 //  Analyze the design unit.
 
-if Get_Date (Design_Unit) = Date_Analyzed then
+        if (Design_Unit->Date = Date_Analyzed) {
 //  Work-around for an internal check in sem.
 //  FIXME: to be removed ?
-Set_Date (Design_Unit, Date_Parsed);
-end if;
+            Design_Unit->Date = 4;
+        }
 
 //  Avoid infinite recursion, if the unit is self-referenced.
-Set_Date_State (Design_Unit, Date_Analyze);
+        Design_Unit->Date_State = Date_Analyze;
 
 //  Disable all warnings.  Warnings are emitted only when the unit
 //  is analyzed.
-Save_Warnings_Setting (Warnings);
-Disable_All_Warnings;
+//FIXME: Save_Warnings_Setting (Warnings);
+        Disable_All_Warnings;
 
 //  Analyze unit.
-Finish_Compilation (Design_Unit);
+        Finish_Compilation(Design_Unit);
 
 //  Restore warnings.
-Restore_Warnings_Setting (Warnings);
-end if;
+//FIXME: Restore_Warnings_Setting (Warnings);
+    }
 
-case Get_Date (Design_Unit) is
-        when Date_Parsed =>
-raise Internal_Error;
-when Date_Analyzing =>
+    switch (Design_Unit->Date) {
+    case 4:
+        throw std::logic_error("");
+    case 5:
 //  Self-referenced unit.
-return;
-when Date_Analyzed =>
+        return;
+    case 6:
 //  FIXME: Accept it silently ?
 //  Note: this is used when Flag_Elaborate_With_Outdated is set.
 //  This is also used by anonymous configuration declaration.
-null;
-when Date_Uptodate =>
-return;
-when Date_Valid =>
-null;
-when Date_Obsolete =>
-if not Flags.Flag_Elaborate_With_Outdated then
-Error_Msg_Sem (+Loc, "%n is obsolete", +Design_Unit);
-return;
-end if;
-when others =>
-raise Internal_Error;
-end case;
+        break;
+    case 7:
+        return;
+    case 0:
+        if (!state.options.Flag_Elaborate_With_Outdated)
+            SemanticError(Design_Unit->Identifier + " is obsolete");
+        return;
+    default:
+        if (Design_Unit->Date > 10)
+            break;
+        else
+            throw std::logic_error("");
+    }
 
-if not Flags.Flag_Elaborate_With_Outdated
-        and then Is_Obsolete (Design_Unit, Loc)
-then
-        Set_Date (Design_Unit, Date_Obsolete);
-end if;
-end Load_Design_Unit;
+    if (!state.options.Flag_Elaborate_With_Outdated && Is_Obsolete(Design_Unit, Loc))
+        Design_Unit->Date = 0;
+}
 
 //  Return the declaration of primary unit NAME of LIBRARY.
-function Find_Primary_Unit
-        (Library: Iir_Library_Declaration; Name: Name_Id)
-return Iir_Design_Unit
-        is
-Unit : Iir_Design_Unit;
-begin
-        Unit := Unit_Hash_Table (Name mod Unit_Hash_Length);
-while Unit /= Null_Iir loop
-if Get_Identifier (Unit) = Name
-        and then Get_Library (Get_Design_File (Unit)) = Library
-then
-case Get_Kind (Get_Library_Unit (Unit)) is
-        when Iir_Kind_Package_Declaration
-| Iir_Kind_Package_Instantiation_Declaration
-| Iir_Kind_Entity_Declaration
-| Iir_Kind_Configuration_Declaration
-| Iir_Kind_Context_Declaration =>
-//  Only return a primary unit.
-return Unit;
-when Iir_Kind_Package_Body
-| Iir_Kind_Architecture_Body =>
-null;
-when others =>
-raise Internal_Error;
-end case;
-end if;
-Unit := Get_Hash_Chain (Unit);
-end loop;
+Iir_Design_Unit* packageHandler::Find_Primary_Unit(Iir_Library_Declaration Library, std::string Name) {
+    auto unit = Primary_Units.find(Name);
 
-// The primary unit is not in the library, return null.
-return Null_Iir;
-end Find_Primary_Unit;
+    if(unit == Primary_Units.end())
+        return nullptr;
+    else return unit->second;
+}
 
-function Load_Primary_Unit
-        (Library: Iir_Library_Declaration; Name: Name_Id; Loc : Iir)
-return Iir_Design_Unit
-        is
-Design_Unit: Iir_Design_Unit;
-begin
-        Design_Unit := Find_Primary_Unit (Library, Name);
-if Design_Unit /= Null_Iir then
-Load_Design_Unit (Design_Unit, Loc);
-end if;
-return Design_Unit;
-end Load_Primary_Unit;
+Iir_Design_Unit* packageHandler::Load_Primary_Unit(Iir_Library_Declaration Library, std::string Name, Iir* Loc) {
+    auto Design_Unit = Find_Primary_Unit(Library, Name);
+    if (Design_Unit != nullptr)
+        Load_Design_Unit(Design_Unit, Loc);
+    return Design_Unit;
+}
+
 
 // Return the declaration of secondary unit NAME for PRIMARY, or null if
 // not found.
-function Find_Secondary_Unit (Primary: Iir_Design_Unit; Name: Name_Id)
-return Iir_Design_Unit
-        is
-Design_Unit: Iir_Design_Unit;
-Library_Unit: Iir;
-Primary_Ident: Name_Id;
-Lib_Prim : Iir;
-begin
-        Lib_Prim := Get_Library (Get_Design_File (Primary));
-Primary_Ident := Get_Identifier (Get_Library_Unit (Primary));
-Design_Unit := Unit_Hash_Table (Primary_Ident mod Unit_Hash_Length);
-while Design_Unit /= Null_Iir loop
-Library_Unit := Get_Library_Unit (Design_Unit);
 
-//  The secondary is always in the same library as the primary.
-if Get_Library (Get_Design_File (Design_Unit)) = Lib_Prim then
-// Set design_unit to null iff this is not the correct
-// design unit.
-case Get_Kind (Library_Unit) is
-        when Iir_Kind_Architecture_Body =>
-// The entity field can be either an identifier (if the
-// library unit was not loaded) or an access to the entity
-// unit.
-if (Get_Entity_Identifier_Of_Architecture (Library_Unit)
-        = Primary_Ident)
-and then Get_Identifier (Library_Unit) = Name
-then
-return Design_Unit;
-end if;
-when Iir_Kind_Package_Body =>
-if Name = Null_Identifier
-        and then Get_Identifier (Library_Unit) = Primary_Ident
-then
-return Design_Unit;
-end if;
-when others =>
-null;
-end case;
-end if;
-Design_Unit := Get_Hash_Chain (Design_Unit);
-end loop;
-
-// The architecture or the body is not in the library, return null.
-return Null_Iir;
-end Find_Secondary_Unit;
+Iir_Design_Unit* packageHandler::Find_Secondary_Unit(Iir_Design_Unit* Primary, std::string Name) {
+    auto unit = Secondary_Units.find(Primary->Identifier);
+    assert(unit->Design_File->Library == Primary->Design_File->Library);
+    assert(unit->Library_Unit->Identifier == Name);
+    return unit->second;
+}
+;
 
 // Load an secondary unit and analyse it.
-function Load_Secondary_Unit
-        (Primary: Iir_Design_Unit; Name: Name_Id; Loc : Iir)
-return Iir_Design_Unit
-        is
-Design_Unit: Iir_Design_Unit;
-begin
-        Design_Unit := Find_Secondary_Unit (Primary, Name);
-if Design_Unit /= Null_Iir then
-Load_Design_Unit (Design_Unit, Loc);
-end if;
-return Design_Unit;
-end Load_Secondary_Unit;
+Iir_Design_Unit* packageHandler::Load_Secondary_Unit(Iir_Design_Unit* Primary, std::string Name, Iir* Loc) {
+    auto Design_Unit = Find_Secondary_Unit (Primary, Name);
+    if (Design_Unit)
+            Load_Design_Unit (Design_Unit, Loc);
+    return Design_Unit;
+}
 
-function Find_Entity_For_Component (Name: Name_Id) return Iir_Design_Unit
-        is
-Res : Iir_Design_Unit := Null_Iir;
-Unit : Iir_Design_Unit;
-begin
-        Unit := Unit_Hash_Table (Name mod Unit_Hash_Length);
-while Unit /= Null_Iir loop
-if Get_Identifier (Unit) = Name
-        and then (Get_Kind (Get_Library_Unit (Unit))
-                = Iir_Kind_Entity_Declaration)
-then
-if Res = Null_Iir then
-        Res := Unit;
-else
-//  Many entities.
-return Null_Iir;
-end if;
-end if;
-Unit := Get_Hash_Chain (Unit);
-end loop;
+Iir_Design_Unit Find_Entity_For_Component(std::string Name) {
+    if(auto a = Primary_Units.find(Name); a != Primary_Units.end()) {
+        return a->second;
+    }
+    else
+        return nullptr;
+}
 
-return Res;
-end Find_Entity_For_Component;
-
-function Get_Libraries_List return Iir_Library_Declaration is
-begin
-return Libraries_List;
-end Get_Libraries_List;
-end Libraries;
+std::vector<Iir_Library_Declaration*> packageHandler::Get_Libraries_List () {
+    return Libraries_List;
+}
 

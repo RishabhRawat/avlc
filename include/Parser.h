@@ -40,8 +40,15 @@
 //    'next token' means the current token is to be analysed.
 
 class Parser {
-    Scanner scanner;
+    const Scanner& scanner;
+
+    Iir_Design_Unit* Parse_Design_Unit ();
+
+
 public:
+    Parser(State state, Location_Type loc): scanner{state, loc} {};
+    Parser(Scanner scanner): scanner(scanner) {};
+
     //  If True, create nodes for parenthesis expressions.
     bool Flag_Parse_Parenthesis = false;
 
@@ -67,7 +74,7 @@ public:
 // At return, the last token accepted is the semi_colon that terminates
 // the library unit.
 // Return Null_Iir when end of file.
-    Iir_Design_Unit* Parse_Design_Unit ();
+    inline Iir_Design_Unit* Parse_Design_Unit (Location_Type loc);
 
 //  Parse a file.
 //  The scanner must habe been initialized as for parse_design_unit.
@@ -100,7 +107,9 @@ private:
     Iir_Signature Parse_Signature();
     void Parse_Declarative_Part (Iir* parent);
     Iir* Parse_Tolerance_Aspect_Opt();
-    Iir* Parse_Package (Iir* parent);
+
+    //TODO: check and fix this
+    Iir_Package_Body* Parse_Package (Iir* parent);
 
     Iir* Parse_Context_Reference(Location_Type Loc, Iir* Name);
 

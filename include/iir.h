@@ -102,7 +102,7 @@ struct Iir_Date_Abs: public virtual Iir {
 };
 
 struct Iir_Context_Items_Abs: public virtual Iir {
-    Iir* Context_Items;
+    std::vector<Iir*> Context_Items;
 };
 
 struct Iir_Identifier_Abs: public virtual Iir {
@@ -112,19 +112,17 @@ struct Iir_Identifier_Abs: public virtual Iir {
 struct Iir_Design_Unit
         : public Iir_Date_Abs,
           public Iir_Context_Items_Abs,
-          public Iir_Chain_Abs,
+          // public Iir_Chain_Abs, NOTE: use Iir_File's vector
           public Iir_Identifier_Abs,
           public Iir_Elab_Flag_Abs {
-    Source_Ptr Design_Unit_Source_Pos;
-    int Design_Unit_Source_Line;
+    Location_Type Source_Pos;
     Location_Type End_Location;
     bool Configuration_Mark_Flag;
-    int Design_Unit_Source_Col;
     Iir_Design_File* Design_File;
-    Iir* Library_Unit;
+    Iir_Design_Unit_n* Library_Unit;
     Date_State_Type Date_State;
     std::vector<Iir*> Analysis_Checks_List;
-    Iir* Hash_Chain;
+//    Iir* Hash_Chain;
     std::vector<Iir*> Dependence_List;
     bool Configuration_Done_Flag;
 };

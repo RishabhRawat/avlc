@@ -75,6 +75,21 @@ enum Iir_Direction {
 
 enum class Iir_Staticness { Unknown, None, Globally, Locally };
 
+//TODO: This type is only for file positions, as opposed to Iir position, ghdl uses same for both
+struct Location_Type {
+    std::filesystem::path filePath;
+    uint32_t Line = 0;
+    uint32_t Line_Pos = 0;
+    uint32_t Pos = 0;
+    bool operator== (const Location_Type& right) {
+        return filePath == right.filePath && Line == right.Line && Line_Pos == right.Line_Pos && Pos == right.Line_Pos;
+    }
+};
+
+inline long LocationToPosition (const Location_Type& l) {
+    return l.Line_Pos + l.Pos;
+}
+
 enum Iir_Predefined_Functions {
     Iir_Predefined_Error,
 

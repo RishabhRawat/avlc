@@ -1285,20 +1285,19 @@ begin
         pragma Assert (Get_Kind (Res) = Iir_Kind_Configuration_Declaration);
 return Res;
 end Get_Configuration;
-
-function Get_Entity_Identifier_Of_Architecture (Arch : Iir) return Name_Id
-        is
-Name : constant Iir := Get_Entity_Name (Arch);
-begin
+*/
+inline std::string Get_Entity_Identifier_Of_Architecture (Iir_Architecture_Body* Arch) {
+    return Arch->Entity_Name->Identifier;
+/*
 case Get_Kind (Name) is
         when Iir_Kind_Simple_Name
 | Iir_Kind_Selected_Name =>
 return Get_Identifier (Name);
 when others =>
 Error_Kind ("get_entity_identifier_of_architecture", Name);
-end case;
-end Get_Entity_Identifier_Of_Architecture;
-
+end case;*/
+}
+/*
 function Is_Component_Instantiation
         (Inst : Iir_Component_Instantiation_Statement)
 return Boolean is

@@ -20,31 +20,37 @@
 #define AVLC_COMPILEREXCEPTIONS_H
 
 #include <cstdio>
-#include <cstring>
 #include <exception>
 #include <string>
 #include <iostream>
+#include "iir_types.h"
 
-class SyntaxError: std::exception {
-	char fileName[50];
-	unsigned int lineNumber;
-	char errorMessage[100];
-	char completeErrorMessage[200];
-
+class SyntaxError: std::runtime_error {
 public:
-	SyntaxError(std::string file, unsigned int line, const char* error) noexcept
-			:lineNumber(line) {
-		strncpy(fileName, file.c_str(), 49);
-		fileName[49] = '\0';
-		strncpy(errorMessage, error, 99);
-		errorMessage[99] = '\0';
-		if (sprintf(completeErrorMessage, "%s:%d: %s", fileName, lineNumber,
-				errorMessage) <= 0)
-			strcpy(completeErrorMessage,
-					"Error in throwing error, god what the hell is wrong with me");
-	}
+    SyntaxError(std::string file, unsigned int line, const char* error) noexcept
+            :std::runtime_error(file + std::to_string(line) + error) { }
+};
 
-	const char* what() const noexcept override { return completeErrorMessage; }
+class CompilationError: std::runtime_error {
+public:
+    CompilationError(const std::string& error) noexcept
+            :std::runtime_error("[Compiler Exception] " + error) { }
+
+    CompilationError(Location_Type loc, const char* error) noexcept
+            :std::runtime_error(
+            "[Compiler Exception] " + loc.filePath.string() + ": Line " + loc.Line + ", Col " + loc.Pos + ": "
+                    + error) { }
+};
+
+class SemanticError: std::runtime_error {
+public:
+    SemanticError(const std::string& error) noexcept
+            :std::runtime_error("[Semantic Error] " + error) { }
+
+    SemanticError(Location_Type loc, const char* error) noexcept
+            :std::runtime_error(
+            "[Semantic Error] " + loc.filePath.string() + ": Line " + loc.Line + ", Col " + loc.Pos + ": "
+                    + error) { }
 };
 
 inline void Warning(const std::string message, const bool warnSwitch = true) {

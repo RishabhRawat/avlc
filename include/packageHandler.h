@@ -9,12 +9,13 @@
 #include <vector>
 #include "iir.h"
 #include "State.h"
+#include "Keywords.h"
 
 class packageHandler {
 private:
-    std::vector<Iir_Library_Declaration> Libraries_List;
+    std::vector<Iir_Library_Declaration*> Libraries_List;
     std::vector<std::filesystem::paths> paths;
-    Options options;
+    State state;
 
     std::string Library_To_File_Name(Iir_Library_Declaration* Library);
     bool Search_Library_In_Path(Iir_Library_Declaration* Library);
@@ -31,7 +32,7 @@ public:
     // whose name is the name of the resource library.  This is done by load_work_library.
 
     // Location for a command line.
-    Location_Type Command_Line_Location;
+//    Location_Type Command_Line_Location;
 
     // Library declaration for the std library.
     // This is also the first library of the libraries chain.
@@ -43,7 +44,7 @@ public:
     Iir_Library_Declaration* Work_Library;
 
     // Name of the WORK library.
-    std::string Work_Library_Name = Std_Names.Name_Work;
+    std::string Work_Library_Name = Keywords::Name_Work;
 
     // Directory of the work library.
     // Set by default by INIT_PATHES to the local directory.
@@ -91,37 +92,37 @@ public:
     // Load, parse, analyze, back-end a design_unit if necessary.
     // Check Design_Unit is not obsolete.
     // LOC is the location where the design unit was needed, in case of error.
-    void Load_Design_Unit(Iir_Design_Unit Design_Unit, Iir* Loc);
+    void Load_Design_Unit(Iir_Design_Unit* Design_Unit, Iir* Loc);
 
     // Load and parse DESIGN_UNIT.
     // Contrary to Load_Design_Unit, the design_unit is not analyzed.
     // Also, the design_unit must not have been already loaded.
     // Used almost only by Load_Design_Unit.
-    void Load_Parse_Design_Unit(Iir_Design_Unit Design_Unit, Iir* Loc);
+    void Load_Parse_Design_Unit(Iir_Design_Unit* Design_Unit, Iir* Loc);
 
     // Remove the same file as DESIGN_FILE from work library and all of its units.
     void Purge_Design_File(Iir_Design_File Design_File);
 
     // Just return the design_unit for NAME, or NULL if not found.
-    Iir_Design_Unit Find_Primary_Unit(Iir_Library_Declaration Library, std::string Name);
+    Iir_Design_Unit* Find_Primary_Unit(Iir_Library_Declaration Library, std::string Name);
 
     // Load an already analyzed primary unit NAME from library LIBRARY
     // and compile it.
     // Return NULL_IIR if not found (ie, NAME does not correspond to a library unit identifier).
-    Iir_Design_Unit Load_Primary_Unit(Iir_Library_Declaration Library, std::string Name, Iir* Loc);
+    Iir_Design_Unit* Load_Primary_Unit(Iir_Library_Declaration Library, std::string Name, Iir* Loc);
 
     // Find the secondary unit of PRIMARY.
     // If PRIMARY is a package declaration, returns the package body,
     // If PRIMARY is an entity declaration, returns the architecture NAME.
     // Return NULL_IIR if not found.
-    Iir_Design_Unit Find_Secondary_Unit(Iir_Design_Unit Primary, std::string Name);
+    Iir_Design_Unit* Find_Secondary_Unit(Iir_Design_Unit* Primary, std::string Name);
 
     // Load an secondary unit of primary unit PRIMARY and analyse it.
     // NAME must be set only for an architecture.
-    Iir_Design_Unit Load_Secondary_Unit(Iir_Design_Unit Primary, std::string Name, Iir Loc);
+    Iir_Design_Unit* Load_Secondary_Unit(Iir_Design_Unit* Primary, std::string Name, Iir* Loc);
 
     // Analyze UNIT.
-    void Finish_Compilation(Iir_Design_Unit Unit, bool Main = false);
+    void Finish_Compilation(Iir_Design_Unit* Unit, bool Main = false);
 
     // Get or create a library from an identifier.
     // LOC is used only to report errors.
@@ -156,12 +157,11 @@ public:
     Iir_Design_Unit Find_Design_Unit(Iir* Unit);
 
     // Find an entity whose name is NAME in any library.
-    // If there is no such entity, return NULL_IIR.
-    // If there are severals entities, return NULL_IIR;
+    // If there is no such entity, return nullptr. (Cannot have multiple, thanks to hash table)
     Iir_Design_Unit Find_Entity_For_Component(std::string Name);
 
     // Get the chain of libraries.  Can be used only to read (it musn't be modified).
-    Iir_Library_Declaration Get_Libraries_Chain();
+    std::vector<Iir_Library_Declaration*> Get_Libraries_List();
 
     void Purge_Design_File(Iir_Design_File* Design_File);
 

@@ -20,21 +20,16 @@
 
 #include "Token.h"
 #include "State.h"
+#include "iir_types.h"
 #include <fstream>
 #include <cassert>
-struct Location_Type {
-    uint32_t Line = 0;
-    uint32_t Line_Pos = 0;
-    uint32_t Pos = 0;
-};
+#include <stdint.h>
 
 // The context contains the whole internal state of the Scanner, ie
 // it can be used to push/pop a lexical analysis, to restart the
 // Scanner from a context marking a previous point.
 struct ScanContext {
-    int Source_File = 0;
-    uint32_t Line_Number = 0;
-    uint32_t Line_Pos = 0;
+    Location_Type loc;
     uint32_t Token_Pos = 0;
     uint32_t File_Len = 0;
     Token::Token token = Token::Invalid;
@@ -66,8 +61,8 @@ struct ScanContext {
     // newLine() must be called after each end-of-line to register to next line number. This is called by
     // Scan_CR_Newline and Scan_LF_Newline.
     inline void newLine() {
-        Line_Number++;
-        Line_Pos = Source.tellg() + 1;
+        loc.Line++;
+        loc.Line_Pos = Source.tellg() + 1;
         assert(Source.tellg() < INT32_MAX);
     }
 
@@ -75,8 +70,10 @@ private:
     std::ifstream Source;
     unsigned char currentChar = 0;
 public:
-    ScanContext(State state, unsigned int fileId)
-            :Source_File(fileId), Source(state.fileList.at(fileId).first) { }
+    ScanContext(Location_Type location) :Source(loc.filePath.string()) {
+        loc = location;
+        Source.seekg(LocationToPosition(loc));
+    }
 
     /*
 Source: File_Buffer_Acc renames currentContext.Source;
@@ -94,16 +91,25 @@ Pos: Source_Ptr renames currentContext.Pos;
         Identifier = "";
     }
 
-    Location_Type getCurrentLocation() {
-        return Location_Type {Line_Number, Line_Pos, Source.tellg()};
+    Location_Type& getCurrentLocation() {
+        return loc;
     }
 };
 
 class Scanner {
 
-    State state;
+    const State& state;
 public:
     ScanContext currentContext;
+
+    Scanner(State state, Location_Type loc) : state(state), currentContext(loc) {};
+
+    void SetNewLocation(Location_Type loc) {
+        if (currentContext.getCurrentLocation() == loc)
+            return;
+        else
+            currentContext = ScanContext(loc);
+    }
 
 // Advances the lexical analyser.  Put a new token into current_token.
     void scan();

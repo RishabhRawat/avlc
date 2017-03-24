@@ -8413,6 +8413,11 @@ end Parse_Context_Declaration_Or_Reference;
 //
 //  [ 11.1 ]
 //  design_unit ::= context_clause library_unit
+inline Iir_Design_Unit* Parser::Parse_Design_Unit(Location_Type loc) {
+    scanner.SetNewLocation(loc);
+    return Parse_Design_Unit();
+}
+
 Iir_Design_Unit* Parser::Parse_Design_Unit() {
     assert(scanner.currentContext.token == Token::Invalid);
     //TODO: take care of eof errors
@@ -8424,25 +8429,27 @@ Iir_Design_Unit* Parser::Parse_Design_Unit() {
     if(result->Library_Unit == nullptr) {
         switch (scanner.currentContext.token) {
         case Token::Entity:
-            Parse_Entity_Declaration(result);
+            result = Parse_Entity_Declaration();
             break;
         case Token::Architecture:
-            Parse_Architecture_Body(result);
+            result = Parse_Architecture_Body();
             break;
         case Token::Package:
-            Set_Library_Unit(result, Parse_Package(result));
+            result->Library_Unit = Parse_Package(result);
             break;
         case Token::Configuration:
-            Parse_Configuration_Declaration(result);
+            result = Parse_Configuration_Declaration();
             break;
         default:
             throw std::runtime_error("PARSE ERROR: entity, architecture, package or configuration keyword expected");
         }
     }
     auto unit = result->Library_Unit;
+
+    //FIXME:
     static_cast<Iir_Parent_Abs*>(unit)->Parent = result;
-    result->Identifier = static_cast<Iir_Identifier_Abs*>(unit)->Identifier;
-    result->Date = Date_Parsed;
+    result->Identifier = unit->Identifier;
+    result->Date = 4; //Date_Parsed
     scanner.currentContext.invalidateToken();
     return result;
 }

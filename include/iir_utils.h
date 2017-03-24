@@ -242,10 +242,10 @@ function Get_Entity (Decl : Iir) return Iir;
 //  Wrapper around get_Configuration_Name: return the configuration
 //  declaration of ASPECT.
 function Get_Configuration (Aspect : Iir) return Iir;
-
+*/
 //  Return the identifier of the entity for architecture ARCH.
-function Get_Entity_Identifier_Of_Architecture (Arch : Iir) return Name_Id;
-
+inline std::string Get_Entity_Identifier_Of_Architecture (Iir_Architecture_Body* Arch);
+/*
 //  Return True is component instantiation statement INST instantiate a
 //  component.
 function Is_Component_Instantiation
