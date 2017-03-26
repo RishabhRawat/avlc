@@ -5,6 +5,10 @@
 #ifndef AVLC_IIR_TYPES_H
 #define AVLC_IIR_TYPES_H
 
+#include <experimental/filesystem>
+
+#define filesystem experimental::filesystem
+
 // Date State.
 // This indicates the origin of the data information.
 // This also indicates the state of the unit (loaded or not).
@@ -56,7 +60,7 @@ enum Iir_Mode {
 bool isDateValid(Date_Type date_type) {
     //FIXME: wtf is this
     return date_type > 10;
-};
+}
 
 enum Iir_Signal_Kind {
         Iir_Register_Kind,
@@ -73,7 +77,47 @@ enum Iir_Direction {
     Iir_Downto
 };
 
+enum Number_Base_Type {
+    Base_None,
+    Base_2,
+    Base_4,
+    Base_8,
+    Base_16,
+    Base_10
+};
+
+enum class Token_Type {
+    Invalid,
+    Next_Event_E
+};
+
+enum class Iir_Constraint {
+    Unconstrained, Partially_Constrained, Fully_Constrained
+};
+
+enum class Iir_All_Sensitized {
+    Unknown, No_Signal, Read_Signal, Invalid_Signal
+};
+
+enum class Tri_State_Type {
+    Unknown, False, True
+};
+
+enum class Iir_Pure_State {
+    Unknown, Pure, Maybe_Impure, Impure
+};
+
+enum class Interface_Type {
+    Generic_Interface_List,
+    Port_Interface_List,
+    Procedure_Parameter_Interface_List,
+    Function_Parameter_Interface_List
+};
+
 enum class Iir_Staticness { Unknown, None, Globally, Locally };
+
+using Time_Stamp_Id = std::tm;
+using File_Checksum_Id = std::string;
 
 //TODO: This type is only for file positions, as opposed to Iir position, ghdl uses same for both
 struct Location_Type {

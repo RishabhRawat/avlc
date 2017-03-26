@@ -20,7 +20,6 @@
 #define AVLC_COMPILEREXCEPTIONS_H
 
 #include <cstdio>
-#include <exception>
 #include <string>
 #include <iostream>
 #include "iir_types.h"
@@ -36,10 +35,10 @@ public:
     CompilationError(const std::string& error) noexcept
             :std::runtime_error("[Compiler Exception] " + error) { }
 
-    CompilationError(Location_Type loc, const char* error) noexcept
-            :std::runtime_error(
-            "[Compiler Exception] " + loc.filePath.string() + ": Line " + loc.Line + ", Col " + loc.Pos + ": "
-                    + error) { }
+    CompilationError(Location_Type loc, const char *error) noexcept
+            : std::runtime_error(
+            "[Compiler Exception] " + loc.filePath.string() + ": Line " + std::to_string(loc.Line) + ", Col " +
+            std::to_string(loc.Pos) + ": " + error) {}
 };
 
 class SemanticError: std::runtime_error {
@@ -47,10 +46,10 @@ public:
     SemanticError(const std::string& error) noexcept
             :std::runtime_error("[Semantic Error] " + error) { }
 
-    SemanticError(Location_Type loc, const char* error) noexcept
-            :std::runtime_error(
-            "[Semantic Error] " + loc.filePath.string() + ": Line " + loc.Line + ", Col " + loc.Pos + ": "
-                    + error) { }
+    SemanticError(Location_Type loc, const char *error) noexcept
+            : std::runtime_error(
+            "[Semantic Error] " + loc.filePath.string() + ": Line " + std::to_string(loc.Line) + ", Col " +
+            std::to_string(loc.Pos) + ": " + error) {}
 };
 
 inline void Warning(const std::string message, const bool warnSwitch = true) {

@@ -19,7 +19,7 @@
 #define AVLC_TOKENS_H
 
 #include <string>
-#include <bits/unordered_set.h>
+#include <unordered_set>
 #include "types.h"
 
 namespace Token {
@@ -731,5 +731,5 @@ std::string image(Token token) {
 	}
 	throw std::logic_error("Control flow should never reach here!!");
 }
-};
+}
 #endif //AVLC_TOKENS_H

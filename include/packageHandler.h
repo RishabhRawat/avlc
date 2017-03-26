@@ -14,7 +14,7 @@
 class packageHandler {
 private:
     std::vector<Iir_Library_Declaration*> Libraries_List;
-    std::vector<std::filesystem::paths> paths;
+    std::vector<std::filesystem::path> paths;
     State state;
 
     std::string Library_To_File_Name(Iir_Library_Declaration* Library);
@@ -54,7 +54,7 @@ public:
     std::filesystem::path Local_Directory;
 
     // Chain of obsoleted design units.
-    Iir Obsoleted_Design_Units = nullptr;
+    Iir* Obsoleted_Design_Units = nullptr;
 
     // Add PATH in the search path.
     void Add_Library_Path(std::filesystem::path Path);
@@ -79,7 +79,7 @@ public:
     void Load_Std_Library(bool Build_Standard = true);
 
     // Save the work library as a host-dependent library.
-    void Save_Work_Library;
+    void Save_Work_Library();
 
     // Start the analyse a file (ie load and parse it).
     // The file is read from the current directory (unless FILE_NAME is an absolute path).
@@ -87,7 +87,7 @@ public:
     // Return NULL_IIR in case of parse error.
     Iir_Design_File Load_File(std::string File_Name);
 
-    Iir_Design_File Load_File(Source_File_Entry File);
+    Iir_Design_File Load_File(std::filesystem::path file);
 
     // Load, parse, analyze, back-end a design_unit if necessary.
     // Check Design_Unit is not obsolete.
@@ -158,7 +158,7 @@ public:
 
     // Find an entity whose name is NAME in any library.
     // If there is no such entity, return nullptr. (Cannot have multiple, thanks to hash table)
-    Iir_Design_Unit Find_Entity_For_Component(std::string Name);
+    Iir_Design_Unit* Find_Entity_For_Component(std::string Name);
 
     // Get the chain of libraries.  Can be used only to read (it musn't be modified).
     std::vector<Iir_Library_Declaration*> Get_Libraries_List();

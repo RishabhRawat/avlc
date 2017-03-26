@@ -649,7 +649,7 @@ const unsigned int Name_Last_Comment = Name_First_Comment + 1;
 const unsigned int Name_First_PSL = Name_Last_Comment + 1;
 const unsigned int Name_Last_PSL = Name_First_PSL + 42;
 
-const std::unordered_map<const std::string, unsigned int> KeywordTable{
+const std::unordered_map<std::string, unsigned int> KeywordTable{
 		{Name_Mod, Name_First_Keyword + 0},
 		{Name_Rem, Name_First_Keyword + 1},
 
@@ -1208,7 +1208,7 @@ const std::unordered_map<const std::string, unsigned int> KeywordTable{
 		{Name_Assume_Guarantee, Name_First_PSL + 6},
 		{Name_Before, Name_First_PSL + 7},
 		{Name_Clock, Name_First_PSL + 8},
-		{Name_Const,},
+		{Name_Const, Name_First_PSL + 9},
 		{Name_Cover, Name_First_PSL + 10},
 		{Name_E, Name_First_PSL + 11},
 		{Name_Ef, Name_First_PSL + 12},
@@ -1246,7 +1246,7 @@ const std::unordered_map<const std::string, unsigned int> KeywordTable{
 
 inline bool isKeyword(std::string id) {
 	auto i = KeywordTable.find(id);
-	return (i != KeywordTable.end() && i->second >= Name_First_Keyword && i->second <= Name_Last_AMS_Keyword);
+	return (i != KeywordTable.end() /*&& i->second >= Name_First_Keyword*/ && i->second <= Name_Last_AMS_Keyword);
 }
 
 inline bool isAMSReservedWord(std::string id) {
@@ -1273,7 +1273,7 @@ inline bool isVHDL93ReservedWord(std::string id) {
 
 inline bool isVHDL87ReservedWord(std::string id) {
 	auto i = KeywordTable.find(id);
-	return (i != KeywordTable.end() && i->second >= Name_First_Keyword && i->second <= (Name_First_Keyword + 80));
+	return (i != KeywordTable.end() /*&& i->second >= Name_First_Keyword*/ && i->second <= (Name_First_Keyword + 80));
 }
 
 }

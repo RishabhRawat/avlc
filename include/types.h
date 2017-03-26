@@ -73,39 +73,39 @@ public:
 		return val!=rhs.val;
 	}
 
-	className operator+(const className& rhs) const {
+	subtype operator+(const className& rhs) const {
 		return val+rhs.val;
 	}
 
-	className<T, min, max> operator-(const className& rhs) const {
+	subtype operator-(const className& rhs) const {
 		return val-rhs.val;
 	}
 
-	className<T, min, max> operator*(const className& rhs) const {
+	subtype operator*(const className& rhs) const {
 		return val*rhs.val;
 	}
 
-	className<T, min, max> operator/(const className& rhs) const {
+	subtype operator/(const className& rhs) const {
 		return val/rhs.val;
 	}
 };
 
-using Int32 = subtype<int32_t, INT32_MIN, INT32_MAX>
-using Nat32 = subtype<int32_t, 0, INT32_MAX>
-using Nat8 = subtype<uint8_t, 0, 255>
-using Uns32 = subtype<uint32_t, 0, UINT32_MAX>
-using Fp64 = double
+using Int32 = subtype<int32_t, INT32_MIN, INT32_MAX>;
+using Nat32 = subtype<int32_t, 0, INT32_MAX>;
+using Nat8 = subtype<uint8_t, 0, 255>;
+using Uns32 = subtype<uint32_t, 0, UINT32_MAX>;
+using Fp64 = double;
 
-using Iir_Int32 = int32_t
-using Iir_Int64 = int64_t
-using Iir_Fp64 = double
-using Iir_Index32 = subtype<int32_t, 0, INT32_MAX>
+using Iir_Int32 = int32_t;
+using Iir_Int64 = int64_t;
+using Iir_Fp64 = double;
+using Iir_Index32 = subtype<int32_t, 0, INT32_MAX>;
 
-using Name_Id = subtype<int32_t, 0, INT32_MAX> // Null_Identifier == 0
+//using Name_Id = subtype<int32_t, 0, INT32_MAX>; // Null_Identifier == 0
 
 //  PSL Node.
-using PSL_Node = int32_t
+using PSL_Node = int32_t;
 
 //  PSL NFA
-using PSL_NFA  = int32_t
+using PSL_NFA  = int32_t;
 #endif //AVLC_TYPES_H

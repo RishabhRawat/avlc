@@ -62,7 +62,8 @@ struct ScanContext {
     // Scan_CR_Newline and Scan_LF_Newline.
     inline void newLine() {
         loc.Line++;
-        loc.Line_Pos = Source.tellg() + 1;
+        loc.Line_Pos = Source.tellg();
+        loc.Line_Pos++;
         assert(Source.tellg() < INT32_MAX);
     }
 
@@ -120,7 +121,7 @@ private:
 
     // When CURRENT_TOKEN is an tok_identifier, tok_char or tok_string,
     // its name_id can be got via this function.
-    Name_Id currentIdentifier();
+    std::string currentIdentifier();
 /*
 	// Get current string identifier and length.
 	function Current_String_Id return String8_Id;
@@ -233,7 +234,7 @@ private:
     void scanString();
 };
 namespace Ada_Chars {
-inline unsigned char toLower(unsigned char c) const {
+inline unsigned char toLower(const unsigned char c) {
     if (c >= 'A' && c <= 'Z')
         return c + ('a' - 'A');
     else if (c >= 192 && c <= 214)
@@ -244,7 +245,7 @@ inline unsigned char toLower(unsigned char c) const {
         return c;
 }
 
-inline bool isExtendedDigit(unsigned char c) const {
+inline bool isExtendedDigit(const unsigned char c) {
     return ((c <= '9' && c >= '0') || (c <= 'f' && c >= 'a') || (c <= 'F' && c > 'A'));
 }
 }

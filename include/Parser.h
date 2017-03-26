@@ -40,14 +40,14 @@
 //    'next token' means the current token is to be analysed.
 
 class Parser {
-    const Scanner& scanner;
+    const Scanner scanner;
 
     Iir_Design_Unit* Parse_Design_Unit ();
 
 
 public:
-    Parser(State state, Location_Type loc): scanner{state, loc} {};
-    Parser(Scanner scanner): scanner(scanner) {};
+    Parser(State state, Location_Type loc): scanner(state, loc) {};
+//    Parser(Scanner scanner): scanner(scanner) {};
 
     //  If True, create nodes for parenthesis expressions.
     bool Flag_Parse_Parenthesis = false;
@@ -100,8 +100,8 @@ private:
     void Parse_Concurrent_Statements (Iir* parent);
     Iir* Parse_Subprogram_Declaration();
     Iir* Parse_Subtype_Indication (Iir* Name = nullptr);
-    Iir* Parse_Interface_List (Ctxt : Interface_Kind_Type; Iir* parent);
-    void Parse_Component_Specification (Res : Iir);
+    Iir* Parse_Interface_List (Interface_Type Ctxt, Iir* parent);
+    void Parse_Component_Specification (Iir* Res);
     Iir_Binding_Indication Parse_Binding_Indication();
     Iir* Parse_Aggregate();
     Iir_Signature Parse_Signature();

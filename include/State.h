@@ -19,7 +19,7 @@
 #define AVLC_STATE_H
 
 #include <vector>
-#include <bits/unordered_map.h>
+#include <unordered_map>
 
 enum class Vhdl_Std {
 	Vhdl_87, Vhdl_93c, Vhdl_93, Vhdl_00, Vhdl_02, Vhdl_08
