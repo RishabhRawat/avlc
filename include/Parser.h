@@ -177,5 +177,9 @@ private:
     Iir *Parse_Type_Mark(bool Check_Paren = false);
 
     std::vector<Iir_Interface_Object_Declaration*> Parse_Interface_Object_Declaration(Interface_Type Ctxt);
+
+    Iir* Parse_Resolution_Indication();
+
+    Iir* Parse_Type_Declaration(Iir* Parent);
 };
 #endif // AVLC_PARSER_H

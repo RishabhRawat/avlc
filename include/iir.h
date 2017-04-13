@@ -589,12 +589,12 @@ struct Iir_Element_Subtype_Indication_Abs: public virtual Iir {
 struct Iir_Array_Element_Resolution: public Iir_Resolution_Indication_Abs, public Iir_Element_Subtype_Indication_Abs {
 };
 
-struct Iir_Record_Resolution: public virtual Iir {
-    Iir* Record_Element_Resolution_Chain;
-};
-
 struct Iir_Record_Element_Resolution
         : public Iir_Chain_Abs, public Iir_Identifier_Abs, public Iir_Resolution_Indication_Abs {
+};
+
+struct Iir_Record_Resolution: public virtual Iir {
+    std::vector<Iir_Record_Element_Resolution*> chain;
 };
 
 struct Iir_Attribute_Specification
@@ -1575,86 +1575,32 @@ struct Iir_Has_Class_Abs: public virtual Iir {
 };
 
 
-struct Iir_Interface_Constant_Declaration
-        : public Iir_After_Drivers_Flag_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Type_Abs,
-          public Iir_Subtype_Indication_Abs,
-          public Iir_Mode_Abs,
-          public Iir_Default_Value_Abs,
-          public Iir_Identifier_Abs,
-          public Iir_Visible_Flag_Abs,
-          public Iir_Parent_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_Use_Flag_Abs,
-          public Iir_Has_Identifier_List_Abs,
-          public Iir_Has_Class_Abs,
-          public Iir_Is_Ref_Abs {
-};
-
-struct Iir_Interface_Variable_Declaration
-        : public Iir_After_Drivers_Flag_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Type_Abs,
-          public Iir_Subtype_Indication_Abs,
-          public Iir_Mode_Abs,
-          public Iir_Default_Value_Abs,
-          public Iir_Identifier_Abs,
-          public Iir_Visible_Flag_Abs,
-          public Iir_Parent_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_Use_Flag_Abs,
-          public Iir_Has_Identifier_List_Abs,
-          public Iir_Has_Class_Abs,
-          public Iir_Is_Ref_Abs {
-};
-
-struct Iir_Interface_Signal_Declaration
-        : public Iir_After_Drivers_Flag_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Type_Abs,
-          public Iir_Subtype_Indication_Abs,
-          public Iir_Mode_Abs,
-          public Iir_Guarded_Signal_Flag_Abs,
-          public Iir_Default_Value_Abs,
-          public Iir_Identifier_Abs,
-          public Iir_Visible_Flag_Abs,
-          public Iir_Parent_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
+struct Iir_Interface_Signal_Declaration_Extras
+        : public Iir_Guarded_Signal_Flag_Abs,
           public Iir_Has_Disconnect_Flag_Abs,
-          public Iir_Has_Active_Flag_Abs,
-          public Iir_Use_Flag_Abs,
-          public Iir_Has_Identifier_List_Abs,
-          public Iir_Has_Class_Abs,
-          public Iir_Is_Ref_Abs {
+          public Iir_Has_Active_Flag_Abs {
     bool Open_Flag;
 };
 
-struct Iir_Interface_File_Declaration
-        : public Iir_After_Drivers_Flag_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Type_Abs,
-          public Iir_Subtype_Indication_Abs,
-          public Iir_Mode_Abs,
-          public Iir_Default_Value_Abs,
-          public Iir_Identifier_Abs,
-          public Iir_Visible_Flag_Abs,
-          public Iir_Parent_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_Use_Flag_Abs,
-          public Iir_Has_Identifier_List_Abs,
-          public Iir_Has_Class_Abs,
-          public Iir_Is_Ref_Abs {
+struct Iir_Interface_Object_Declaration :
+        public Iir_Identifier_Abs,
+        public Iir_Visible_Flag_Abs,
+        public Iir_Parent_Abs,
+        public Iir_Expr_Staticness_Abs,
+        public Iir_After_Drivers_Flag_Abs,
+        public Iir_Chain_Abs,
+        public Iir_Type_Abs,
+        public Iir_Mode_Abs,
+        public Iir_Default_Value_Abs,
+        public Iir_Name_Staticness_Abs,
+        public Iir_Use_Flag_Abs,
+        public Iir_Subtype_Indication_Abs,
+        public Iir_Has_Identifier_List_Abs,
+        public Iir_Has_Class_Abs,
+        public Iir_Is_Ref_Abs {
+    enum class type { constant, variable, signal, file } Interface_Object_Type;
+    std::optional<Iir_Interface_Signal_Declaration_Extras> extras;
 };
-
-using Iir_Interface_Object_Declaration = std::variant<Iir_Interface_Constant_Declaration,
-        Iir_Interface_File_Declaration,
-        Iir_Interface_Function_Declaration,
-        Iir_Interface_Procedure_Declaration>
 
 
 struct Iir_Interface_Type_Declaration
