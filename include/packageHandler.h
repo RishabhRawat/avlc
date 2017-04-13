@@ -85,9 +85,7 @@ public:
     // The file is read from the current directory (unless FILE_NAME is an absolute path).
     // Emit an error if the file cannot be opened.
     // Return NULL_IIR in case of parse error.
-    Iir_Design_File Load_File(std::string File_Name);
-
-    Iir_Design_File Load_File(std::filesystem::path file);
+    Iir_Design_File* Load_File(std::filesystem::path file);
 
     // Load, parse, analyze, back-end a design_unit if necessary.
     // Check Design_Unit is not obsolete.
@@ -104,12 +102,12 @@ public:
     void Purge_Design_File(Iir_Design_File Design_File);
 
     // Just return the design_unit for NAME, or NULL if not found.
-    Iir_Design_Unit* Find_Primary_Unit(Iir_Library_Declaration Library, std::string Name);
+    Iir_Design_Unit* Find_Primary_Unit(Iir_Library_Declaration* Library, std::string Name);
 
     // Load an already analyzed primary unit NAME from library LIBRARY
     // and compile it.
     // Return NULL_IIR if not found (ie, NAME does not correspond to a library unit identifier).
-    Iir_Design_Unit* Load_Primary_Unit(Iir_Library_Declaration Library, std::string Name, Iir* Loc);
+    Iir_Design_Unit* Load_Primary_Unit(Iir_Library_Declaration* Library, std::string Name, Iir* Loc);
 
     // Find the secondary unit of PRIMARY.
     // If PRIMARY is a package declaration, returns the package body,
@@ -126,7 +124,7 @@ public:
 
     // Get or create a library from an identifier.
     // LOC is used only to report errors.
-    Iir_Library_Declaration Get_Library(std::string Ident, Location_Type Loc);
+    Iir_Library_Declaration* Get_Library(std::string Ident, Location_Type Loc);
 
     // Add or replace an design unit in the work library.
     // DECL must not have a chain (because it may be modified).
@@ -146,15 +144,12 @@ public:
     // FILE is updated since it may changed (FILE is never put in the library, a new one is created).
     void Add_Design_File_Into_Library(Iir_Design_File* File);
 
-    // Return the latest architecture analysed for entity ENTITY.
-    Iir_Architecture_Body Get_Latest_Architecture(Iir_Entity_Declaration Entity);
-
-    // Return the design unit (stubed if not loaded) from UNIT.
-    // UNIT may be either a design unit, in this case UNIT is returned,
-    //    or a selected name, in this case the prefix is a library name and the suffix a primary design unit name,
-    //    or an entity_aspect_entity to designate an architectrure.
+    // Return the design unit (stubbed if not loaded) from UNIT.
+    // UNIT may be either a design unit, in this case UNIT is returned, or a selected name, in this case the prefix
+    // is a library name and the suffix a primary design unit name, or an entity_aspect_entity to designate an architecture.
     // Return null_iir if the design unit is not found.
-    Iir_Design_Unit Find_Design_Unit(Iir* Unit);
+    Iir_Design_Unit* Find_Design_Unit(Iir_Selected_Name* Unit);
+    Iir_Design_Unit* Find_Design_Unit(Iir_Entity_Aspect_Entity* Unit);
 
     // Find an entity whose name is NAME in any library.
     // If there is no such entity, return nullptr. (Cannot have multiple, thanks to hash table)

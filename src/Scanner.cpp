@@ -169,11 +169,6 @@ end Get_Token_Column;
 */
 
 /*
-function Get_Token_Position return Source_Ptr is
-begin
-return currentContext.Token_Pos;
-end Get_Token_Position;
-
 function Get_Position return Source_Ptr is
 begin
 return currentContext.Pos;
@@ -203,49 +198,51 @@ end Get_Position;
 //Fp64 => 0.0);
 //currentContext.token := Tok_Invalid;
 //end Set_File;
-/*
 
-function Detect_Encoding_Errors return Boolean
-		is
-C : constant Character := Source (Pos);
-begin
+void Scanner::Detect_Encoding_Errors() {
 // No need to check further if first character is plain ASCII-7
-if C >= ' ' and C < Character'Val (127) then
-return False;
-end if;
+
+    if (currentContext.cChar() >=' ' && currentContext.cChar() < 127)
+        return;
 
 // UTF-8 BOM is EF BB BF
-if Source (Pos + 0) = Character'Val (16#ef#)
-and then Source (Pos + 1) = Character'Val (16#bb#)
-and then Source (Pos + 2) = Character'Val (16#bf#)
-then
-		throw std::runtime_error
-		("source encoding must be latin-1 (UTF-8 BOM detected)");
-return True;
-end if;
-
+    if (currentContext.cChar() == 0xef) {
+        if (currentContext.nextChar() == 0xbb && currentContext.nextChar() == 0xbf)
+            throw std::runtime_error ("source encoding must be latin-1 (UTF-8 BOM detected)");
+    }
 // UTF-16 BE BOM is FE FF
-if Source (Pos + 0) = Character'Val (16#fe#)
-and then Source (Pos + 1) = Character'Val (16#ff#)
-then
-		throw std::runtime_error
-		("source encoding must be latin-1 (UTF-16 BE BOM detected)");
-return True;
-end if;
-
+    else if (currentContext.cChar() == 0xfe) {
+        if (currentContext.nextChar() == 0xff)
+            throw std::runtime_error ("source encoding must be latin-1 (UTF-16 BE BOM detected)");
+    }
 // UTF-16 LE BOM is FF FE
-if Source (Pos + 0) = Character'Val (16#ff#)
-and then Source (Pos + 1) = Character'Val (16#fe#)
-then
-		throw std::runtime_error
-		("source encoding must be latin-1 (UTF-16 LE BOM detected)");
-return True;
-end if;
+    else if (currentContext.cChar() == 0xff) {
+        if (currentContext.nextChar() == 0xfe)
+            throw std::runtime_error ("source encoding must be latin-1 (UTF-16 LE BOM detected)");
+    }
 
 // Certainly weird, but scanner/parser will catch it.
-return False;
-end Detect_Encoding_Errors;
-*/
+    return;
+}
+
+
+Iir_Simple_Name *Scanner::Current_Identifier_Iir() {
+    auto result = new Iir_Simple_Name;
+    result->Identifier = currentContext.Identifier;
+    result->Location = currentContext.getTokenLocation();
+    currentContext.invalidateCurrentIdentifier();
+    currentContext.invalidateToken();
+    return result;
+}
+
+Iir_Character_Literal *Scanner::Current_Character_Iir() {
+    auto result = new Iir_Character_Literal;
+    result->Identifier = currentContext.Identifier;
+    result->Location = currentContext.getTokenLocation();
+    currentContext.invalidateCurrentIdentifier();
+    currentContext.invalidateToken();
+    return result;
+}
 
 /*
 procedure Set_Current_Position (Position: Source_Ptr)

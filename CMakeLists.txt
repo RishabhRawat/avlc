@@ -28,7 +28,7 @@ set(SOURCE_FILES
 set( CMAKE_CXX_FLAGS_DEBUG "-ggdb" )
 set( CMAKE_CXX_FLAGS_RELEASE "-O3 " )
 
-set(TESTF src/packageHandler.cpp)
+set(TESTF src/Parser.cpp)
 
 include_directories(libs)
 include_directories(include)

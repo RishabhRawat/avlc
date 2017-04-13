@@ -2,11 +2,9 @@
 #define AVLC_IIR_UTILS_H
 
 #include "iir.h"
-/*
-//  Transform the current token into an iir literal.
-//  The current token must be either a character, a string or an identifier.
-function Current_Text return Iir;
 
+//function Current_Text return Iir;
+/*
 //  Get identifier of NODE as a string.
 function Image_Identifier (Node : Iir) return String;
 function Image_String_Lit (Str : Iir) return String;

@@ -731,5 +731,24 @@ std::string image(Token token) {
 	}
 	throw std::logic_error("Control flow should never reach here!!");
 }
+	inline bool isSignType(Token token) {
+        return token == Plus || token == Minus;
+    }
+
+    inline bool isAddingOperator(Token token) {
+        return token == Plus || token == Minus || token == Ampersand;
+    }
+
+    inline bool isMultiplyingOperator(Token token) {
+        return token == Star || token == Slash || token == Mod || token == Rem;
+    }
+
+    inline bool isShiftingOperator(Token token) {
+        return token == Sll || token == Srl || token == Sla || token == Sra || token == Rol || token == Ror;
+    }
+
+    inline bool isRelationalOperator(Token token) {
+        return token >= Equal && token <= Match_Greater_Equal;
+    }
 }
 #endif //AVLC_TOKENS_H

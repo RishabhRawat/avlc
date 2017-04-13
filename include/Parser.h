@@ -40,14 +40,13 @@
 //    'next token' means the current token is to be analysed.
 
 class Parser {
-    const Scanner scanner;
+    Scanner& scanner;
 
     Iir_Design_Unit* Parse_Design_Unit ();
 
 
 public:
-    Parser(State state, Location_Type loc): scanner(state, loc) {};
-//    Parser(Scanner scanner): scanner(scanner) {};
+    Parser(Scanner& scanner): scanner(scanner) {};
 
     //  If True, create nodes for parenthesis expressions.
     bool Flag_Parse_Parenthesis = false;
@@ -58,7 +57,7 @@ public:
     Iir* Parse_Expression_Rhs (Iir* Left);
 
 // Parse an relationnal operator and its rhs.
-    Iir* Parse_Relation_Rhs (Iir* Left);
+    Iir_Binary_Operator * Parse_Relation_Rhs (Iir* Left);
 
 //  Convert the STR (0 .. LEN - 1) into a operator symbol identifier.
 //  Emit an error message if the name is not an operator name.
@@ -89,6 +88,7 @@ private:
     // Leaves a token.
     Iir* Parse_Simple_Expression (Iir* Primary = nullptr);
     Iir* Parse_Primary();
+    Iir* Parse_Shift_Expression ();
     Iir_Use_Clause* Parse_Use_Clause();
 
     Iir* Parse_Association_List();
@@ -147,10 +147,35 @@ private:
 
     Iir* Parse_External_Pathname();
 
-    Iir* Parse_External_Name();
+    Iir_External_Name * Parse_External_Name();
 
     Iir* Parse_Term(Iir* Primary);
 
-    Iir* Build_Unary_Factor(Iir* Primary, Vhdl_Std standard);
+    Iir* Build_Unary_Factor(Iir_Unary_Operator_Type Op, Iir* Primary, bool isVhdl_08);
+
+    Iir *Parse_Factor(Iir *Primary);
+
+    Iir *Parse_Relation();
+
+    std::vector<Iir_Waveform_Element *> Parse_Waveform();
+
+    void Parse_Delay_Mechanism(Iir_Guarded_Target_State_Abs *Assign);
+
+    void Parse_Options(Iir *Stmt);
+
+    std::variant<std::vector<Iir_Conditional_Waveform*>, std::vector<Iir_Waveform_Element*>> Parse_Conditional_Waveforms();
+
+    std::variant<Iir_Concurrent_Simple_Signal_Assignment, Iir_Concurrent_Conditional_Signal_Assignment *>
+    Parse_Concurrent_Conditional_Signal_Assignment(Iir *Target);
+
+    Iir *Parse_Selected_Signal_Assignment();
+
+    void Parse_Assertion(Iir *Stmt);
+
+    Iir *Parse_Name(bool Allow_Indexes = true);
+
+    Iir *Parse_Type_Mark(bool Check_Paren = false);
+
+    std::vector<Iir_Interface_Object_Declaration*> Parse_Interface_Object_Declaration(Interface_Type Ctxt);
 };
 #endif // AVLC_PARSER_H

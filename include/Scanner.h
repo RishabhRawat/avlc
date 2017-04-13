@@ -20,7 +20,7 @@
 
 #include "Token.h"
 #include "State.h"
-#include "iir_types.h"
+#include "iir.h"
 #include <fstream>
 #include <cassert>
 #include <stdint.h>
@@ -35,8 +35,8 @@ struct ScanContext {
     Token::Token token = Token::Invalid;
     Token::Token prevToken = Token::Invalid;
     std::string Identifier;
-    Iir_Int64 Int64 = 0;
-    Iir_Fp64 Fp64 = 0;
+    int64_t Int64 = 0;
+    double Fp64 = 0;
 
     inline unsigned char cChar() {
         return currentChar;
@@ -74,6 +74,7 @@ public:
     ScanContext(Location_Type location) :Source(loc.filePath.string()) {
         loc = location;
         Source.seekg(LocationToPosition(loc));
+        currentChar = Source.peek();
     }
 
     /*
@@ -92,15 +93,21 @@ Pos: Source_Ptr renames currentContext.Pos;
         Identifier = "";
     }
 
-    Location_Type& getCurrentLocation() {
+    Location_Type getCurrentLocation() {
         return loc;
+    }
+
+    Location_Type getTokenLocation() {
+        auto location = loc;
+        location.Pos = Token_Pos;
+        return location;
     }
 };
 
 class Scanner {
 
-    const State& state;
 public:
+    const State& state;
     ScanContext currentContext;
 
     Scanner(State state, Location_Type loc) : state(state), currentContext(loc) {};
@@ -114,6 +121,12 @@ public:
 
 // Advances the lexical analyser.  Put a new token into current_token.
     void scan();
+
+    //  Transform the current token into an iir literal.
+    //  The current token must be either a character, a string or an identifier.
+    Iir_Simple_Name *Current_Identifier_Iir();
+
+    Iir_Character_Literal *Current_Character_Iir();
 
 private:
 
@@ -133,19 +146,20 @@ private:
 
     // When CURRENT_TOKEN is tok_integer, returns the value.
     // When CURRENT_TOKEN is tok_bit_string, returns the log of the base.
-    Iir_Int64 currentIirInt64();
+    int64_t currentIirInt64();
 
     // When CURRENT_TOKEN is tok_real, it returns the value.
-    Iir_Fp64 currentIirFp64();
+    double currentIirFp64();
 
     // Initialize the Scanner with file SOURCE_FILE.
 //	void setFile (Source_File : Source_File_Entry);
 
-    // This function can be called just after Set_File to detect UTF BOM
-    // patterns.  It reports an error if a BOM is present and return True.
-    // Silently return False if no error detected.
-//	function Detect_Encoding_Errors return Boolean;
+public:
+    // This function can be called just after Set_File to detect UTF BOM patterns.
+    // It throws an error if a UTF BOM is present.
+    void Detect_Encoding_Errors();
 
+private:
     // procedure Set_Current_Position (Position: Source_Ptr);
 
 // Finalize the Scanner.
@@ -180,18 +194,6 @@ private:
     // False (used by PSL).
 //	function Scan_Underscore return Boolean;
 
-// Get the current location, or the location of the current token.
-// Since a token cannot spread over lines, file and line of the current
-// token are the same as those of the current position.
-/*
-	function Get_Current_Source_File return Source_File_Entry;
-	function Get_Current_Line return Natural;
-	function Get_Current_Column return Natural;
-	function Get_Token_Location return Location_Type;
-	function Get_Token_Column return Natural;
-	function Get_Token_Position return Source_Ptr;
-	function Get_Position return Source_Ptr;
-*/
     // Convert (canonicalize) an identifier stored in name_buffer/name_length.
     // Upper case letters are converted into lower case.
     // Lexical checks are performed.
@@ -232,6 +234,7 @@ private:
     int scanBasedInteger(int base);
 
     void scanString();
+
 };
 namespace Ada_Chars {
 inline unsigned char toLower(const unsigned char c) {

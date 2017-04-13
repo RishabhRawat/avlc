@@ -88,8 +88,7 @@ struct Iir_Design_File: public Iir_Elab_Flag_Abs {
     File_Checksum_Id File_Checksum;
     Iir_Library_Declaration* Library;
     std::vector<Iir*> File_Dependence_List;
-    std::filesystem::path Design_File_Directory;
-    std::string Design_File_Filename;
+    std::filesystem::path Design_File_Filename;
 };
 
 struct Iir_Entity_Declaration;
@@ -120,7 +119,7 @@ struct Iir_Identifier_Abs: public virtual Iir {
     std::string Identifier;
 };
 
-struct Iir_Design_Unit
+struct  Iir_Design_Unit
         : public Iir_Date_Abs,
           public Iir_Context_Items_Abs,
           // public Iir_Chain_Abs, NOTE: use Iir_File's vector
@@ -130,7 +129,7 @@ struct Iir_Design_Unit
     Location_Type End_Location;
     bool Configuration_Mark_Flag;
     Iir_Design_File* Design_File;
-    Iir_Design_Unit_n* Library_Unit;
+    Iir_Design_Unit_n Library_Unit;
     Date_State_Type Date_State;
     std::vector<Iir*> Analysis_Checks_List;
 //    Iir* Hash_Chain;
@@ -164,7 +163,7 @@ struct Iir_Context_Reference: public Iir_Chain_Abs, public Iir_Selected_Name_Abs
 };
 
 struct Iir_Value_Abs: public virtual Iir {
-    Iir_Int64 Value;
+    int64_t Value;
 };
 
 struct Iir_Literal_Origin_Abs: public virtual Iir {
@@ -176,7 +175,7 @@ struct Iir_Integer_Literal
 };
 
 struct Iir_Fp_Value_Abs: public virtual Iir {
-    Iir_Fp64 Fp_Value;
+    double Fp_Value;
 };
 
 struct Iir_Floating_Point_Literal
@@ -190,13 +189,12 @@ struct Iir_Literal_Subtype_Abs: public virtual Iir {
     Iir* Literal_Subtype;
 };
 
-struct Iir_String_Literal8
+struct Iir_String
         : public Iir_Literal_Origin_Abs,
           public Iir_Literal_Subtype_Abs,
           public Iir_Type_Abs,
           public Iir_Expr_Staticness_Abs {
     std::string str;
-    bool Has_Length;
     bool Has_Sign;
     Number_Base_Type Bit_String_Base;
     bool Has_Signed;
@@ -238,23 +236,23 @@ struct Iir_Simple_Aggregate
 struct Iir_Overflow_Literal: public Iir_Literal_Origin_Abs, public Iir_Type_Abs, public Iir_Expr_Staticness_Abs {
 };
 
-struct Iir_Unaffected_Waveform: public Iir_Chain_Abs {
+
+struct Iir_Unaffected_Waveform: public virtual Iir {
 };
 
-struct Iir_Waveform_Element: public Iir_Chain_Abs {
+struct Iir_Waveform_Element: public virtual Iir {
     Iir* We_Value;
     Iir* Time;
 };
 
-struct Iir_Waveform_Chain_Abs: public virtual Iir {
-    Iir* Waveform_Chain;
-};
+using Iir_Waveform = std::vector<Iir_Waveform_Element*>;
 
 struct Iir_Condition_Abs: public virtual Iir {
     Iir* Condition;
 };
 
-struct Iir_Conditional_Waveform: public Iir_Chain_Abs, public Iir_Waveform_Chain_Abs, public Iir_Condition_Abs {
+struct Iir_Conditional_Waveform: public Iir_Chain_Abs, public Iir_Condition_Abs {
+    Iir_Waveform waveform;
 };
 
 struct Iir_Expression_Abs: public virtual Iir {
@@ -329,48 +327,89 @@ struct Iir_Association_Element_Subprogram
           public Iir_Chain_Abs {
 };
 
-struct Iir_Associated_Expr_Abs: public virtual Iir {
+
+// Iir_Kind_Choice_By_Others (Short)
+// Iir_Kind_Choice_By_None (Short)
+// Iir_Kind_Choice_By_Range (Short)
+// Iir_Kind_Choice_By_Name (Short)
+// Iir_Kind_Choice_By_Expression (Short)
+//  (Iir_Kinds_Choice)
+//
+//   Get/Set_Parent (Field0)
+//
+//  For a list of choices, only the first one is associated, the following
+//  associations have the same_alternative_flag set.
+//   Get/Set_Chain (Field2)
+//
+//  These are elements of an choice chain, which is used for
+//  case_statement, concurrent_select_signal_assignment, aggregates.
+//
+//  Get/Set what is associated with the choice.  There are two different
+//  nodes, one for simple association and the other for chain association.
+//  They don't have the same properties (normal vs chain), so the right
+//  field must be selected according to the property to have working
+//  walkers. Both fields are never used at the same time.
+//
+//  For:
+//  * an expression for an aggregate
+//  * an individual association
+//  * a generate_statement_body chain for a case_generate_statement
+//   Get/Set_Associated_Expr (Field3)
+//   Get/Set_Associated_Block (Alias Field3)
+//
+//  For
+//  * a waveform_chain for a concurrent_select_signal_assignment,
+//  * a sequential statement chain for a case_statement.
+//   Get/Set_Associated_Chain (Field4)
+//
+//  Should be a simple_name.
+// Only for Iir_Kind_Choice_By_Name:
+//   Get/Set_Choice_Name (Field5)
+//
+// Only for Iir_Kind_Choice_By_Expression:
+//   Get/Set_Choice_Expression (Field5)
+//
+// Only for Iir_Kind_Choice_By_Range:
+//   Get/Set_Choice_Range (Field5)
+//
+//   Get/Set_Same_Alternative_Flag (Flag1)
+//
+// Only for Iir_Kind_Choice_By_Range:
+// Only for Iir_Kind_Choice_By_Expression:
+//   Get/Set_Choice_Staticness (State1)
+
+
+
+
+struct Iir_Choice_Abs : public Iir_Chain_Abs,
+                        public Iir_Parent_Abs {
     bool Same_Alternative_Flag;
     Iir* Associated_Expr;
     Iir* Associated_Chain;
 };
 
-using Iir_Associated_Chain_Abs = Iir_Associated_Expr_Abs;
-
-using Iir_Same_Alternative_Flag_Abs = Iir_Associated_Expr_Abs;
-
 struct Iir_Choice_By_Range
-        : public Iir_Associated_Expr_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Parent_Abs,
+        : public Iir_Choice_Abs,
           public Iir_Choice_Staticness_Abs {
     Iir* Choice_Range;
 };
 
 struct Iir_Choice_By_Expression
-        : public Iir_Associated_Expr_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Parent_Abs,
+        : public Iir_Choice_Abs,
           public Iir_Choice_Staticness_Abs {
     Iir* Choice_Expression;
 };
 
-struct Iir_Choice_By_Others
-        : public Iir_Associated_Expr_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Parent_Abs {
+struct Iir_Kind_Choice_By_Others
+        : public Iir_Choice_Abs {
 };
 
 struct Iir_Choice_By_None
-        : public Iir_Associated_Expr_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Parent_Abs {
+        : public Iir_Choice_Abs {
 };
 
 struct Iir_Choice_By_Name
-        : public Iir_Associated_Expr_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Parent_Abs {
+        : public Iir_Choice_Abs {
     Iir* Choice_Name;
 };
 
@@ -1535,6 +1574,7 @@ struct Iir_Has_Class_Abs: public virtual Iir {
     bool Has_Class;
 };
 
+
 struct Iir_Interface_Constant_Declaration
         : public Iir_After_Drivers_Flag_Abs,
           public Iir_Chain_Abs,
@@ -1611,6 +1651,12 @@ struct Iir_Interface_File_Declaration
           public Iir_Is_Ref_Abs {
 };
 
+using Iir_Interface_Object_Declaration = std::variant<Iir_Interface_Constant_Declaration,
+        Iir_Interface_File_Declaration,
+        Iir_Interface_Function_Declaration,
+        Iir_Interface_Procedure_Declaration>
+
+
 struct Iir_Interface_Type_Declaration
         : public Iir_Chain_Abs,
           public Iir_Type_Abs,
@@ -1672,280 +1718,70 @@ struct Iir_Operand_Abs: public virtual Iir {
     Iir* Operand;
 };
 
-struct Iir_Identity_Operator
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
+enum class Iir_Unary_Operator_Type {
+    Identity,
+    Negation,
+    Absolute,
+    Not,
+    Condition,
+    Reduction_And,
+    Reduction_Or,
+    Reduction_Nand,
+    Reduction_Nor,
+    Reduction_Xor,
+    Reduction_Xnor,
+
 };
 
-struct Iir_Negation_Operator
+struct Iir_Unary_Operator
         : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
+    Iir_Unary_Operator_Type Operator_Type;
 };
 
-struct Iir_Absolute_Operator
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
+enum class Iir_Binary_Operator_Type {
+    And,
+    Or,
+    Nand,
+    Nor,
+    Xor,
+    Xnor,
+    Equality,
+    Inequality,
+    Less_Than,
+    Less_Than_Or_Equal,
+    Greater_Than,
+    Greater_Than_Or_Equal,
+    Match_Equality,
+    Match_Inequality,
+    Match_Less_Than,
+    Match_Less_Than_Or_Equal,
+    Match_Greater_Than,
+    Match_Greater_Than_Or_Equal,
+    Sll,
+    Sla,
+    Srl,
+    Sra,
+    Rol,
+    Ror,
+    Addition,
+    Subtraction,
+    Concatenation,
+    Multiplication,
+    Division,
+    Modulus,
+    Remainder,
+    Exponentiation
 };
 
-struct Iir_Not_Operator
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
-};
-
-struct Iir_Condition_Operator
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
-};
-
-struct Iir_Reduction_And_Operator
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
-};
-
-struct Iir_Reduction_Or_Operator
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
-};
-
-struct Iir_Reduction_Nand_Operator
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
-};
-
-struct Iir_Reduction_Nor_Operator
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
-};
-
-struct Iir_Reduction_Xor_Operator
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
-};
-
-struct Iir_Reduction_Xnor_Operator
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Operand_Abs, public Iir_Implementation_Abs {
-};
-
-struct Iir_Left_Abs: public virtual Iir {
-    Iir* Right;
+struct Iir_Binary_Operator
+        : public Iir_Type_Abs,
+          public Iir_Expr_Staticness_Abs,
+          public Iir_Implementation_Abs {
     Iir* Left;
+    Iir* Right;
+    Iir_Binary_Operator_Type Operator_Type;
 };
 
-using Iir_Right_Abs = Iir_Left_Abs;
-
-struct Iir_And_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Or_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Nand_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Nor_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Xor_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Xnor_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Equality_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Inequality_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Less_Than_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Less_Than_Or_Equal_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Greater_Than_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Greater_Than_Or_Equal_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Match_Equality_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Match_Inequality_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Match_Less_Than_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Match_Less_Than_Or_Equal_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Match_Greater_Than_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Match_Greater_Than_Or_Equal_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Sll_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Sla_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Srl_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Sra_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Rol_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Ror_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Addition_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Substraction_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Concatenation_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Multiplication_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Division_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Modulus_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Remainder_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
-
-struct Iir_Exponentiation_Operator
-        : public Iir_Type_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Left_Abs,
-          public Iir_Implementation_Abs {
-};
 
 struct Iir_Function_Call
         : public Iir_Type_Abs,
@@ -2138,15 +1974,13 @@ struct Iir_Concurrent_Simple_Signal_Assignment
           public Iir_Label_Abs,
           public Iir_Visible_Flag_Abs,
           public Iir_Target_Abs,
-          public Iir_Waveform_Chain_Abs,
           public Iir_Guard_Abs,
           public Iir_Postponed_Flag_Abs,
           public Iir_Parent_Abs {
+    Iir_Waveform waveform;
 };
 
-struct Iir_Conditional_Waveform_Chain_Abs: public virtual Iir {
-    Iir* Conditional_Waveform_Chain;
-};
+using Iir_Conditional_Waveforms = std::vector<Iir_Conditional_Waveform*>;
 
 struct Iir_Concurrent_Conditional_Signal_Assignment
         : public Iir_Guarded_Target_State_Abs,
@@ -2156,8 +1990,8 @@ struct Iir_Concurrent_Conditional_Signal_Assignment
           public Iir_Target_Abs,
           public Iir_Guard_Abs,
           public Iir_Postponed_Flag_Abs,
-          public Iir_Conditional_Waveform_Chain_Abs,
           public Iir_Parent_Abs {
+    Iir_Conditional_Waveforms conditional_waveforms;
 };
 
 struct Iir_Selected_Waveform_Chain_Abs: public virtual Iir {
@@ -2360,8 +2194,8 @@ struct Iir_Simple_Signal_Assignment_Statement
           public Iir_Label_Abs,
           public Iir_Visible_Flag_Abs,
           public Iir_Target_Abs,
-          public Iir_Waveform_Chain_Abs,
           public Iir_Parent_Abs {
+    Iir_Waveform waveform;
 };
 
 struct Iir_Conditional_Signal_Assignment_Statement
@@ -2370,8 +2204,8 @@ struct Iir_Conditional_Signal_Assignment_Statement
           public Iir_Label_Abs,
           public Iir_Visible_Flag_Abs,
           public Iir_Target_Abs,
-          public Iir_Conditional_Waveform_Chain_Abs,
           public Iir_Parent_Abs {
+    Iir_Conditional_Waveforms conditional_waveforms;
 };
 
 struct Iir_Selected_Waveform_Assignment_Statement
@@ -2603,18 +2437,13 @@ struct Iir_External_Pathname_Abs: public virtual Iir {
     Iir* External_Pathname;
 };
 
-struct Iir_External_Constant_Name
-        : public Iir_Chain_Abs,
-          public Iir_Type_Abs,
-          public Iir_Subtype_Indication_Abs,
-          public Iir_Shared_Flag_Abs,
-          public Iir_Parent_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_External_Pathname_Abs {
+enum class External_Name_Type {
+    Constant,
+    Signal,
+    Variable
 };
 
-struct Iir_External_Signal_Name
+struct Iir_External_Name
         : public Iir_Chain_Abs,
           public Iir_Type_Abs,
           public Iir_Subtype_Indication_Abs,
@@ -2623,17 +2452,7 @@ struct Iir_External_Signal_Name
           public Iir_Expr_Staticness_Abs,
           public Iir_Name_Staticness_Abs,
           public Iir_External_Pathname_Abs {
-};
-
-struct Iir_External_Variable_Name
-        : public Iir_Chain_Abs,
-          public Iir_Type_Abs,
-          public Iir_Subtype_Indication_Abs,
-          public Iir_Shared_Flag_Abs,
-          public Iir_Parent_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_External_Pathname_Abs {
+    External_Name_Type Name_Type;
 };
 
 struct Iir_Pathname_Suffix_Abs: public virtual Iir {
@@ -2845,32 +2664,19 @@ struct Iir_Transaction_Attribute
           public Iir_Has_Active_Flag_Abs {
 };
 
-struct Iir_Event_Attribute
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Name_Staticness_Abs, public Iir_Prefix_Abs {
+enum class Iir_Attribute_Type {
+    Event,
+    Active,
+    Last_Event,
+    Last_Active,
+    Last_Value,
+    Driving,
+    Driving_Value
 };
 
-struct Iir_Active_Attribute
+struct Iir_Attribute
         : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Name_Staticness_Abs, public Iir_Prefix_Abs {
-};
-
-struct Iir_Last_Event_Attribute
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Name_Staticness_Abs, public Iir_Prefix_Abs {
-};
-
-struct Iir_Last_Active_Attribute
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Name_Staticness_Abs, public Iir_Prefix_Abs {
-};
-
-struct Iir_Last_Value_Attribute
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Name_Staticness_Abs, public Iir_Prefix_Abs {
-};
-
-struct Iir_Driving_Attribute
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Name_Staticness_Abs, public Iir_Prefix_Abs {
-};
-
-struct Iir_Driving_Value_Attribute
-        : public Iir_Type_Abs, public Iir_Expr_Staticness_Abs, public Iir_Name_Staticness_Abs, public Iir_Prefix_Abs {
+    Iir_Attribute_Type Attribute_Type;
 };
 
 struct Iir_Behavior_Attribute: public virtual Iir {
@@ -2909,17 +2715,18 @@ struct Iir_Index_Subtype_Abs: public virtual Iir {
     Iir* Index_Subtype;
 };
 
-struct Iir_Left_Array_Attribute
-        : public Iir_Type_Abs,
-          public Iir_Base_Name_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_Prefix_Abs,
-          public Iir_Index_Subtype_Abs,
-          public Iir_Parameter_Abs {
+enum class Array_Attribute_Type {
+    Left,
+    Right,
+    High,
+    Low,
+    Length,
+    Ascending,
+    Range,
+    Reverse_Range
 };
 
-struct Iir_Right_Array_Attribute
+struct Iir_Array_Attribute
         : public Iir_Type_Abs,
           public Iir_Base_Name_Abs,
           public Iir_Expr_Staticness_Abs,
@@ -2927,66 +2734,7 @@ struct Iir_Right_Array_Attribute
           public Iir_Prefix_Abs,
           public Iir_Index_Subtype_Abs,
           public Iir_Parameter_Abs {
-};
-
-struct Iir_High_Array_Attribute
-        : public Iir_Type_Abs,
-          public Iir_Base_Name_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_Prefix_Abs,
-          public Iir_Index_Subtype_Abs,
-          public Iir_Parameter_Abs {
-};
-
-struct Iir_Low_Array_Attribute
-        : public Iir_Type_Abs,
-          public Iir_Base_Name_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_Prefix_Abs,
-          public Iir_Index_Subtype_Abs,
-          public Iir_Parameter_Abs {
-};
-
-struct Iir_Length_Array_Attribute
-        : public Iir_Type_Abs,
-          public Iir_Base_Name_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_Prefix_Abs,
-          public Iir_Index_Subtype_Abs,
-          public Iir_Parameter_Abs {
-};
-
-struct Iir_Ascending_Array_Attribute
-        : public Iir_Type_Abs,
-          public Iir_Base_Name_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_Prefix_Abs,
-          public Iir_Index_Subtype_Abs,
-          public Iir_Parameter_Abs {
-};
-
-struct Iir_Range_Array_Attribute
-        : public Iir_Type_Abs,
-          public Iir_Base_Name_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_Prefix_Abs,
-          public Iir_Index_Subtype_Abs,
-          public Iir_Parameter_Abs {
-};
-
-struct Iir_Reverse_Range_Array_Attribute
-        : public Iir_Type_Abs,
-          public Iir_Base_Name_Abs,
-          public Iir_Expr_Staticness_Abs,
-          public Iir_Name_Staticness_Abs,
-          public Iir_Prefix_Abs,
-          public Iir_Index_Subtype_Abs,
-          public Iir_Parameter_Abs {
+    Array_Attribute_Type Attribute_Type;
 };
 
 struct Iir_Attribute_Name

@@ -108,10 +108,10 @@ enum class Iir_Pure_State {
 };
 
 enum class Interface_Type {
-    Generic_Interface_List,
-    Port_Interface_List,
-    Procedure_Parameter_Interface_List,
-    Function_Parameter_Interface_List
+    Generic,
+    Port,
+    Procedure_Parameter,
+    Function_Parameter
 };
 
 enum class Iir_Staticness { Unknown, None, Globally, Locally };

@@ -16,24 +16,6 @@
 // Transform the current token into an iir literal.
 // The current token must be either a character or an identifier.
 /*
-function Current_Text return Iir is
-Res: Iir;
-begin
-case Current_Token is
-when Tok_Identifier =>
-Res := Create_Iir (Iir_Kind_Simple_Name);
-when Tok_Character =>
-Res := Create_Iir (Iir_Kind_Character_Literal);
-when others =>
-raise Internal_Error;
-end case;
-Set_Identifier (Res, Current_Identifier);
-Invalidate_Current_Identifier;
-Invalidate_Current_Token;
-Set_Location (Res, Get_Token_Location);
-return Res;
-end Current_Text;
-
 function Is_Error (N : Iir) return Boolean is
 begin
 return Get_Kind (N) = Iir_Kind_Error;
