@@ -557,13 +557,13 @@ struct Iir_Procedure_Call
           public Iir_Implementation_Abs,
           public Iir_Parameter_Association_Chain_Abs {
 };
-
-struct Iir_Element_Position_Abs: public virtual Iir {
-    Iir_Index32 Element_Position;
-    Iir* Base_Element_Declaration;
-};
-
-using Iir_Base_Element_Declaration_Abs = Iir_Element_Position_Abs;
+//
+//struct Iir_Element_Position_Abs: public virtual Iir {
+//    Iir_Index32 Element_Position;
+//    Iir* Base_Element_Declaration;
+//};
+//
+//using Iir_Base_Element_Declaration_Abs = Iir_Element_Position_Abs;
 
 struct Iir_Visible_Flag_Abs: public virtual Iir {
     bool Visible_Flag;
@@ -571,7 +571,7 @@ struct Iir_Visible_Flag_Abs: public virtual Iir {
 
 struct Iir_Record_Element_Constraint
         : public Iir_Type_Abs,
-          public Iir_Element_Position_Abs,
+//          public Iir_Element_Position_Abs,
           public Iir_Identifier_Abs,
           public Iir_Visible_Flag_Abs,
           public Iir_Parent_Abs {
@@ -1152,7 +1152,7 @@ struct Iir_Group_Declaration
 struct Iir_Element_Declaration
         : public Iir_Type_Abs,
           public Iir_Subtype_Indication_Abs,
-          public Iir_Element_Position_Abs,
+//          public Iir_Element_Position_Abs,
           public Iir_Identifier_Abs,
           public Iir_Visible_Flag_Abs,
           public Iir_Parent_Abs,

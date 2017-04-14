@@ -181,5 +181,15 @@ private:
     Iir* Parse_Resolution_Indication();
 
     Iir* Parse_Type_Declaration(Iir* Parent);
+
+    Iir_Physical_Type_Definition* Parser::Parse_Physical_Type_Definition (Iir* Parent);
+    Iir_Record_Type_Definition* Parser::Parse_Record_Type_Definition();
+    Iir_Access_Type_Definition* Parser::Parse_Access_Type_Definition();
+    Iir_File_Type_Definition* Parser::Parse_File_Type_Definition();
+    Iir* Parser::Parse_Protected_Type_Definition(std::string Ident, Location_Type Loc);
+    Iir_Subtype_Declaration* Parser::Parse_Subtype_Declaration (Iir* Parent);
+    Iir* Parser::Parse_Nature_Declaration();
+    Iir_Report_Statement* Parser::Parse_Report_Statement();
+    void Parser::Check_Type_Mark(Iir *Mark);
 };
 #endif // AVLC_PARSER_H
