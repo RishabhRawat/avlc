@@ -406,7 +406,7 @@ Iir* Parser::Parse_Name_Suffix(Iir* Pfx, bool Allow_Indexes = true) {
             }
             result = new Iir_Attribute_Name;
             result->Identifier = scanner.currentContext.Identifier;
-            Set_Location(result);
+            result->Location = scanner.currentContext.getTokenLocation();
             if (Get_Kind(Prefix) == Iir_Signature) {
                 Set_Attribute_Signature(result, Prefix);
 
@@ -432,7 +432,7 @@ Iir* Parser::Parse_Name_Suffix(Iir* Pfx, bool Allow_Indexes = true) {
             }
 
             result = new Iir_Parenthesis_Name;
-            Set_Location(result);
+            result->Location = scanner.currentContext.getTokenLocation();
             Set_Prefix(result, Prefix);
             Set_Association_Chain(result, Parse_Association_List_In_Parenthesis);
             break;
@@ -446,19 +446,19 @@ Iir* Parser::Parse_Name_Suffix(Iir* Pfx, bool Allow_Indexes = true) {
             switch (scanner.currentContext.token) {
             case Token::All:
                 result = new Iir_Selected_By_All_Name;
-                Set_Location(result);
+                result->Location = scanner.currentContext.getTokenLocation();
                 Set_Prefix(result, Prefix);
                 break;
             case Token::Identifier:
             case Token::Character:
                 result = new Iir_Selected_Name;
-                Set_Location(result);
+                result->Location = scanner.currentContext.getTokenLocation();
                 Set_Prefix(result, Prefix);
                 Set_Identifier(result, scanner.currentContext.Identifier);
                 break;
             case Token::String:
                 result = new Iir_Selected_Name;
-                Set_Location(result);
+                result->Location = scanner.currentContext.getTokenLocation();
                 Set_Prefix(result, Prefix);
                 Set_Identifier(result, Scan_To_Operator_Name(Get_Token_Location));
                 break;
@@ -504,7 +504,7 @@ Iir* Parser::Parse_External_Pathname() {
     switch (scanner.currentContext.token) {
     case Token::Arobase:
         result = new Iir_Package_Pathname;
-        Set_Location(result);
+        result->Location = scanner.currentContext.getTokenLocation();
         Last = result;
 
 //  Skip '@'
@@ -528,7 +528,7 @@ Iir* Parser::Parse_External_Pathname() {
         break;
     case Token::Dot:
         result = new Iir_Absolute_Pathname;
-        Set_Location(result);
+        result->Location = scanner.currentContext.getTokenLocation();
         Last = result;
 
 //  Skip '.'
@@ -538,7 +538,7 @@ Iir* Parser::Parse_External_Pathname() {
         Last = nullptr;
         do {
             El = new Iir_Relative_Pathname;
-            Set_Location(El);
+            El->Location = scanner.currentContext.getTokenLocation();
 
 //  Skip '^'
             scanner.scan();
@@ -575,7 +575,7 @@ Iir* Parser::Parse_External_Pathname() {
             throw std::runtime_error("PARSE ERROR: pathname element expected");
 
         El = new Iir_Pathname_Element;
-        Set_Location(El);
+        El->Location = scanner.currentContext.getTokenLocation();
         Set_Identifier(El, scanner.currentContext.Identifier);
         if (!Last)
             result = El;
@@ -947,7 +947,7 @@ std::vector<Iir_Interface_Object_Declaration*> Parser::Parse_Interface_Object_De
     }
     return IdentifierList;
 }
-/*
+
 //  Precond : 'package'
 //  Postcond: next token
 //
@@ -956,95 +956,90 @@ std::vector<Iir_Interface_Object_Declaration*> Parser::Parse_Interface_Object_De
 //    PACKAGE identifier IS NEW uninstantiated_package name
 //      interface_package_generic_map_aspect
 //
-//  interface_package_generic_map_aspect ::=
-//       generic_map_aspect
-//     | GENERIC MAP ( <> )
-//     | GENERIC MAP ( DEFAULT )
-Parse_Interface_Package_Declaration return Iir
-        is
-Inter : Iir;
-Map : Iir;
-begin
-        Inter = Create_Iir (Iir_Interface_Package_Declaration);
+//  interface_package_generic_map_aspect ::= generic_map_aspect | GENERIC MAP ( <> ) | GENERIC MAP ( DEFAULT )
+//
+Iir* Parser::Parse_Interface_Package_Declaration() {
+//        is
+//Inter : Iir;
+//Map : Iir;
+//begin
+    auto Inter = new Iir_Interface_Package_Declaration;
 
 //  Skip 'package'
-Scan_Expect (Token::Identifier,
-"an identifier is expected after ""package""");
-Set_Identifier (Inter, scanner.currentContext.Identifier);
-Set_Location (Inter);
+    Scan_Expect(Token::Identifier,
+                "an identifier is expected after ""package""");
+    Inter->Identifier = scanner.currentContext.Identifier;
+    Inter->Location = scanner.currentContext.getTokenLocation();
 
 //  Skip identifier
-Scan_Expect (Token::Is);
+    Scan_Expect(Token::Is);
 
 //  Skip 'is'
-Scan_Expect (Token::New);
+    Scan_Expect(Token::New);
 
 //  Skip 'new'
-scanner.scan();
+    scanner.scan();
 
-Set_Uninstantiated_Package_Name (Inter, Parse_Name (false));
+    Inter->Uninstantiated_Package_Name = Parse_Name(false);
 
-Expect (Token::Generic);
+    Expect(Token::Generic);
 
 //  Skip 'generic'
-Scan_Expect (Token::Map);
+    Scan_Expect(Token::Map);
 
 //  Skip 'map'
-Scan_Expect (Token::Left_Paren);
+    Scan_Expect(Token::Left_Paren);
 
 //  Skip '('
-scanner.scan();
-
-switch (scanner.currentContext.token) {
-case Token::Box:
-Map = nullptr;
+    scanner.scan();
+    Iir* Map;
+    switch (scanner.currentContext.token) {
+        case Token::Box:
+            Map = nullptr;
 //  Skip '<>'
-scanner.scan();
-default:
-Map = Parse_Association_List;
-}
-Set_Generic_Map_Aspect_Chain (Inter, Map);
+            scanner.scan();
+        default:
+            Map = Parse_Association_List();
+    }
+    Inter->Generic_Map_Aspect_Chain = Map;
 
-Expect (Token::Right_Paren);
+    Expect(Token::Right_Paren);
 
 //  Skip ')'
-scanner.scan();
+    scanner.scan();
 
-return Inter;
-end Parse_Interface_Package_Declaration;
+    return Inter;
+}
 
 //  Precond:  identifier or string
 //  Postcond: next token
 //
 //  [ 2.1 ]
 //  designator ::= identifier | operator_symbol
- Parse_Subprogram_Designator (Subprg : Iir) is
-        begin
-if (scanner.currentContext.token == Token::Identifier {
-        Set_Identifier (Subprg, scanner.currentContext.Identifier);
-Set_Location (Subprg);
-elsif (scanner.currentContext.token == Token::String {
-if Kind_In (Subprg, Iir_Procedure_Declaration,
-        Iir_Interface_Procedure_Declaration)
-{
+Iir* Parser::Parse_Subprogram_Designator(Iir* Subprg) {
+    if (scanner.currentContext.token == Token::Identifier) {
+        Subprg->Identifier = scanner.currentContext.Identifier;
+        Subprg->Location = scanner.currentContext.getTokenLocation();
+    } else if (scanner.currentContext.token == Token::String) {
+        if (Kind_In(Subprg, Iir_Procedure_Declaration, Iir_Interface_Procedure_Declaration)
 //  LRM93 2.1
 //  A procedure designator is always an identifier.
-throw std::runtime_error("PARSE ERROR: a procedure name must be an identifier");
-end if;
+            throw std::runtime_error("PARSE ERROR: a procedure name must be an identifier");
+
 //  LRM93 2.1
 //  A function designator is either an identifier or an operator
 //  symbol.
-Set_Identifier (Subprg, Scan_To_Operator_Name (Get_Token_Location));
-Set_Location (Subprg);
-else
+        Subprg->Identifier = Scan_To_Operator_Name(Get_Token_Location());
+        Subprg->Location = scanner.currentContext.getTokenLocation();
+    } else
 //  Just to display a parse error.
-Expect (Token::Identifier);
-end if;
+        Expect(Token::Identifier);
 
 //  Eat designator (identifier or string).
-scanner.scan();
-end Parse_Subprogram_Designator;
-
+    scanner.scan();
+}
+/*
+// NOTE: This is obsolete (maybe), so maybe later :P
 //  Precond: '(' or return or any
 //  Postcond: next token
         procedure Parse_Subprogram_Parameters_And_Return
@@ -1137,7 +1132,7 @@ case Token::Function
 | Token::Impure:
 Kind = Iir_Interface_Function_Declaration;
 default:
-raise Internal_Error;
+throw std::logic_error();
 }
 Subprg = Create_Iir (Kind);
 Set_Location (Subprg);
@@ -1161,7 +1156,7 @@ scanner.scan();
 
 Expect (Token::Function, "'function' must follow 'pure' or 'impure'");
 default:
-raise Internal_Error;
+throw std::logic_error();
 }
 
 //  Eat 'procedure' or 'function'.
@@ -1177,7 +1172,7 @@ Parse_Subprogram_Parameters_And_Return
 
 return Subprg;
 end Parse_Interface_Subprogram_Declaration;
-
+*/
 //  Precond : '('
 //  Postcond: next token
 //
@@ -1185,113 +1180,110 @@ end Parse_Interface_Subprogram_Declaration;
 //  interface_list ::= interface_element { ';' interface_element }
 //
 //  interface_element ::= interface_declaration
-Parse_Interface_List (Ctxt : Interface_Kind_Type; Parent : Iir)
-return Iir
-        is
-Res, Last : Iir;
-Inters : Iir;
-Next : Iir;
-Prev_Loc : Location_Type;
-begin
-        Expect (Token::Left_Paren);
+Iir* Parser::Parse_Interface_List (Interface_Type Ctxt, Iir Parent) {
+//Res, Last : Iir;
+//Inters : Iir;
+//Next : Iir;
+//Prev_Loc : Location_Type;
 
-Res = nullptr;
-Last = nullptr;
-loop
-        Prev_Loc = scanner.currentContext.getTokenLocation();
+    Expect(Token::Left_Paren);
+
+    Iir* Res = nullptr;
+    Iir* Last = nullptr;
+    Iir* Inters;
+    while (1) {
+        auto Prev_Loc = scanner.currentContext.getTokenLocation();
 
 //  Skip '(' or ';'
-scanner.scan();
+        scanner.scan();
 
-switch (scanner.currentContext.token) {
-case Token::Identifier
-| Token::Signal
-| Token::Variable
-| Token::Constant
-| Token::File:
+        switch (scanner.currentContext.token) {
+            case Token::Identifier:
+            case Token::Signal:
+            case Token::Variable:
+            case Token::Constant:
+            case Token::File:
 //  An inteface object.
-Inters = Parse_Interface_Object_Declaration (Ctxt);
-case Token::Package:
-if Ctxt != Generic_Interface_List {
-throw std::runtime_error("PARSE ERROR: package interface only allowed in generic interface");
-elsif scanner.state.options.standard < Vhdl_08 {
-        throw std::runtime_error("PARSE ERROR: package interface not allowed before vhdl 08");
-end if;
-Inters = Parse_Interface_Package_Declaration;
-case Token::Type:
-if Ctxt != Generic_Interface_List {
-throw std::runtime_error("PARSE ERROR: type interface only allowed in generic interface");
-elsif scanner.state.options.standard < Vhdl_08 {
-        throw std::runtime_error("PARSE ERROR: type interface not allowed before vhdl 08");
-end if;
-Inters = Create_Iir (Iir_Interface_Type_Declaration);
-Scan_Expect (Token::Identifier,
-"an identifier is expected after 'type'");
-Set_Identifier (Inters, scanner.currentContext.Identifier);
-Set_Location (Inters);
+                Inters = Parse_Interface_Object_Declaration(Ctxt);
+                break;
+            case Token::Package:
+                if (Ctxt != Interface_Type::Generic)
+                    throw std::runtime_error("PARSE ERROR: package interface only allowed in generic interface");
+                else if (scanner.state.options.standard < Vhdl_Std::Vhdl_08)
+                    throw std::runtime_error("PARSE ERROR: package interface not allowed before vhdl 08");
 
+                Inters = Parse_Interface_Package_Declaration();
+                break;
+            case Token::Type:
+                if (Ctxt != Interface_Type::Generic)
+                    throw std::runtime_error("PARSE ERROR: type interface only allowed in generic interface");
+                else if (scanner.state.options.standard < Vhdl_Std::Vhdl_08)
+                    throw std::runtime_error("PARSE ERROR: type interface not allowed before vhdl 08");
+
+                Inters = new Iir_Interface_Type_Declaration;
+                Scan_Expect(Token::Identifier, "an identifier is expected after 'type'");
+                Set_Identifier(Inters, scanner.currentContext.Identifier);
+                Inters->Location = scanner.currentContext.getTokenLocation();
+                break;
 //  Skip identifier
-scanner.scan();
-case Token::Procedure
-| Token::Pure
-| Token::Impure
-| Token::Function:
-if Ctxt != Generic_Interface_List {
-throw std::runtime_error("PARSE ERROR: subprogram interface only allowed in generic interface");
-elsif scanner.state.options.standard < Vhdl_08 {
-        throw std::runtime_error("PARSE ERROR: subprogram interface not allowed before vhdl 08");
-end if;
-Inters = Parse_Interface_Subprogram_Declaration;
-case Token::Right_Paren:
-if Res = nullptr {
-        Error_Msg_Parse
-        (Prev_Loc, "empty interface list not allowed");
-else
-Error_Msg_Parse
-(Prev_Loc, "extra ';' at end of interface list");
-end if;
-exit;
-default:
-throw std::runtime_error("PARSE ERROR: interface declaration expected");
-//  Use a variable interface as a fall-back.
-Inters = Parse_Interface_Object_Declaration (Ctxt);
-}
+                scanner.scan();
+            case Token::Procedure:
+            case Token::Pure:
+            case Token::Impure:
+            case Token::Function:
+                if (Ctxt != Interface_Type::Generic)
+                    throw std::runtime_error("PARSE ERROR: subprogram interface only allowed in generic interface");
+                else if (scanner.state.options.standard < Vhdl_Std::Vhdl_08)
+                    throw std::runtime_error("PARSE ERROR: subprogram interface not allowed before vhdl 08");
+
+                Inters = Parse_Interface_Subprogram_Declaration();
+                break;
+            case Token::Right_Paren:
+                if (!Res)
+                    throw std::runtime_error("PARSE ERROR: empty interface list not allowed");
+                else
+                    throw std::runtime_error("PARSE ERROR: extra ';' at end of interface list");
+                exit;
+            default:
+                throw std::runtime_error("PARSE ERROR: interface declaration expected");
+        }
 
 //  Chain
-if Last = nullptr {
-        Res = Inters;
-else
-Set_Chain (Last, Inters);
-end if;
+        if (!Last)
+            Res = Inters;
+        else
+            Set_Chain(Last, Inters);
+
 
 //  Set parent and set Last to the last interface.
-Last = Inters;
-loop
-        Set_Parent (Last, Parent);
-Next = Get_Chain (Last);
-exit when Next = nullptr;
-Last = Next;
-end loop;
+        Last = Inters;
+        while (1) {
+            Set_Parent(Last, Parent);
+            Next = Get_Chain(Last);
+            if (!Next)
+                break;
+            Last = Next;
+        }
 
-switch (scanner.currentContext.token) {
-case Token::Comma:
-throw std::runtime_error("PARSE ERROR: interfaces must be separated by ';' (found ',')");
-case Token::Semi_Colon:
-null;
-default:
-exit;
-}
-end loop;
+        switch (scanner.currentContext.token) {
+            case Token::Comma:
+                throw std::runtime_error("PARSE ERROR: interfaces must be separated by ';' (found ',')");
+            case Token::Semi_Colon:
+                break;
+            default:
+                exit;
+        }
+    }
 
-if (scanner.currentContext.token != Token::Right_Paren {
-throw std::runtime_error("PARSE ERROR: ')' expected at end of interface list");
-end if;
+    if (scanner.currentContext.token != Token::Right_Paren)
+        throw std::runtime_error("PARSE ERROR: ')' expected at end of interface list");
+
 
 //  Skip ')'
-scanner.scan();
+    scanner.scan();
 
-return Res;
-end Parse_Interface_List;
+    return Res;
+}
 
 //  precond : PORT
 //  postcond: next token
@@ -1301,29 +1293,27 @@ end Parse_Interface_List;
 //
 //  [ 1.1.1.2 ]
 //  port_list ::= PORT_interface_list
- Parse_Port_Clause (Parent : Iir)
-is
-        Res: Iir;
-El : Iir;
-begin
+void Parser::Parse_Port_Clause (Iir* Parent) {
+    El :
+    Iir;
 //  Skip 'port'
-pragma Assert (scanner.currentContext.token == Token::Port);
-scanner.scan();
+    assert(scanner.currentContext.token == Token::Port);
+    scanner.scan();
 
-Res = Parse_Interface_List (Port_Interface_List, Parent);
+    auto Res = Parse_Interface_List(Interface_Type::Port, Parent);
 
 //  Check the interface are signal interfaces.
-El = Res;
-while El != nullptr loop
-if Get_Kind (El) != Iir_Interface_Signal_Declaration {
-throw std::runtime_error("PARSE ERROR:" + +El, "port must be a signal");
-end if;
-El = Get_Chain (El);
-end loop;
+    auto El = Res;
+    while (El) {
+        if (Get_Kind(El) != Iir_Interface_Signal_Declaration)
+            throw std::runtime_error("PARSE ERROR:" + El->Identifier + "port must be a signal");
 
-Scan_Semi_Colon ("port clause");
-Set_Port_Chain (Parent, Res);
-end Parse_Port_Clause;
+        El = Get_Chain(El);
+    }
+
+    Scan_Semi_Colon("port clause");
+    Set_Port_Chain(Parent, Res);
+}
 
 //  precond : GENERIC
 //  postcond: next token
@@ -1333,58 +1323,49 @@ end Parse_Port_Clause;
 //
 //  [ LRM93 1.1.1.1, LRM08 6.5.6.2]
 //  generic_list ::= GENERIC_interface_list
- Parse_Generic_Clause (Parent : Iir)
-is
-        Res: Iir;
-begin
+void Parser::Parse_Generic_Clause (Iir* Parent) {
 //  Skip 'generic'
-pragma Assert (scanner.currentContext.token == Token::Generic);
-scanner.scan();
+    assert (scanner.currentContext.token == Token::Generic);
+    scanner.scan();
 
-Res = Parse_Interface_List (Generic_Interface_List, Parent);
-Set_Generic_Chain (Parent, Res);
+    auto Res = Parse_Interface_List(Interface_Type::Generic, Parent);
+    Set_Generic_Chain(Parent, Res);
 
-Scan_Semi_Colon ("generic clause");
-end Parse_Generic_Clause;
+    Scan_Semi_Colon("generic clause");
+}
 
 //  precond : a token.
 //  postcond: next token
 //
 //  [ 1.1.1 ]
-//  entity_header ::=
-//      [ FORMAL_generic_clause ]
-//      [ FORMAL_port_clause ]
+//  entity_header ::= [ FORMAL_generic_clause ] [ FORMAL_port_clause ]
 //
 //  [ 4.5 ]
 //          [ LOCAL_generic_clause ]
 //          [ LOCAL_port_clause ]
- Parse_Generic_Port_Clauses (Parent : Iir)
-is
-        Has_Port, Has_Generic : Boolean;
-begin
-        Has_Port = false;
-Has_Generic = false;
-loop
-if (scanner.currentContext.token == Token::Generic {
-if Has_Generic {
-throw std::runtime_error("PARSE ERROR: at most one generic clause is allowed");
-end if;
-if Has_Port {
-throw std::runtime_error("PARSE ERROR: generic clause must precede port clause");
-end if;
-Has_Generic = true;
-Parse_Generic_Clause (Parent);
-elsif (scanner.currentContext.token == Token::Port {
-if Has_Port {
-throw std::runtime_error("PARSE ERROR: at most one port clause is allowed");
-end if;
-Has_Port = true;
-Parse_Port_Clause (Parent);
-else
-exit;
-end if;
-end loop;
-end Parse_Generic_Port_Clauses;
+void Parser::Parse_Generic_Port_Clauses (Iir* Parent) {
+    bool Has_Port = false;
+    bool Has_Generic = false;
+    while (1) {
+        if (scanner.currentContext.token == Token::Generic) {
+            if (Has_Generic)
+                throw std::runtime_error("PARSE ERROR: at most one generic clause is allowed");
+
+            if (Has_Port)
+                throw std::runtime_error("PARSE ERROR: generic clause must precede port clause");
+
+            Has_Generic = true;
+            Parse_Generic_Clause(Parent);
+        } else if (scanner.currentContext.token == Token::Port) {
+            if (Has_Port)
+                throw std::runtime_error("PARSE ERROR: at most one port clause is allowed");
+
+            Has_Port = true;
+            Parse_Port_Clause(Parent);
+        } else
+            break;
+    }
+}
 
 //  precond : a token
 //  postcond: next token
@@ -1395,92 +1376,74 @@ end Parse_Generic_Port_Clauses;
 //
 //  [ LRM93 3.1.1 ]
 //  enumeration_literal ::= identifier | character_literal
-Parse_Enumeration_Type_Definition (Parent : Iir)
-return Iir_Enumeration_Type_Definition
-        is
-Pos: Iir_Int32;
-Enum_Lit: Iir_Enumeration_Literal;
-Enum_Type: Iir_Enumeration_Type_Definition;
-Enum_List : Iir_List;
-begin
+Iir_Enumeration_Type_Definition* Parser::Parse_Enumeration_Type_Definition(Iir* Parent) {
+//Pos: Iir_Int32;
+//Enum_Lit: Iir_Enumeration_Literal;
+//Enum_Type: Iir_Enumeration_Type_Definition;
+//Enum_List : Iir_List;
+
 //  This is an enumeration.
-Enum_Type = Create_Iir (Iir_Enumeration_Type_Definition);
-Set_Location (Enum_Type);
-Enum_List = Create_Iir_List;
-Set_Enumeration_Literal_List (Enum_Type, Enum_List);
+    auto Enum_Type = new Iir_Enumeration_Type_Definition;
+    Enum_Type->Location = scanner.currentContext.;
 
 //  LRM93 3.1.1
 //  The position number of the first listed enumeration literal is zero.
-Pos = 0;
 
 //  Eat '('.
-scanner.scan();
+    scanner.scan();
 
-if (scanner.currentContext.token == Token::Right_Paren {
+    if (scanner.currentContext.token == Token::Right_Paren)
         throw std::runtime_error("PARSE ERROR: at least one literal must be declared");
-scanner.scan();
-return Enum_Type;
-end if;
-loop
-if (scanner.currentContext.token != Token::Identifier
-        && scanner.currentContext.token != Token::Character
-        {
-if (scanner.currentContext.token == Token::Eof {
-        throw std::runtime_error("PARSE ERROR: unexpected end of file");
-return Enum_Type;
-end if;
-throw std::runtime_error("PARSE ERROR: identifier or character expected");
-end if;
 
-Enum_Lit = Create_Iir (Iir_Enumeration_Literal);
-Set_Identifier (Enum_Lit, scanner.currentContext.Identifier);
-Set_Parent (Enum_Lit, Parent);
-Set_Location (Enum_Lit);
-Set_Enum_Pos (Enum_Lit, Pos);
+    while (1) {
+        if (scanner.currentContext.token != Token::Identifier && scanner.currentContext.token != Token::Character) {
+            if (scanner.currentContext.token == Token::Eof)
+                throw std::runtime_error("PARSE ERROR: unexpected end of file");
+            throw std::runtime_error("PARSE ERROR: identifier or character expected");
+        }
+
+        auto Enum_Lit = new Iir_Enumeration_Literal;
+        Enum_Lit->Identifier = scanner.currentContext.Identifier;
+        Enum_Lit->Parent = Parent;
+        Enum_Lit->Location;
+        Enum_Type->Enumeration_Literal_List.push_back(Enum_Lit);
 
 // LRM93 3.1.1
 // the position number for each additional enumeration literal is
 // one more than that if its predecessor in the list.
-Pos = Pos + 1;
-
-Append_Element (Enum_List, Enum_Lit);
 
 //  Skip identifier or character.
-scanner.scan();
+        scanner.scan();
 
-exit when scanner.currentContext.token == Token::Right_Paren;
-if (scanner.currentContext.token != Token::Comma {
-throw std::runtime_error("PARSE ERROR: ')' or ',' is expected after an enum literal");
-end if;
+        if (scanner.currentContext.token == Token::Right_Paren)
+            break;
+        if (scanner.currentContext.token != Token::Comma)
+            throw std::runtime_error("PARSE ERROR: ')' or ',' is expected after an enum literal");
+
 
 //  Skip ','.
-scanner.scan();
+        scanner.scan();
 
-if (scanner.currentContext.token == Token::Right_Paren {
-        throw std::runtime_error("PARSE ERROR: extra ',' ignored");
-exit;
-end if;
-end loop;
+        if (scanner.currentContext.token == Token::Right_Paren)
+            throw std::runtime_error("PARSE ERROR: extra ',' ignored");
+    }
 
 //  Skip ')'.
-scanner.scan();
+    scanner.scan();
 
-return Enum_Type;
-end Parse_Enumeration_Type_Definition;
+    return Enum_Type;
+}
 
 //  precond : ARRAY
 //  postcond: ??
 //
 //  [ LRM93 3.2.1 ]
-//  array_type_definition ::= unconstrained_array_definition
-//                          | constrained_array_definition
+//  array_type_definition ::= unconstrained_array_definition | constrained_array_definition
 //
 //   unconstrained_array_definition ::=
-//      ARRAY ( index_subtype_definition { , index_subtype_definition } )
-//      OF element_subtype_indication
+//      ARRAY ( index_subtype_definition { , index_subtype_definition } ) OF element_subtype_indication
 //
-//   constrained_array_definition ::=
-//      ARRAY index_constraint OF element_subtype_indication
+//   constrained_array_definition ::= ARRAY index_constraint OF element_subtype_indication
 //
 //   index_subtype_definition ::= type_mark RANGE <>
 //
@@ -1489,113 +1452,111 @@ end Parse_Enumeration_Type_Definition;
 //   discrete_range ::= discrete_subtype_indication | range
 //
 //  [ LRM08 5.3.2.1 ]
-//  array_type_definition ::= unbounded_array_definition
-//                          | constrained_array_definition
+//  array_type_definition ::= unbounded_array_definition | constrained_array_definition
 //
 //   unbounded_array_definition ::=
-//      ARRAY ( index_subtype_definition { , index_subtype_definition } )
-//      OF element_subtype_indication
-Parse_Array_Definition return Iir
-        is
-Index_Constrained : Boolean;
-Array_Constrained : Boolean;
-First : Boolean;
-Res_Type: Iir;
-Index_List : Iir_List;
-
-Loc : Location_Type;
-Def : Iir;
-Type_Mark : Iir;
-Element_Subtype : Iir;
-begin
-        Loc = scanner.currentContext.getTokenLocation();
+//      ARRAY ( index_subtype_definition { , index_subtype_definition } ) OF element_subtype_indication
+Iir* Parser::Parse_Array_Definition() {
+//        is
+bool Index_Constrained;
+bool Array_Constrained;
+//First : Boolean;
+//Res_Type: Iir;
+//Index_List : Iir_List;
+//
+//Loc : Location_Type;
+//Def : Iir;
+//Type_Mark : Iir;
+//Element_Subtype : Iir;
+//begin
+    auto Loc = scanner.currentContext.getTokenLocation();
 
 //  Skip 'array', scan '('
-Scan_Expect (Token::Left_Paren);
-scanner.scan();
+    Scan_Expect(Token::Left_Paren);
+    scanner.scan();
 
-First = true;
-Index_List = Create_Iir_List;
+    bool First = true;
+    Index_List = Create_Iir_List;
 
-loop
+    while (1) {
 //  The accepted syntax can be one of:
 //  * index_subtype_definition, which is:
 //    * type_mark RANGE <>
 //  * discrete_range, which is either:
-//    * /discrete/_subtype_indication
+//    * discrete_subtype_indication
 //      * [ resolution_indication ] type_mark [ range_constraint ]
 //        * range_constraint ::= RANGE range
 //    * range
-//      * /range/_attribute_name
+//      * range_attribute_name
 //      * simple_expression direction simple_expression
 
 //  Parse a simple expression (for the range), which can also parse a
 //  name.
-Type_Mark = Parse_Simple_Expression;
+        auto Type_Mark = Parse_Simple_Expression();
 
-switch (scanner.currentContext.token) {
-case Token::Range:
+        switch (scanner.currentContext.token) {
+            case Token::Range:
 //  Skip 'range'
-scanner.scan();
+                scanner.scan();
 
-if (scanner.currentContext.token == Token::Box {
+                if (scanner.currentContext.token == Token::Box) {
 //  Parsed 'RANGE <>': this is an index_subtype_definition.
-Index_Constrained = false;
-scanner.scan();
-Def = Type_Mark;
-else
+                    Index_Constrained = false;
+                    scanner.scan();
+                    Def = Type_Mark;
+                } else {
 //  This is a /discrete/_subtype_indication
-        Index_Constrained = true;
-Def =
-Parse_Range_Constraint_Of_Subtype_Indication (Type_Mark);
-end if;
-case Token::To
-| Token::Downto:
+                    Index_Constrained = true;
+                    Def = Parse_Range_Constraint_Of_Subtype_Indication(Type_Mark);
+                }
+                break;
+            case Token::To:
+            case Token::Downto:
 //  A range
-Index_Constrained = true;
-Def = Parse_Range_Expression (Type_Mark);
-default:
+                Index_Constrained = true;
+                Def = Parse_Range_Expression(Type_Mark);
+                break;
+            default:
 //  For a /range/_attribute_name
-        Index_Constrained = true;
-Def = Type_Mark;
-}
+                Index_Constrained = true;
+                Def = Type_Mark;
+        }
 
-Append_Element (Index_List, Def);
+        Append_Element(Index_List, Def);
 
-if First {
-Array_Constrained = Index_Constrained;
-First = false;
-else
-if Array_Constrained != Index_Constrained {
-throw std::runtime_error("PARSE ERROR: cannot mix constrained and unconstrained index");
-end if;
-end if;
-exit when scanner.currentContext.token != Token::Comma;
-scanner.scan();
-end loop;
+        if (First) {
+            Array_Constrained = Index_Constrained;
+            First = false;
+        } else if (Array_Constrained != Index_Constrained)
+            throw std::runtime_error("PARSE ERROR: cannot mix constrained and unconstrained index");
+
+        if (scanner.currentContext.token != Token::Comma)
+            break;
+        scanner.scan();
+    }
 
 //  Skip ')' and 'of'
-Expect (Token::Right_Paren);
-Scan_Expect (Token::Of);
-scanner.scan();
+    Expect(Token::Right_Paren);
+    Scan_Expect(Token::Of);
+    scanner.scan();
 
-Element_Subtype = Parse_Subtype_Indication;
+    auto Element_Subtype = Parse_Subtype_Indication();
 
-if Array_Constrained {
+    if (Array_Constrained) {
 //  Sem_Type will create the array type.
-Res_Type = Create_Iir (Iir_Array_Subtype_Definition);
-Set_Array_Element_Constraint (Res_Type, Element_Subtype);
-Set_Index_Constraint_List (Res_Type, Index_List);
-else
-Res_Type = Create_Iir (Iir_Array_Type_Definition);
-Set_Element_Subtype_Indication (Res_Type, Element_Subtype);
-Set_Index_Subtype_Definition_List (Res_Type, Index_List);
-end if;
-Set_Location (Res_Type, Loc);
+        Res_Type = new Iir_Array_Subtype_Definition;
+        Res_Type->Array_Element_Constraint = Element_Subtype;
+        Res_Type->Index_Constraint_List = Index_List;
+    } else {
+        Res_Type = new Iir_Array_Type_Definition;
+        Res_Type->Element_Subtype_Indication = Element_Subtype;
+        Res_Type->Index_Subtype_Definition_List = Index_List;
+    }
+    Res_Type->Location = Loc;
 
-return Res_Type;
-end Parse_Array_Definition;
-*/
+    return Res_Type;
+}
+
 //  precond : UNITS
 //  postcond: next token
 //
@@ -2094,81 +2055,69 @@ Iir* Parser::Parse_Resolution_Indication() {
         throw std::runtime_error("PARSE ERROR: resolution indication expected");
 
 }
-/*
+
 //  precond : '('
 //  postcond: next token
 //
 //  [ LRM08 6.3 Subtype declarations ]
-//  element_constraint ::=
-//      array_constraint | record_constraint
+//  element_constraint ::= array_constraint | record_constraint
 //
 //  [ LRM08 5.3.2.1 Array types ]
-//  array_constraint ::=
-//      index_constraint [ array_element_constraint ]
-//      | ( open ) [ array_element_constraint ]
+//  array_constraint ::= index_constraint [ array_element_constraint ] | ( open ) [ array_element_constraint ]
 //
 //  array_element_constraint ::= element_constraint
 //
 //  RES is the resolution_indication of the subtype indication.
-Parse_Element_Constraint return Iir
-        is
-Def : Iir;
-El : Iir;
-Index_List : Iir_List;
-begin
-//  Index_constraint.
-Def = Create_Iir (Iir_Array_Subtype_Definition);
-Set_Location (Def);
+//
+Iir* Parser::Parse_Element_Constraint() {
+    auto Def = new Iir_Array_Subtype_Definition;
+    Def->Location = scanner.currentContext.getTokenLocation();
+
 
 //  Eat '('.
-scanner.scan();
+    scanner.scan();
 
-if (scanner.currentContext.token == Token::Open {
+    if (scanner.currentContext.token == Token::Open)
 //  Eat 'open'.
-scanner.scan();
-else
-Index_List = Create_Iir_List;
-Set_Index_Constraint_List (Def, Index_List);
+        scanner.scan();
+    else {
 //  index_constraint ::= (discrete_range {, discrete_range} )
-loop
-        El = Parse_Discrete_Range;
-Append_Element (Index_List, El);
+        while (1) {
+            auto El = Parse_Discrete_Range();
+            Def->Index_Constraint_List.push_back(El);
 
-exit when scanner.currentContext.token == Token::Right_Paren;
+            if (scanner.currentContext.token == Token::Right_Paren)
+                break;
 
 //  Eat ','
-Expect (Token::Comma);
-scanner.scan();
-end loop;
-end if;
+            Expect(Token::Comma);
+            scanner.scan();
+        }
+    }
 
 //  Eat ')'
-Expect (Token::Right_Paren);
-scanner.scan();
+    Expect(Token::Right_Paren);
+    scanner.scan();
 
-if (scanner.currentContext.token == Token::Left_Paren {
-        Set_Array_Element_Constraint (Def, Parse_Element_Constraint);
-end if;
-return Def;
-end Parse_Element_Constraint;
+    if (scanner.currentContext.token == Token::Left_Paren)
+        Def->Array_Element_Constraint = Parse_Element_Constraint();
+
+    return Def;
+}
 
 //  precond : tolerance
 //  postcond: next token
 //
 //  [ LRM93 4.2 ]
 //  tolerance_aspect ::= TOLERANCE string_expression
-        function Parse_Tolerance_Aspect_Opt return Iir is
-begin
-if AMS_Vhdl
-        && scanner.currentContext.token == Token::Tolerance
-{
+Iir* Parser::Parse_Tolerance_Aspect_Opt() {
+    if (scanner.state.options.AMS_Vhdl && scanner.currentContext.token == Token::Tolerance) {
         scanner.scan();
-return Parse_Expression;
-else
-return nullptr;
-end if;
-end Parse_Tolerance_Aspect_Opt;
-*/
+        return Parse_Expression();
+    } else
+        return nullptr;
+}
+
 
 //  precond : identifier or '('
 //  postcond: next token
@@ -2286,15 +2235,7 @@ Iir_Subtype_Declaration* Parser::Parse_Subtype_Declaration (Iir* Parent) {
 //  [ 3.5.2 ]
 //  composite_nature_definition ::= array_nature_definition | record_nature_definition
 Iir* Parser::Parse_Nature_Declaration() {
-
-//Def : Iir;
-//Ref : Iir;
-//Loc : Location_Type;
-//Ident : Name_Id;
-//Decl : Iir;
-//begin
-// The current token must be type.
-    assert(scanner.currentContext.token == Token::Nature);
+   assert(scanner.currentContext.token == Token::Nature);
 
 // Get the identifier
     Scan_Expect(Token::Identifier,
@@ -2365,7 +2306,7 @@ Iir* Parser::Parse_Nature_Declaration() {
     scanner.currentContext.invalidateToken();
     return Decl;
 }
-/*
+
 //  precond : identifier
 //  postcond: next token
 //
@@ -2375,29 +2316,24 @@ Iir* Parser::Parse_Nature_Declaration() {
 //      nature_mark [ index_constraint ]
 //      [ TOLERANCE string_expression ACROSS string_expression THROUGH ]
 //
-//  nature_mark ::=
-//      nature_name | subnature_name
-Parse_Subnature_Indication return Iir is
-Nature_Mark : Iir;
-begin
-if (scanner.currentContext.token != Token::Identifier {
-throw std::runtime_error("PARSE ERROR: nature mark expected in a subnature indication");
-raise Parse_Error;
-end if;
-Nature_Mark = Parse_Name (Allow_Indexes: false);
+//  nature_mark ::= nature_name | subnature_name
+//
+Iir* Parser::Parse_Subnature_Indication() {
 
-if (scanner.currentContext.token == Token::Left_Paren {
+    if (scanner.currentContext.token != Token::Identifier)
+        throw std::runtime_error("PARSE ERROR: nature mark expected in a subnature indication");
+
+    auto Nature_Mark = Parse_Name(false);
+
+    if (scanner.currentContext.token == Token::Left_Paren)
 //  TODO
         throw std::runtime_error("PARSE ERROR: index constraint not supported for subnature indication");
-raise Parse_Error;
-end if;
 
-if (scanner.currentContext.token == Token::Tolerance {
+    if (scanner.currentContext.token == Token::Tolerance)
         throw std::runtime_error("PARSE ERROR: tolerance not supported for subnature indication");
-raise Parse_Error;
-end if;
-return Nature_Mark;
-end Parse_Subnature_Indication;
+
+    return Nature_Mark;
+}
 
 //  precond : TERMINAL
 //  postcond: ;
@@ -2405,261 +2341,249 @@ end Parse_Subnature_Indication;
 //  [ 4.3.1.5 Terminal declarations ]
 //  terminal_declaration ::=
 //      TERMINAL identifier_list : subnature_indication
-Iir Parse_Terminal_Declaration (Parent : Iir) 
-        is
+Iir* Parser::Parse_Terminal_Declaration (Iir* Parent) {
 //  First and last element of the chain to be returned.
-First, Last : Iir;
-Terminal : Iir;
-Subnature : Iir;
-begin
-        Sub_Chain_Init (First, Last);
+//First, Last : Iir;
+//Terminal : Iir;
+//Subnature : Iir;
+    Sub_Chain_Init(First, Last);
 
-loop
+    while (1) {
 // 'terminal' or "," was just scanned.
-Terminal = Create_Iir (Iir_Terminal_Declaration);
-Scan_Expect (Token::Identifier);
-Set_Identifier (Terminal, scanner.currentContext.Identifier);
-Set_Location (Terminal);
-Set_Parent (Terminal, Parent);
+        auto Terminal = new Iir_Terminal_Declaration;
+        Scan_Expect(Token::Identifier);
+        Terminal->Identifier = scanner.currentContext.Identifier;
+        Terminal->Location = scanner.currentContext.getTokenLocation();
+        Terminal->Parent = Parent;
 
-Sub_Chain_Append (First, Last, Terminal);
+        Sub_Chain_Append(First, Last, Terminal);
 
-scanner.scan();
-exit when scanner.currentContext.token == Token::Colon;
-if (scanner.currentContext.token != Token::Comma {
-throw std::runtime_error("PARSE ERROR: ',' or ':' is expected after "
-& "identifier in terminal declaration");
-raise Expect_Error;
-end if;
-end loop;
+        scanner.scan();
+        if (scanner.currentContext.token == Token::Colon)
+            break;
+        if (scanner.currentContext.token != Token::Comma)
+            throw std::runtime_error("PARSE ERROR: ',' or ':' is expected after identifier in terminal declaration");
+
+    }
 
 // The colon was parsed.
-scanner.scan();
-Subnature = Parse_Subnature_Indication;
+    scanner.scan();
+    auto Subnature = Parse_Subnature_Indication();
 
-Terminal = First;
-while Terminal != nullptr loop
+    Terminal = First;
+    while (Terminal) {
 // Type definitions are factorized.  This is OK, but not done by
 // sem.
-if Terminal = First {
-        Set_Nature (Terminal, Subnature);
-else
-Set_Nature (Terminal, nullptr);
-end if;
-Terminal = Get_Chain (Terminal);
-end loop;
-Expect (Token::Semi_Colon);
-return First;
-end Parse_Terminal_Declaration;
+        if (Terminal == First)
+            Terminal->Nature = Subnature;
+        else
+            Set_Nature(Terminal, nullptr);
+
+        Terminal = Get_Chain(Terminal);
+    }
+    Expect(Token::Semi_Colon);
+    return First;
+}
 
 //  precond : QUANTITY
 //  postcond: ;
 //
 //  [ 4.3.1.6 Quantity declarations ]
-//  quantity_declaration ::=
-//      free_quantity_declaration
-//      | branch_quantity_declaration
-//      | source_quantity_declaration
+//  quantity_declaration ::= free_quantity_declaration
+//                       | branch_quantity_declaration
+//                       | source_quantity_declaration
 //
-//  free_quantity_declaration ::=
-//      QUANTITY identifier_list : subtype_indication [ = expression ] ;
+//  free_quantity_declaration ::= QUANTITY identifier_list : subtype_indication [ = expression ] ;
 //
-//  branch_quantity_declaration ::=
-//      QUANTITY [ across_aspect ] [ through_aspect ] terminal_aspect ;
+//  branch_quantity_declaration ::= QUANTITY [ across_aspect ] [ through_aspect ] terminal_aspect ;
 //
-//  source_quantity_declaration ::=
-//      QUANTITY identifier_list : subtype_indication source_aspect ;
+//  source_quantity_declaration ::= QUANTITY identifier_list : subtype_indication source_aspect ;
 //
-//  across_aspect ::=
-//      identifier_list [ tolerance_aspect ] [ = expression ] ACROSS
+//  across_aspect ::= identifier_list [ tolerance_aspect ] [ = expression ] ACROSS
 //
-//  through_aspect ::=
-//      identifier_list [ tolerance_aspect ] [ = expression ] THROUGH
+//  through_aspect ::= identifier_list [ tolerance_aspect ] [ = expression ] THROUGH
 //
-//  terminal_aspect ::=
-//      plus_terminal_name [ TO minus_terminal_name ]
-Iir Parse_Quantity_Declaration (Parent : Iir) 
-        is
+//  terminal_aspect ::= plus_terminal_name [ TO minus_terminal_name ]
+//
+Iir* Parser::Parse_Quantity_Declaration (Iir* Parent) {
+
 //  First and last element of the chain to be returned.
-First, Last : Iir;
-Object : Iir;
-New_Object : Iir;
-Tolerance : Iir;
-Default_Value : Iir;
-Kind : Iir_Kind;
-Plus_Terminal : Iir;
-begin
-        Sub_Chain_Init (First, Last);
+//First, Last : Iir;
+//Object : Iir;
+//New_Object : Iir;
+//Tolerance : Iir;
+//Default_Value : Iir;
+//Kind : Iir_Kind;
+//Plus_Terminal : Iir;
+//begin
+    Sub_Chain_Init(First, Last);
 
 //  Eat 'quantity'
-scanner.scan();
+    scanner.scan();
 
-loop
+    while (1) {
 //  Quantity or "," was just scanned.  We assume a free quantity
 //  declaration and will change to branch or source quantity if
 //  necessary.
-Object = Create_Iir (Iir_Free_Quantity_Declaration);
-Expect (Token::Identifier);
-Set_Identifier (Object, scanner.currentContext.Identifier);
-Set_Location (Object);
-Set_Parent (Object, Parent);
+        auto Object = new Iir_Free_Quantity_Declaration;
+        Expect(Token::Identifier);
+        Object->Identifier = scanner.currentContext.Identifier;
+        Object->Location = scanner.currentContext.getTokenLocation();
+        Object->Parent = Parent;
 
-Sub_Chain_Append (First, Last, Object);
+        Sub_Chain_Append(First, Last, Object);
 
 //  Eat identifier
-scanner.scan();
-exit when scanner.currentContext.token != Token::Comma;
+        scanner.scan();
+        if (scanner.currentContext.token != Token::Comma)
+            break;
 
 //  Eat ','
-scanner.scan();
-end loop;
+        scanner.scan();
+    }
 
-switch (scanner.currentContext.token) {
-case Token::Colon:
+    switch (scanner.currentContext.token) {
+        case Token::Colon:
 //  Either a free quantity (or a source quantity)
 //  TODO
-        raise Program_Error;
-case Token::Tolerance
-| Token::Assign
-| Token::Across
-| Token::Through:
+            throw std::logic_error("this shouldnt happen");
+        case Token::Tolerance:
+        case Token::Assign:
+        case Token::Across:
+        case Token::Through:
 //  A branch quantity
 
 //  Parse tolerance aspect
-        Tolerance = Parse_Tolerance_Aspect_Opt;
+            Tolerance = Parse_Tolerance_Aspect_Opt();
 
 //  Parse default value
-if (scanner.currentContext.token == Token::Assign {
-        scanner.scan();
-Default_Value = Parse_Expression;
-else
-Default_Value = nullptr;
-end if;
+            if (scanner.currentContext.token == Token::Assign) {
+                scanner.scan();
+                Default_Value = Parse_Expression();
+            } else
+                Default_Value = nullptr;
 
-switch (scanner.currentContext.token) {
-case Token::Across:
-Kind = Iir_Across_Quantity_Declaration;
-case Token::Through:
-Kind = Iir_Through_Quantity_Declaration;
-default:
-throw std::runtime_error("PARSE ERROR: 'across' or 'through' expected here");
-Eat_Tokens_Until_Semi_Colon;
-raise Expect_Error;
-}
+
+            switch (scanner.currentContext.token) {
+                case Token::Across:
+                    Kind = Iir_Across_Quantity_Declaration;
+                    break;
+                case Token::Through:
+                    Kind = Iir_Through_Quantity_Declaration;
+                    break;
+                default:
+                    throw std::runtime_error("PARSE ERROR: 'across' or 'through' expected here");
+            }
 
 //  Eat across/through
-        scanner.scan();
+            scanner.scan();
 
 //  Change declarations
-Object = First;
-Sub_Chain_Init (First, Last);
-while Object != nullptr loop
-New_Object = Create_Iir (Kind);
-Location_Copy (New_Object, Object);
-Set_Identifier (New_Object, Get_Identifier (Object));
-Set_Parent (New_Object, Parent);
-Set_Tolerance (New_Object, Tolerance);
-Set_Default_Value (New_Object, Default_Value);
+            Object = First;
+            Sub_Chain_Init(First, Last);
+            while (Object) {
+                New_Object = Create_Iir(Kind);
+                Location_Copy(New_Object, Object);
+                New_Object->Identifier = Get_Identifier(Object);
+                New_Object->Parent = Parent;
+                New_Object->Tolerance = Tolerance;
+                New_Object->Default_Value = Default_Value;
 
-Sub_Chain_Append (First, Last, New_Object);
+                Sub_Chain_Append(First, Last, New_Object);
 
-if Object != First {
-Set_Plus_Terminal (New_Object, nullptr);
-end if;
-New_Object = Get_Chain (Object);
-Free_Iir (Object);
-Object = New_Object;
-end loop;
+                if (Object != First)
+                    Set_Plus_Terminal(New_Object, nullptr);
+
+                New_Object = Get_Chain(Object);
+                Free_Iir(Object);
+                Object = New_Object;
+            }
 
 //  Parse terminal (or first identifier of through declarations)
-Plus_Terminal = Parse_Name;
+            Plus_Terminal = Parse_Name();
 
-switch (scanner.currentContext.token) {
-case Token::Comma
-| Token::Tolerance
-| Token::Assign
-| Token::Through
-| Token::Across:
+            switch (scanner.currentContext.token) {
+                case Token::Comma:
+                case Token::Tolerance:
+                case Token::Assign:
+                case Token::Through:
+                case Token::Across:
 //  Through quantity declaration.  Convert the Plus_Terminal
 //  to a declaration.
-Object = Create_Iir (Iir_Through_Quantity_Declaration);
-New_Object = Object;
-Location_Copy (Object, Plus_Terminal);
-if Get_Kind (Plus_Terminal) != Iir_Simple_Name {
-throw std::runtime_error("PARSE ERROR: identifier for quantity declaration expected");
-else
-Set_Identifier (Object, Get_Identifier (Plus_Terminal));
-end if;
-Set_Plus_Terminal (Object, nullptr);
-Free_Iir (Plus_Terminal);
+                    auto Object = new Iir_Through_Quantity_Declaration;
+                    New_Object = Object;
+                    Location_Copy(Object, Plus_Terminal);
+                    if (Get_Kind(Plus_Terminal) != Iir_Simple_Name)
+                        throw std::runtime_error("PARSE ERROR: identifier for quantity declaration expected");
+                    else
+                        Object->Identifier = Get_Identifier(Plus_Terminal);
 
-loop
-        Set_Parent (Object, Parent);
-Sub_Chain_Append (First, Last, Object);
-exit when scanner.currentContext.token != Token::Comma;
-scanner.scan();
+                    Object->Plus_Terminal = nullptr;
+                    Free_Iir(Plus_Terminal);
 
-Object = Create_Iir
-        (Iir_Through_Quantity_Declaration);
-Set_Location (Object);
-if (scanner.currentContext.token != Token::Identifier {
-throw std::runtime_error("PARSE ERROR: identifier for quantity declaration expected");
-else
-Set_Identifier (Object, scanner.currentContext.Identifier);
-scanner.scan();
-end if;
-Set_Plus_Terminal (Object, nullptr);
+                    while (1) {
+                        Object->Parent = Parent;
+                        Sub_Chain_Append(First, Last, Object);
+                        if (scanner.currentContext.token != Token::Comma)
+                            break;
+                        scanner.scan();
 
-end loop;
+                        Object = new Iir_Through_Quantity_Declaration;
+                        Object->Location = scanner.currentContext.getTokenLocation();
+                        if (scanner.currentContext.token != Token::Identifier)
+                            throw std::runtime_error("PARSE ERROR: identifier for quantity declaration expected");
+                        else {
+                            Object->Identifier = scanner.currentContext.Identifier;
+                            scanner.scan();
+                        }
+                        Object->Plus_Terminal = nullptr;
+
+                    }
 
 //  Parse tolerance aspect
-        Set_Tolerance (Object, Parse_Tolerance_Aspect_Opt);
+                    Object->Tolerance = Parse_Tolerance_Aspect_Opt();
 
 //  Parse default value
-if (scanner.currentContext.token == Token::Assign {
-        scanner.scan();
-Set_Default_Value (Object, Parse_Expression);
-end if;
+                    if (scanner.currentContext.token == Token::Assign) {
+                        scanner.scan();
+                        Object->Default_Value = Parse_Expression();
+                    }
 
 //  Scan 'through'
-if (scanner.currentContext.token == Token::Through {
-        scanner.scan();
-elsif (scanner.currentContext.token == Token::Across {
-        throw std::runtime_error("PARSE ERROR: across quantity declaration must appear"
-        & " before though declaration");
-scanner.scan();
-else
-throw std::runtime_error("PARSE ERROR: 'through' expected");
-end if;
+                    if (scanner.currentContext.token == Token::Through)
+                        scanner.scan();
+                    else if (scanner.currentContext.token == Token::Across) {
+                        throw std::runtime_error(
+                                "PARSE ERROR: across quantity declaration must appear before though declaration");
+                        scanner.scan();
+                    } else
+                        throw std::runtime_error("PARSE ERROR: 'through' expected");
 
 //  Parse plus terminal
-        Plus_Terminal = Parse_Name;
-default:
-null;
-}
+                    Plus_Terminal = Parse_Name();
+                    break;
+                default:
+                    break;
+            }
 
-Set_Plus_Terminal (First, Plus_Terminal);
+            Set_Plus_Terminal(First, Plus_Terminal);
 
 //  Parse minus terminal (if present)
-if (scanner.currentContext.token == Token::To {
-        scanner.scan();
-Set_Minus_Terminal (First, Parse_Name);
-end if;
-default:
-throw std::runtime_error("PARSE ERROR: missing type or across/throught aspect "
-& "in quantity declaration");
-Eat_Tokens_Until_Semi_Colon;
-raise Expect_Error;
+            if (scanner.currentContext.token == Token::To) {
+                scanner.scan();
+                Set_Minus_Terminal(First, Parse_Name);
+            }
+        default:
+            throw std::runtime_error("PARSE ERROR: missing type or across/throught aspect in quantity declaration");
+    }
+    Expect(Token::Semi_Colon);
+    return First;
 }
-Expect (Token::Semi_Colon);
-return First;
-end Parse_Quantity_Declaration;
 
 //  precond : token (CONSTANT, SIGNAL, VARIABLE, FILE)
 //  postcond: ;
 //
-//  KIND can be iir_kind_constant_declaration, iir_kind_file_declaration
-//   or iir_kind_variable_declaration
+//  KIND can be iir_kind_constant_declaration, iir_kind_file_declaration or iir_kind_variable_declaration
 //
 //  [ LRM93 4.3.1 ]
 //  object_declaration ::= constant_declaration
@@ -2668,200 +2592,189 @@ end Parse_Quantity_Declaration;
 //                       | file_declaration
 //
 //  [ LRM93 4.3.1.1 ]
-//  constant_declaration ::=
-//      CONSTANT identifier_list : subtype_indication [ = expression ]
+//  constant_declaration ::= CONSTANT identifier_list : subtype_indication [ = expression ]
 //
 //  [ LRM87 4.3.2 ]
-//  file_declaration ::=
-//      FILE identifier : subtype_indication IS [ mode ] file_logical_name
+//  file_declaration ::= FILE identifier : subtype_indication IS [ mode ] file_logical_name
 //
 //  [ LRM93 4.3.1.4 ]
-//  file_declaration ::=
-//      FILE identifier_list : subtype_indication [ file_open_information ]
+//  file_declaration ::= FILE identifier_list : subtype_indication [ file_open_information ]
 //
 //  [ LRM93 4.3.1.4 ]
-//  file_open_information ::=
-//      [ OPEN FILE_OPEN_KIND_expression ] IS file_logical_name
+//  file_open_information ::= [ OPEN FILE_OPEN_KIND_expression ] IS file_logical_name
 //
 //  [ LRM93 4.3.1.4 ]
 //  file_logical_name ::= STRING_expression
 //
 //  [ LRM93 4.3.1.3 ]
-//  variable_declaration ::=
-//      [ SHARED ] VARIABLE identifier_list : subtype_indication
-//          [ = expression ]
+//  variable_declaration ::= [ SHARED ] VARIABLE identifier_list : subtype_indication [ = expression ]
 //
 //  [ LRM93 4.3.1.2 ]
-//  signal_declaration ::=
-//      SIGNAL identifier_list : subtype_information [ signal_kind ]
-//          [ = expression ]
+//  signal_declaration ::= SIGNAL identifier_list : subtype_information [ signal_kind ] [ = expression ]
 //
 //  [ LRM93 4.3.1.2 ]
 //  signal_kind ::= REGISTER | BUS
 //
 //  FIXME: file_open_information.
-Iir Parse_Object_Declaration (Parent : Iir) 
-        is
+Iir* Parser::Parse_Object_Declaration (Iir* Parent) {
 //  First and last element of the chain to be returned.
-First, Last : Iir;
-Object: Iir;
-Object_Type: Iir;
-Default_Value : Iir;
-Mode: Iir_Mode;
-Signal_Kind : Iir_Signal_Kind;
-Is_Guarded : Boolean;
-Open_Kind : Iir;
-Logical_Name : Iir;
-Kind: Iir_Kind;
-Shared : Boolean;
-Has_Mode : Boolean;
-begin
-        Sub_Chain_Init (First, Last);
+//First, Last : Iir;
+//Object: Iir;
+//Object_Type: Iir;
+//Default_Value : Iir;
+//Mode: Iir_Mode;
+//Signal_Kind : Iir_Signal_Kind;
+//Is_Guarded : Boolean;
+//Open_Kind : Iir;
+//Logical_Name : Iir;
+//Kind: Iir_Kind;
+//Shared : Boolean;
+//Has_Mode : Boolean;
+//begin
+    Sub_Chain_Init(First, Last);
 
 // object keyword was just scanned.
-switch (scanner.currentContext.token) {
-case Token::Signal:
-Kind = Iir_Signal_Declaration;
-case Token::Constant:
-Kind = Iir_Constant_Declaration;
-case Token::File:
-Kind = Iir_File_Declaration;
-case Token::Variable:
-Kind = Iir_Variable_Declaration;
-Shared = false;
-case Token::Shared:
-Kind = Iir_Variable_Declaration;
-Shared = true;
-Scan_Expect (Token::Variable);
-default:
-raise Internal_Error;
-}
+    switch (scanner.currentContext.token) {
+        case Token::Signal:
+            Kind = Iir_Signal_Declaration;
+            break;
+        case Token::Constant:
+            Kind = Iir_Constant_Declaration;
+            break;
+        case Token::File:
+            Kind = Iir_File_Declaration;
+            break;
+        case Token::Variable:
+            Kind = Iir_Variable_Declaration;
+            Shared = false;
+            break;
+        case Token::Shared:
+            Kind = Iir_Variable_Declaration;
+            Shared = true;
+            Scan_Expect(Token::Variable);
+        default:
+            throw std::logic_error();
+    }
 
-loop
+    while (1) {
 // object or "," was just scanned.
-Object = Create_Iir (Kind);
-if Kind = Iir_Variable_Declaration {
-        Set_Shared_Flag (Object, Shared);
-end if;
-Scan_Expect (Token::Identifier);
-Set_Identifier (Object, scanner.currentContext.Identifier);
-Set_Location (Object);
-Set_Parent (Object, Parent);
+        auto Object = new Kind;
+        if (Kind = Iir_Variable_Declaration)
+            Set_Shared_Flag(Object, Shared);
+        Scan_Expect(Token::Identifier);
+        Set_Identifier(Object, scanner.currentContext.Identifier);
+        Set_Location(Object);
+        Set_Parent(Object, Parent);
 
-Sub_Chain_Append (First, Last, Object);
+        Sub_Chain_Append(First, Last, Object);
 
-scanner.scan();
-exit when scanner.currentContext.token == Token::Colon;
-if (scanner.currentContext.token != Token::Comma {
-switch (scanner.currentContext.token) {
-case Token::Assign:
-throw std::runtime_error("PARSE ERROR: missing type in " & Disp_Name (Kind));
-exit;
-default:
-throw std::runtime_error("PARSE ERROR: ',' or ':' is expected after identifier in "
-& Disp_Name (Kind));
-raise Expect_Error;
-}
-end if;
-Set_Has_Identifier_List (Object, true);
-end loop;
+        scanner.scan();
+        if (scanner.currentContext.token == Token::Colon)
+            break;
+        if (scanner.currentContext.token != Token::Comma) {
+            switch (scanner.currentContext.token) {
+                case Token::Assign:
+                    throw std::runtime_error("PARSE ERROR: missing type in " & Disp_Name(Kind));
+                default:
+                    throw std::runtime_error(
+                            "PARSE ERROR: ',' or ':' is expected after identifier in   Disp_Name (Kind)");
+            }
+        }
+        Set_Has_Identifier_List(Object, true);
+    }
 
 // Eat ':'
-scanner.scan();
+    scanner.scan();
 
-Object_Type = Parse_Subtype_Indication;
+    Object_Type = Parse_Subtype_Indication();
 
-if Kind = Iir_Signal_Declaration {
-        Parse_Signal_Kind (Is_Guarded, Signal_Kind);
-end if;
+    if (Kind = Iir_Signal_Declaration)
+        Parse_Signal_Kind(Is_Guarded, Signal_Kind);
 
-if (scanner.currentContext.token == Token::Assign {
-if Kind = Iir_File_Declaration {
-        throw std::runtime_error("PARSE ERROR: default expression not allowed for a file declaration");
-end if;
+
+    if (scanner.currentContext.token == Token::Assign) {
+        if (Kind = Iir_File_Declaration)
+            throw std::runtime_error("PARSE ERROR: default expression not allowed for a file declaration");
+
 
 //  Skip ':='.
-scanner.scan();
+        scanner.scan();
 
-Default_Value = Parse_Expression;
-elsif (scanner.currentContext.token == Token::Equal {
-        throw std::runtime_error("PARSE ERROR: = should be = for initial value");
+        Default_Value = Parse_Expression();
+    } else if (scanner.currentContext.token == Token::Equal)
+        throw std::runtime_error("PARSE ERROR: = should be := for initial value");
+    else
+        Default_Value = nullptr;
 
-//  Skip '='
-scanner.scan();
 
-Default_Value = Parse_Expression;
-else
-Default_Value = nullptr;
-end if;
+    if (Kind = Iir_File_Declaration) {
+        if (scanner.currentContext.token == Token::Open) {
+            if (scanner.state.options.standard = Vhdl_Std::Vhdl_87)
+                throw std::runtime_error("PARSE ERROR: 'open' and open kind expression not allowed in vhdl 87");
 
-if Kind = Iir_File_Declaration {
-if (scanner.currentContext.token == Token::Open {
-if scanner.state.options.standard = Vhdl_87 {
-        throw std::runtime_error("PARSE ERROR: 'open' and open kind expression not allowed in vhdl 87");
-end if;
-scanner.scan();
-Open_Kind = Parse_Expression;
-else
-Open_Kind = nullptr;
-end if;
+            scanner.scan();
+            Open_Kind = Parse_Expression;
+        } else
+            Open_Kind = nullptr;
 
 //  LRM 4.3.1.4
 //  The default mode is IN, if no mode is specified.
-Mode = Iir_In_Mode;
+        Mode = Iir_In_Mode;
 
-Logical_Name = nullptr;
-Has_Mode = false;
-if (scanner.currentContext.token == Token::Is {
+        Logical_Name = nullptr;
+        Has_Mode = false;
+        if (scanner.currentContext.token == Token::Is) {
 //  Skip 'is'.
-scanner.scan();
+            scanner.scan();
 
-switch (scanner.currentContext.token) {
-case Token::In | Token::Out | Token::Inout:
-if scanner.state.options.standard >= Vhdl_93 {
-throw std::runtime_error("PARSE ERROR: mode allowed only in vhdl 87");
-end if;
-Mode = Parse_Mode;
-if Mode = Iir_Inout_Mode {
-        throw std::runtime_error("PARSE ERROR: inout mode not allowed for file");
-end if;
-Has_Mode = true;
-default:
-null;
-}
-Logical_Name = Parse_Expression;
-elsif scanner.state.options.standard = Vhdl_87 {
-        throw std::runtime_error("PARSE ERROR: file name expected (vhdl 87)");
-end if;
-end if;
+            switch (scanner.currentContext.token) {
+                case Token::In | Token::Out | Token::Inout:
+                    if (scanner.state.options.standard >= Vhdl_Std::Vhdl_93)
+                        throw std::runtime_error("PARSE ERROR: mode allowed only in vhdl 87");
 
-Set_Subtype_Indication (First, Object_Type);
-if Kind != Iir_File_Declaration {
-Set_Default_Value (First, Default_Value);
-end if;
+                    Mode = Parse_Mode;
+                    if (Mode = Iir_Inout_Mode)
+                        throw std::runtime_error("PARSE ERROR: inout mode not allowed for file");
 
-Object = First;
-while Object != nullptr loop
-switch (Kind is
-case Iir_File_Declaration:
-Set_Mode (Object, Mode);
-Set_File_Open_Kind (Object, Open_Kind);
-Set_File_Logical_Name (Object, Logical_Name);
-Set_Has_Mode (Object, Has_Mode);
-case Iir_Signal_Declaration:
-Set_Guarded_Signal_Flag (Object, Is_Guarded);
-Set_Signal_Kind (Object, Signal_Kind);
-default:
-null;
-}
-Object = Get_Chain (Object);
-end loop;
+                    Has_Mode = true;
+                default:
+                    break;
+            }
+            Logical_Name = Parse_Expression();
+        } else if (scanner.state.options.standard == Vhdl_Std::Vhdl_87)
+            throw std::runtime_error("PARSE ERROR: file name expected (vhdl 87)");
+    }
+
+
+    Set_Subtype_Indication(First, Object_Type);
+    if (Kind != Iir_File_Declaration)
+        Set_Default_Value(First, Default_Value);
+
+
+    Object = First;
+    while (Object) {
+        switch (Kind) {
+            case Iir_File_Declaration:
+                Set_Mode(Object, Mode);
+                Set_File_Open_Kind(Object, Open_Kind);
+                Set_File_Logical_Name(Object, Logical_Name);
+                Set_Has_Mode(Object, Has_Mode);
+                break;
+            case Iir_Signal_Declaration:
+                Set_Guarded_Signal_Flag(Object, Is_Guarded);
+                Set_Signal_Kind(Object, Signal_Kind);
+                break;
+            default:
+                break;
+        }
+        Object = Get_Chain(Object);
+    }
 
 //  ';' is not eaten.
-Expect (Token::Semi_Colon);
+    Expect(Token::Semi_Colon);
 
-return First;
-end Parse_Object_Declaration;
+    return First;
+}
 
 //  precond : COMPONENT
 //  postcond: ';'
@@ -2872,70 +2785,60 @@ end Parse_Object_Declaration;
 //          [ LOCAL_generic_clause ]
 //          [ LOCAL_port_clause ]
 //      END COMPONENT [ COMPONENT_simple_name ] ;
-Parse_Component_Declaration
-return Iir_Component_Declaration
-        is
-Component: Iir_Component_Declaration;
-begin
-        Component = Create_Iir (Iir_Component_Declaration);
-Scan_Expect (Token::Identifier,
-"an identifier is expected after 'component'");
-Set_Identifier (Component, scanner.currentContext.Identifier);
-Set_Location (Component);
-scanner.scan();
-if (scanner.currentContext.token == Token::Is {
-if scanner.state.options.standard = Vhdl_87 {
-        throw std::runtime_error("PARSE ERROR: ""is"" keyword is not allowed here by vhdl 87");
-end if;
-Set_Has_Is (Component, true);
-scanner.scan();
-end if;
-Parse_Generic_Port_Clauses (Component);
-Check_End_Name (Token::Component, Component);
-return Component;
-end Parse_Component_Declaration;
+Iir_Component_Declaration* Parser::Parse_Component_Declaration() {
+    auto Component = new Iir_Component_Declaration;
+    Scan_Expect(Token::Identifier, "an identifier is expected after 'component'");
+    Component->Identifier = scanner.currentContext.Identifier;
+    Component->Location = scanner.currentContext.getTokenLocation();
+    scanner.scan();
+    if (scanner.currentContext.token == Token::Is) {
+        if (scanner.state.options.standard == Vhdl_Std::Vhdl_87)
+            throw std::runtime_error("PARSE ERROR: ""is"" keyword is not allowed here by vhdl 87");
+
+        Component->Has_Is = true;
+        scanner.scan();
+    }
+    Parse_Generic_Port_Clauses(Component);
+    Check_End_Name(Token::Component, Component);
+    return Component;
+}
 
 //  precond : '['
 //  postcond: next token after ']'
 //
 //  [ 2.3.2 ]
 //  signature ::= [ [ type_mark { , type_mark } ] [ RETURN type_mark ] ]
-Parse_Signature return Iir_Signature
-        is
-Res : Iir_Signature;
-List : Iir_List;
-begin
-        Expect (Token::Left_Bracket);
-Res = Create_Iir (Iir_Signature);
-Res->Location = scanner.currentContext.getTokenLocation();
+Iir_Signature* Parser::Parse_Signature() {
+    Expect(Token::Left_Bracket);
+    auto Res = new Iir_Signature;
+    Res->Location = scanner.currentContext.getTokenLocation();
 
 //  Skip '['
-scanner.scan();
+    scanner.scan();
 
 //  List of type_marks.
-if (scanner.currentContext.token == Token::Identifier {
-        List = Create_Iir_List;
-Set_Type_Marks_List (Res, List);
-loop
-        Append_Element (List, Parse_Type_Mark (Check_Paren: true));
-exit when scanner.currentContext.token != Token::Comma;
-scanner.scan();
-end loop;
-end if;
+    if (scanner.currentContext.token == Token::Identifier) {
+        while (1) {
+            Res->Type_Marks_List.push_back(Parse_Type_Mark(true))
+            if (scanner.currentContext.token != Token::Comma)
+                break;
+            scanner.scan();
+        }
+    }
 
-if (scanner.currentContext.token == Token::Return {
+    if (scanner.currentContext.token == Token::Return) {
 //  Skip 'return'
-scanner.scan();
+        scanner.scan();
 
-Set_Return_Type_Mark (Res, Parse_Name);
-end if;
+        Res->Return_Type_Mark = Parse_Name();
+    }
 
 //  Skip ']'
-Expect (Token::Right_Bracket);
-scanner.scan();
+    Expect(Token::Right_Bracket);
+    scanner.scan();
 
-return Res;
-end Parse_Signature;
+    return Res;
+}
 
 //  precond : ALIAS
 //  postcond: a token
@@ -2949,117 +2852,102 @@ end Parse_Signature;
 //  alias_designator ::= identifier | character_literal | operator_symbol
 //
 //  FIXME: signature is not part of the node.
-Parse_Alias_Declaration return Iir
-        is
-Res: Iir;
-Ident : Name_Id;
-begin
+Iir* Parser::Parse_Alias_Declaration() {
+    std::string Ident;
 //  Eat 'alias'.
-scanner.scan();
+    scanner.scan();
 
-Res = Create_Iir (Iir_Object_Alias_Declaration);
-Res->Location = scanner.currentContext.getTokenLocation();
+    auto Res = new Iir_Object_Alias_Declaration;
+    Res->Location = scanner.currentContext.getTokenLocation();
 
-switch (scanner.currentContext.token) {
-case Token::Identifier:
-Ident = scanner.currentContext.Identifier;
-case Token::Character:
-Ident = scanner.currentContext.Identifier;
-case Token::String:
-Ident = Scan_To_Operator_Name (Get_Token_Location);
+    switch (scanner.currentContext.token) {
+        case Token::Identifier:
+            Ident = scanner.currentContext.Identifier;
+        case Token::Character:
+            Ident = scanner.currentContext.Identifier;
+        case Token::String:
+            Ident = Scan_To_Operator_Name(Get_Token_Location);
 //  FIXME: vhdl87
 //  FIXME: operator symbol.
-default:
-throw std::runtime_error("PARSE ERROR: alias designator expected");
-}
+        default:
+            throw std::runtime_error("PARSE ERROR: alias designator expected");
+    }
 
 //  Eat identifier.
-Set_Identifier (Res, Ident);
-scanner.scan();
+    Res->Identifier = Ident;
+    scanner.scan();
 
-if (scanner.currentContext.token == Token::Colon {
+    if (scanner.currentContext.token == Token::Colon) {
         scanner.scan();
-Set_Subtype_Indication (Res, Parse_Subtype_Indication);
-end if;
+        Res->Subtype_Indication = Parse_Subtype_Indication();
+    }
 
 //  FIXME: nice message if token is ':=' ?
-Expect (Token::Is);
-scanner.scan();
-Set_Name (Res, Parse_Name);
+    Expect(Token::Is);
+    scanner.scan();
+    Res->Name = Parse_Name();
 
-return Res;
-end Parse_Alias_Declaration;
+    return Res;
+}
 
 //  precond : FOR
 //  postcond: ';'
 //
 //  [ 5.2 ]
-//  configuration_specification ::=
-//      FOR component_specification binding_indication ;
-Parse_Configuration_Specification
-return Iir_Configuration_Specification
-        is
-Res : Iir_Configuration_Specification;
-begin
-        Res = Create_Iir (Iir_Configuration_Specification);
-Res->Location = scanner.currentContext.getTokenLocation();
-Expect (Token::For);
-scanner.scan();
-Parse_Component_Specification (Res);
-Set_Binding_Indication (Res, Parse_Binding_Indication);
-Expect (Token::Semi_Colon);
-return Res;
-end Parse_Configuration_Specification;
+//  configuration_specification ::= FOR component_specification binding_indication ;
+//
+Iir_Configuration_Specification* Parser::Parse_Configuration_Specification() {
+    auto Res = new Iir_Configuration_Specification;
+    Res->Location = scanner.currentContext.getTokenLocation();
+    Expect(Token::For);
+    scanner.scan();
+    Parse_Component_Specification(Res);
+    Res->Binding_Indication = Parse_Binding_Indication();
+    Expect(Token::Semi_Colon);
+    return Res;
+}
 
 //  precond : next token
 //  postcond: next token
 //
 //  [  5.2 ]
-//  entity_class = ENTITY | ARCHITECTURE | CONFIGURATION | PROCEDURE
-//                | FUNCTION | PACKAGE | TYPE | SUBTYPE | CONSTANT
-//                | SIGNAL | VARIABLE | COMPONENT | LABEL | LITERAL
-//                | UNITS | GROUP | FILE
-Parse_Entity_Class return Token_Type
-        is
-Res : Token_Type;
-begin
-switch (scanner.currentContext.token) {
-case Token::Entity
-| Token::Architecture
-| Token::Configuration
-| Token::Procedure
-| Token::Function
-| Token::Package
-| Token::Type
-| Token::Subtype
-| Token::Constant
-| Token::Signal
-| Token::Variable
-| Token::Component
-| Token::Label:
-null;
-case Token::Literal
-| Token::Units
-| Token::Group
-| Token::File:
-null;
-default:
-throw std::runtime_error("PARSE ERROR: %t is not a entity class", +scanner.currentContext.token);
+//  entity_class = ENTITY | ARCHITECTURE | CONFIGURATION | PROCEDURE | FUNCTION | PACKAGE | TYPE
+//                  | SUBTYPE | CONSTANT | SIGNAL | VARIABLE | COMPONENT | LABEL | LITERAL | UNITS | GROUP | FILE
+Token::Token Parser::Parse_Entity_Class() {
+    switch (scanner.currentContext.token) {
+        case Token::Entity:
+        case Token::Architecture:
+        case Token::Configuration:
+        case Token::Procedure:
+        case Token::Function:
+        case Token::Package:
+        case Token::Type:
+        case Token::Subtype:
+        case Token::Constant:
+        case Token::Signal:
+        case Token::Variable:
+        case Token::Component:
+        case Token::Label:
+            break;
+        case Token::Literal:
+        case Token::Units:
+        case Token::Group:
+        case Token::File:
+            break;
+        default:
+            throw std::runtime_error("PARSE ERROR: " + scanner.currentContext.token + " is not a entity class");
+    }
+    auto Res = scanner.currentContext.token;
+    scanner.scan();
+    return Res;
 }
-Res = scanner.currentContext.token;
-scanner.scan();
-return Res;
-end Parse_Entity_Class;
 
-Parse_Entity_Class_Entry return Iir_Entity_Class
-        is
-Res : Iir_Entity_Class;
-begin
-        Res = Create_Iir (Iir_Entity_Class);
-Res->Location = scanner.currentContext.getTokenLocation();
-Set_Entity_Class (Res, Parse_Entity_Class);
-return Res;
-end Parse_Entity_Class_Entry;
+Iir_Entity_Class* Parser::Parse_Entity_Class_Entry() {
+    auto Res = new Iir_Entity_Class;
+    Res->Location = scanner.currentContext.getTokenLocation();
+    Res->Entity_Class = Parse_Entity_Class();
+    return Res;
+}
 
 //  precond : next token
 //  postcond: next token
@@ -3068,74 +2956,71 @@ end Parse_Entity_Class_Entry;
 //  entity_designator ::= entity_tag [ signature ]
 //
 //  entity_tag ::= simple_name | character_literal | operator_symbol
-Parse_Entity_Designator return Iir
-        is
-Res : Iir;
-Name : Iir;
-begin
-switch (scanner.currentContext.token) {
-case Token::Identifier:
-Res = Create_Iir (Iir_Simple_Name);
-Res->Location = scanner.currentContext.getTokenLocation();
-Set_Identifier (Res, scanner.currentContext.Identifier);
-case Token::Character:
-Res = Create_Iir (Iir_Character_Literal);
-Res->Location = scanner.currentContext.getTokenLocation();
-Set_Identifier (Res, scanner.currentContext.Identifier);
-case Token::String:
-Res = Create_Iir (Iir_Operator_Symbol);
-Res->Location = scanner.currentContext.getTokenLocation();
-Set_Identifier (Res, Scan_To_Operator_Name (Get_Token_Location));
-default:
-throw std::runtime_error("PARSE ERROR: identifier, character or string expected");
-raise Expect_Error;
+Iir* Parser::Parse_Entity_Designator() {
+    Iir* Res;
+    switch (scanner.currentContext.token) {
+        case Token::Identifier:
+            Res = new Iir_Simple_Name;
+            Res->Location = scanner.currentContext.getTokenLocation();
+            Res->Identifier = scanner.currentContext.Identifier;
+            break;
+        case Token::Character:
+            Res = new Iir_Character_Literal;
+            Res->Location = scanner.currentContext.getTokenLocation();
+            Res->Identifier = scanner.currentContext.Identifier;
+            break;
+        case Token::String:
+            Res = new Iir_Operator_Symbol;
+            Res->Location = scanner.currentContext.getTokenLocation();
+            Res->Identifier = Scan_To_Operator_Name(Get_Token_Location);
+            break;
+        default:
+            throw std::runtime_error("PARSE ERROR: identifier, character or string expected");
+    }
+    scanner.scan();
+    if (scanner.currentContext.token == Token::Left_Bracket) {
+        auto Name = Res;
+        Res = Parse_Signature();
+        Res->Signature_Prefix = Name;
+    }
+    return Res;
 }
-scanner.scan();
-if (scanner.currentContext.token == Token::Left_Bracket {
-        Name = Res;
-Res = Parse_Signature;
-Set_Signature_Prefix (Res, Name);
-end if;
-return Res;
-end Parse_Entity_Designator;
 
 //  precond : next token
 //  postcond: IS
 //
 //  [ 5.1 ]
-//  entity_name_list ::= entity_designator { , entity_designator }
-//                     | OTHERS
-//                     | ALL
- Parse_Entity_Name_List
-        (Attribute : Iir_Attribute_Specification)
-is
-        List : Iir_List;
-El : Iir;
-begin
-switch (scanner.currentContext.token) {
-case Token::All:
-List = Iir_List_All;
-scanner.scan();
-case Token::Others:
-List = Iir_List_Others;
-scanner.scan();
-default:
-List = Create_Iir_List;
-loop
-        El = Parse_Entity_Designator;
-Append_Element (List, El);
-exit when scanner.currentContext.token != Token::Comma;
-scanner.scan();
-end loop;
-}
-Set_Entity_Name_List (Attribute, List);
-if (scanner.currentContext.token == Token::Colon {
+//  entity_name_list ::= entity_designator { , entity_designator } | OTHERS | ALL
+//
+void Parser::Parse_Entity_Name_List(Iir_Attribute_Specification* Attribute) {
+
+    switch (scanner.currentContext.token) {
+        case Token::All:
+            List = Iir_List_All;
+            scanner.scan();
+            break;
+        case Token::Others:
+            List = Iir_List_Others;
+            scanner.scan();
+            break;
+        default:
+            List = Create_Iir_List;
+            while (1) {
+                auto El = Parse_Entity_Designator();
+                Append_Element(List, El);
+                if (scanner.currentContext.token != Token::Comma)
+                    break;
+                scanner.scan();
+            }
+    }
+    Set_Entity_Name_List(Attribute, List);
+    if (scanner.currentContext.token == Token::Colon) {
         scanner.scan();
-Set_Entity_Class (Attribute, Parse_Entity_Class);
-else
-throw std::runtime_error("PARSE ERROR: missing ':' and entity kind in attribute specification");
-end if;
-end Parse_Entity_Name_List;
+        Attribute->Entity_Class = Parse_Entity_Class();
+    } else
+        throw std::runtime_error("PARSE ERROR: missing ':' and entity kind in attribute specification");
+
+}
 
 //  precond : ATTRIBUTE
 //  postcond: ';'
@@ -3150,66 +3035,56 @@ end Parse_Entity_Name_List;
 //
 //  entity_specification ::= entity_name_list : entity_class
 //
-Parse_Attribute return Iir
-        is
-Loc : Location_Type;
-Ident : Name_Id;
-begin
-        Expect (Token::Attribute);
-Scan_Expect (Token::Identifier);
-Loc = scanner.currentContext.getTokenLocation();
-Ident = scanner.currentContext.Identifier;
+Iir* Parser::Parse_Attribute() {
+
+    Expect(Token::Attribute);
+    Scan_Expect(Token::Identifier);
+    auto Loc = scanner.currentContext.getTokenLocation();
+    auto Ident = scanner.currentContext.Identifier;
 
 //  Skip identifier.
-scanner.scan();
+    scanner.scan();
 
-switch (scanner.currentContext.token) {
-case Token::Colon:
-declare
-        Res : Iir_Attribute_Declaration;
-begin
-        Res = Create_Iir (Iir_Attribute_Declaration);
-Set_Location (Res, Loc);
-Set_Identifier (Res, Ident);
+    switch (scanner.currentContext.token) {
+        case Token::Colon:
+            auto Res = new Iir_Attribute_Declaration;
+            Res->Location = Loc;
+            Res->Identifier = Ident;
 
 //  Skip ':'.
-scanner.scan();
+            scanner.scan();
 
-Set_Type_Mark (Res, Parse_Type_Mark (Check_Paren: true));
-Expect (Token::Semi_Colon);
-return Res;
-end;
+            Res->Type_Mark = Parse_Type_Mark(true);
+            Expect(Token::Semi_Colon);
+            return Res;
 
-case Token::Of:
-declare
-        Res : Iir_Attribute_Specification;
-Designator : Iir_Simple_Name;
-begin
-        Res = Create_Iir (Iir_Attribute_Specification);
-Set_Location (Res, Loc);
-Designator = Create_Iir (Iir_Simple_Name);
-Set_Location (Designator, Loc);
-Set_Identifier (Designator, Ident);
-Set_Attribute_Designator (Res, Designator);
+
+        case Token::Of:
+            auto Res = new Iir_Attribute_Specification;
+            Res->Location = Loc;
+            auto Designator = new Iir_Simple_Name;
+            Designator->Location = Loc;
+            Designator->Identifier = Ident;
+            Res->Attribute_Designator = Designator;
 
 //  Skip 'of'.
-scanner.scan();
+            scanner.scan();
 
-Parse_Entity_Name_List (Res);
-Expect (Token::Is);
+            Parse_Entity_Name_List(Res);
+            Expect(Token::Is);
 
 //  Skip 'is'.
-scanner.scan();
+            scanner.scan();
 
-Set_Expression (Res, Parse_Expression);
-Expect (Token::Semi_Colon);
-return Res;
-end;
-default:
-throw std::runtime_error("PARSE ERROR: ':' or 'of' expected after identifier");
-return nullptr;
+            Res->Expression = Parse_Expression();
+            Expect(Token::Semi_Colon);
+            return Res;
+
+        default:
+            throw std::runtime_error("PARSE ERROR: ':' or 'of' expected after identifier");
+            return nullptr;
+    }
 }
-end Parse_Attribute;
 
 //  precond : GROUP
 //  postcond: ';'
@@ -3221,108 +3096,94 @@ end Parse_Attribute;
 //  entity_class_entry_list ::= entity_class_entry { , entity_class_entry }
 //
 //  entity_class_entry ::= entity_class [ <> ]
-Parse_Group return Iir is
-Loc : Location_Type;
-Ident : Name_Id;
-begin
-        Expect (Token::Group);
-Scan_Expect (Token::Identifier);
-Loc = scanner.currentContext.getTokenLocation();
-Ident = scanner.currentContext.Identifier;
-scanner.scan();
-switch (scanner.currentContext.token) {
-case Token::Is:
-declare
-        use Iir_Chains.Entity_Class_Entry_Chain_Handling;
-Res : Iir_Group_Template_Declaration;
-El : Iir_Entity_Class;
-Last : Iir_Entity_Class;
-begin
-        Res = Create_Iir (Iir_Group_Template_Declaration);
-Set_Location (Res, Loc);
-Set_Identifier (Res, Ident);
-Scan_Expect (Token::Left_Paren);
-scanner.scan();
-Build_Init (Last);
-loop
-        Append (Last, Res, Parse_Entity_Class_Entry);
-if (scanner.currentContext.token == Token::Box {
-        El = Create_Iir (Iir_Entity_Class);
-Set_Location (El);
-Set_Entity_Class (El, Token::Box);
-Append (Last, Res, El);
-scanner.scan();
-if (scanner.currentContext.token == Token::Comma {
-        throw std::runtime_error("PARSE ERROR: '<>' is allowed only for the last "
-                & "entity class entry");
-end if;
-end if;
-exit when scanner.currentContext.token == Token::Right_Paren;
-Expect (Token::Comma);
-scanner.scan();
-end loop;
-Scan_Expect (Token::Semi_Colon);
-return Res;
-end;
-case Token::Colon:
-declare
-        Res : Iir_Group_Declaration;
-List : Iir_Group_Constituent_List;
-begin
-        Res = Create_Iir (Iir_Group_Declaration);
-Set_Location (Res, Loc);
-Set_Identifier (Res, Ident);
-scanner.scan();
-Set_Group_Template_Name
-(Res, Parse_Name (Allow_Indexes: false));
-Expect (Token::Left_Paren);
-scanner.scan();
-List = Create_Iir_List;
-Set_Group_Constituent_List (Res, List);
-loop
-        Append_Element (List, Parse_Name (Allow_Indexes: false));
-exit when scanner.currentContext.token == Token::Right_Paren;
-Expect (Token::Comma);
-scanner.scan();
-end loop;
-Scan_Expect (Token::Semi_Colon);
-return Res;
-end;
-default:
-throw std::runtime_error("PARSE ERROR: ':' or 'is' expected here");
-return nullptr;
+Iir* Parser::Parse_Group() {
+    Expect(Token::Group);
+    Scan_Expect(Token::Identifier);
+    auto Loc = scanner.currentContext.getTokenLocation();
+    auto Ident = scanner.currentContext.Identifier;
+    scanner.scan();
+    switch (scanner.currentContext.token) {
+        case Token::Is:
+
+            Res = Create_Iir(Iir_Group_Template_Declaration);
+            Set_Location(Res, Loc);
+            Set_Identifier(Res, Ident);
+            Scan_Expect(Token::Left_Paren);
+            scanner.scan();
+            Build_Init(Last);
+            while (1) {
+                Append(Last, Res, Parse_Entity_Class_Entry);
+                if (scanner.currentContext.token == Token::Box) {
+                    El = Create_Iir(Iir_Entity_Class);
+                    Set_Location(El);
+                    Set_Entity_Class(El, Token::Box);
+                    Append(Last, Res, El);
+                    scanner.scan();
+                    if (scanner.currentContext.token == Token::Comma)
+                        throw std::runtime_error("PARSE ERROR: '<>' is allowed only for the last entity class entry");
+
+                }
+                if (scanner.currentContext.token == Token::Right_Paren)
+                    break;
+                Expect(Token::Comma);
+                scanner.scan();
+            }
+            Scan_Expect(Token::Semi_Colon);
+            return Res;
+
+        case Token::Colon:
+
+            Res = Create_Iir(Iir_Group_Declaration);
+            Set_Location(Res, Loc);
+            Set_Identifier(Res, Ident);
+            scanner.scan();
+            Set_Group_Template_Name(Res, Parse_Name(false));
+            Expect(Token::Left_Paren);
+            scanner.scan();
+            List = Create_Iir_List;
+            Set_Group_Constituent_List(Res, List);
+            while (1) {
+                Append_Element(List, Parse_Name(false));
+                if (scanner.currentContext.token == Token::Right_Paren)
+                    break;
+                Expect(Token::Comma);
+                scanner.scan();
+            }
+            Scan_Expect(Token::Semi_Colon);
+            return Res;
+
+        default:
+            throw std::runtime_error("PARSE ERROR: ':' or 'is' expected here");
+            return nullptr;
+    }
 }
-end Parse_Group;
 
 //  precond : next token
 //  postcond: ':'
 //
 //  [ 5.4 ]
-//  signal_list ::= signal_name { , signal_name }
-//                | OTHERS
-//                | ALL
-Parse_Signal_List return Iir_List
-        is
-Res : Iir_List;
-begin
-switch (scanner.currentContext.token) {
-case Token::Others:
-scanner.scan();
-return Iir_List_Others;
-case Token::All:
-scanner.scan();
-return Iir_List_All;
-default:
-Res = Create_Iir_List;
-loop
-        Append_Element (Res, Parse_Name);
-exit when scanner.currentContext.token == Token::Colon;
-Expect (Token::Comma);
-scanner.scan();
-end loop;
-return Res;
+//  signal_list ::= signal_name { , signal_name } | OTHERS | ALL
+//
+std::vector<Iir*> Parser::Parse_Signal_List() {
+    std::vector<Iir*> Res;
+    switch (scanner.currentContext.token) {
+        case Token::Others:
+            scanner.scan();
+            return Iir_List_Others;
+        case Token::All:
+            scanner.scan();
+            return Iir_List_All;
+        default:
+            while (1) {
+                Res.push_back(Parse_Name());
+                if (scanner.currentContext.token == Token::Colon)
+                    break;
+                Expect(Token::Comma);
+                scanner.scan();
+            }
+            return Res;
+    }
 }
-end Parse_Signal_List;
 
 //  precond : DISCONNECT
 //  postcond: ';'
@@ -3330,63 +3191,61 @@ end Parse_Signal_List;
 //  [ 5.4 ]
 //  disconnection_specification ::=
 //      DISCONNECT guarded_signal_specification AFTER time_expression ;
-Parse_Disconnection_Specification
-return Iir_Disconnection_Specification
-        is
-Res : Iir_Disconnection_Specification;
-begin
-        Res = Create_Iir (Iir_Disconnection_Specification);
-Res->Location = scanner.currentContext.getTokenLocation();
+Iir_Disconnection_Specification* Parser::Parse_Disconnection_Specification() {
+    auto Res = new Iir_Disconnection_Specification;
+    Res->Location = scanner.currentContext.getTokenLocation();
 
 //  Skip 'disconnect'
-Expect (Token::Disconnect);
-scanner.scan();
+    Expect(Token::Disconnect);
+    scanner.scan();
 
-Set_Signal_List (Res, Parse_Signal_List);
+    Res->Signal_List = Parse_Signal_List();
 
 //  Skip ':'
-Expect (Token::Colon);
-scanner.scan();
+    Expect(Token::Colon);
+    scanner.scan();
 
-Set_Type_Mark (Res, Parse_Type_Mark (Check_Paren: true));
+    Res->Type_Mark = Parse_Type_Mark(true);
 
 //  Skip 'after'
-Expect (Token::After);
-scanner.scan();
+    Expect(Token::After);
+    scanner.scan();
 
-Set_Expression (Res, Parse_Expression);
-return Res;
-end Parse_Disconnection_Specification;
+    Res->Expression = Parse_Expression();
+    return Res;
+}
 
-Parse_Psl_Default_Clock return Iir
-        is
-Res : Iir;
-begin
-        Res = Create_Iir (Iir_Psl_Default_Clock);
-Res->Location = scanner.currentContext.getTokenLocation();
+Iir* Parser::Parse_Psl_Default_Clock() {
+    auto Res = new Iir_Psl_Default_Clock;
+    Res->Location = scanner.currentContext.getTokenLocation();
 
-//  Recognize PSL keywords.
-Scanner.Flag_Psl = true;
+//  FIXME: Recognize PSL keywords.
+    //scanner.state.psl = true;
 
 //  Skip 'default'.
-Scan_Expect (Token::Psl_Clock);
-Xrefs.Xref_Keyword (Get_Token_Location);
+    Scan_Expect(Token::Psl_Clock);
+    //FIXME:
+    //Xrefs.Xref_Keyword(Get_Token_Location);
 
 //  Skip 'clock'.
-Scan_Expect (Token::Is);
+    Scan_Expect(Token::Is);
 
 //  Skip 'is'.
-scanner.scan();
+    scanner.scan();
 
-Set_Psl_Boolean (Res, Parse_Psl.Parse_Psl_Boolean);
-Expect (Token::Semi_Colon);
+//    FIXME: Res->Psl_Boolean = Parse_Psl.Parse_Psl_Boolean();
+    Expect(Token::Semi_Colon);
 
-Scanner.Flag_Scan_In_Comment = false;
-Scanner.Flag_Psl = false;
+    //FIXME:
+    //Scanner.Flag_Scan_In_Comment = false;
+    //Scanner.Flag_Psl = false;
 
-return Res;
-end Parse_Psl_Default_Clock;
-
+    return Res;
+}
+/*
+ * TODO: NOTE: PSL
+ */
+/*
 Parse_Psl_Declaration return Iir
         is
 Tok : constant Token_Type = scanner.currentContext.token;
@@ -3427,31 +3286,28 @@ Set_Psl_Declaration (Res, Decl);
 
 return Res;
 end Parse_Psl_Declaration;
-
+*/
 //  Return the parent of a nested package.  Used to check if some
 //  declarations are allowed in a package.
-Iir Get_Package_Parent (Decl : Iir) 
-        is
-Res : Iir;
-Parent : Iir;
-begin
-        Res = Decl;
-loop
-switch (Get_Kind (Res) is
-        when Iir_Package_Declaration
-| Iir_Package_Body:
-Parent = Get_Parent (Res);
-if Get_Kind (Parent) = Iir_Design_Unit {
-return Res;
-else
-Res = Parent;
-end if;
-default:
-return Res;
-}
-end loop;
-end Get_Package_Parent;
+Iir* Parser::Get_Package_Parent (Iir* Decl) {
+    auto Res = Decl;
+    while (1) {
+        switch (Get_Kind(Res)) {
+            case Iir_Package_Declaration:
+            case Iir_Package_Body:
+                Parent = Get_Parent(Res);
+                if (Get_Kind(Parent) = Iir_Design_Unit)
+                    return Res;
+                else
+                    Res = Parent;
 
+            default:
+                return Res;
+        }
+    }
+}
+
+/*
 //  precond : next token
 //  postcond: next token
 //
@@ -3664,7 +3520,7 @@ loop
         Decl = nullptr;
 switch (scanner.currentContext.token) {
 case Token::Invalid:
-raise Internal_Error;
+throw std::logic_error();
 case Token::Type:
 Decl = Parse_Type_Declaration (Parent);
 
@@ -3939,7 +3795,7 @@ if (scanner.currentContext.token == Token::Semi_Colon or scanner.currentContext.
 end if;
 end loop;
 end Parse_Declarative_Part;
-
+*/
 //  precond : ENTITY
 //  postcond: ';'
 //
@@ -3956,129 +3812,117 @@ end Parse_Declarative_Part;
 //  entity_header ::=
 //      [ FORMAL_generic_clause ]
 //      [ FORMAL_port_clause ]
- Parse_Entity_Declaration (Unit : Iir_Design_Unit)
-is
-        Res: Iir_Entity_Declaration;
-begin
-        Expect (Token::Entity);
-Res = Create_Iir (Iir_Entity_Declaration);
+void Parser::Parse_Entity_Declaration (Iir_Design_Unit* Unit) {
+    Expect(Token::Entity);
+    auto Res = new Iir_Entity_Declaration;
 
 //  Get identifier.
-Scan_Expect (Token::Identifier,
-"an identifier is expected after ""entity""");
-Set_Identifier (Res, scanner.currentContext.Identifier);
-Res->Location = scanner.currentContext.getTokenLocation();
+    Scan_Expect(Token::Identifier, "an identifier is expected after ""entity""");
+    Res->Identifier = scanner.currentContext.Identifier;
+    Res->Location = scanner.currentContext.getTokenLocation();
 
-Scan_Expect (Token::Is, "missing ""is"" after identifier");
-scanner.scan();
+    Scan_Expect(Token::Is, "missing ""is"" after identifier");
+    scanner.scan();
 
-Parse_Generic_Port_Clauses (Res);
+    Parse_Generic_Port_Clauses(Res);
 
-Parse_Declarative_Part (Res);
+    Parse_Declarative_Part(Res);
 
-if (scanner.currentContext.token == Token::Begin {
-        Set_Has_Begin (Res, true);
-scanner.scan();
-Parse_Concurrent_Statements (Res);
-end if;
+    if (scanner.currentContext.token == Token::Begin) {
+        Res->Has_Begin = true;
+        scanner.scan();
+        Parse_Concurrent_Statements(Res);
+    }
 
 //   end keyword is expected to finish an entity declaration
-        Expect (Token::End);
-Set_End_Location (Unit);
+    Expect(Token::End);
+    Unit->End_Location = scanner.currentContext.getTokenLocation();
 
-scanner.scan();
-if (scanner.currentContext.token == Token::Entity {
-if scanner.state.options.standard = Vhdl_87 {
-        throw std::runtime_error("PARSE ERROR: 'entity' keyword not allowed here by vhdl 87");
-end if;
-Set_End_Has_Reserved_Id (Res, true);
-scanner.scan();
-end if;
-Check_End_Name (Res);
-Expect (Token::Semi_Colon);
-Invalidate_scanner.currentContext.token;
-Set_Library_Unit (Unit, Res);
-end Parse_Entity_Declaration;
+    scanner.scan();
+    if (scanner.currentContext.token == Token::Entity) {
+        if (scanner.state.options.standard == Vhdl_Std::Vhdl_87)
+            throw std::runtime_error("PARSE ERROR: 'entity' keyword not allowed here by vhdl 87");
+
+        Res->End_Has_Reserved_Id = true;
+        scanner.scan();
+    }
+    Check_End_Name(Res);
+    Expect(Token::Semi_Colon);
+    scanner.currentContext.invalidateToken();
+    Unit->Library_Unit = Res;
+}
 
 //  [ LRM93 7.3.2 ]
-//  choice ::= simple_expression
-//           | discrete_range
-//           | ELEMENT_simple_name
-//           | OTHERS
-Iir Parse_A_Choice (Expr: Iir) 
-        is
-A_Choice: Iir;
-Expr1: Iir;
-begin
-if Expr = nullptr {
-if (scanner.currentContext.token == Token::Others {
-        A_Choice = Create_Iir (Iir_Choice_By_Others);
-Set_Location (A_Choice);
+//  choice ::= simple_expression | discrete_range | ELEMENT_simple_name | OTHERS
+Iir* Parser::Parse_A_Choice (Iir* Expr) {
+    Iir* A_Choice;
+    if (!Expr) {
+        if (scanner.currentContext.token == Token::Others) {
+            A_Choice = new Iir_Choice_By_Others;
+            A_Choice->Location = scanner.currentContext.getTokenLocation();
 
 //  Skip 'others'
-scanner.scan();
+            scanner.scan();
 
-return A_Choice;
-else
-Expr1 = Parse_Expression;
+            return A_Choice;
+        } else {
+            Expr1 = Parse_Expression();
 
-if Expr1 = nullptr {
+            if (!Expr1) {
 //  Handle parse error now.
 //  FIXME: skip until '=>'.
-A_Choice = Create_Iir (Iir_Choice_By_Expression);
-Set_Location (A_Choice);
-return A_Choice;
-end if;
-end if;
-else
-Expr1 = Expr;
-end if;
-if Is_Range_Attribute_Name (Expr1) {
-        A_Choice = Create_Iir (Iir_Choice_By_Range);
-Location_Copy (A_Choice, Expr1);
-Set_Choice_Range (A_Choice, Expr1);
-return A_Choice;
-elsif (scanner.currentContext.token == Token::To || scanner.currentContext.token == Token::Downto {
-        A_Choice = Create_Iir (Iir_Choice_By_Range);
-Location_Copy (A_Choice, Expr1);
-Set_Choice_Range (A_Choice, Parse_Range_Expression (Expr1));
-return A_Choice;
-else
-A_Choice = Create_Iir (Iir_Choice_By_Expression);
-Location_Copy (A_Choice, Expr1);
-Set_Choice_Expression (A_Choice, Expr1);
-return A_Choice;
-end if;
-end Parse_A_Choice;
+                A_Choice = new Iir_Choice_By_Expression;
+                A_Choice->Location = scanner.currentContext.getTokenLocation();
+                return A_Choice;
+            }
+        }
+    } else
+        Expr1 = Expr;
+
+    if (Is_Range_Attribute_Name(Expr1)) {
+        A_Choice = new Iir_Choice_By_Range;
+        Location_Copy(A_Choice, Expr1);
+        A_Choice->Choice_Range = Expr1;
+        return A_Choice;
+    } else if (scanner.currentContext.token == Token::To || scanner.currentContext.token == Token::Downto) {
+        A_Choice = new Iir_Choice_By_Range;
+        Location_Copy(A_Choice, Expr1);
+        A_Choice->Choice_Range = Parse_Range_Expression(Expr1);
+        return A_Choice;
+    } else {
+        A_Choice = new Iir_Choice_By_Expression;
+        Location_Copy(A_Choice, Expr1);
+        A_Choice->Choice_Expression = Expr1;
+        return A_Choice;
+    }
+}
 
 //  [ LRM93 7.3.2 ]
 //  choices ::= choice { | choice }
 //
 // Leave Token::double_arrow as current token.
-Iir Parse_Choices (Expr: Iir) 
-        is
-First, Last : Iir;
-A_Choice: Iir;
-Expr1 : Iir;
-begin
-        Sub_Chain_Init (First, Last);
-Expr1 = Expr;
-loop
-        A_Choice = Parse_A_Choice (Expr1);
-if First != nullptr {
-Set_Same_Alternative_Flag (A_Choice, true);
-if Get_Kind (A_Choice) = Iir_Choice_By_Others {
-        throw std::runtime_error("PARSE ERROR: 'others' choice must be alone");
-end if;
-end if;
-Sub_Chain_Append (First, Last, A_Choice);
-if (scanner.currentContext.token != Token::Bar {
-return First;
-end if;
-scanner.scan();
-Expr1 = nullptr;
-end loop;
-end Parse_Choices;
+Iir* Parser::Parse_Choices (Iir* Expr) {
+//    A_Choice:
+//    Iir;
+//    Expr1 :
+//    Iir;
+    Sub_Chain_Init(First, Last);
+    auto Expr1 = Expr;
+    while (1) {
+        A_Choice = Parse_A_Choice(Expr1);
+        if (First) {
+            Set_Same_Alternative_Flag(A_Choice, true);
+            if (Get_Kind(A_Choice) == Iir_Choice_By_Others)
+                throw std::runtime_error("PARSE ERROR: 'others' choice must be alone");
+        }
+        Sub_Chain_Append(First, Last, A_Choice);
+        if (scanner.currentContext.token != Token::Bar)
+            return First;
+
+        scanner.scan();
+        Expr1 = nullptr;
+    }
+}
 
 //  precond : '('
 //  postcond: next token
@@ -4090,194 +3934,179 @@ end Parse_Choices;
 //
 //  [ LRM93 7.3.2 ]
 //  element_association ::= [ choices: ] expression
-        function Parse_Aggregate return Iir
-        is
-use Iir_Chains.Association_Choices_Chain_Handling;
-Expr: Iir;
-Res: Iir;
-Last : Iir;
-Assoc: Iir;
-Loc : Location_Type;
-begin
-        Loc = scanner.currentContext.getTokenLocation();
+Iir* Parser::Parse_Aggregate() {
+    auto Loc = scanner.currentContext.getTokenLocation();
 
 //  Skip '('
-scanner.scan();
+    scanner.scan();
 
-if (scanner.currentContext.token != Token::Others {
-Expr = Parse_Expression;
-switch (scanner.currentContext.token) {
-case Token::Comma
-| Token::Double_Arrow
-| Token::Bar:
+    if (scanner.currentContext.token != Token::Others) {
+        auto Expr = Parse_Expression();
+        switch (scanner.currentContext.token) {
+            case Token::Comma:
+            case Token::Double_Arrow:
+            case Token::Bar:
 //  This is really an aggregate
-        null;
-case Token::Right_Paren:
+                break;
+            case Token::Right_Paren:
 // This was just a braced expression.
 
 // Eat ')'.
-scanner.scan();
+                scanner.scan();
 
-if Get_Kind (Expr) = Iir_Aggregate {
+                if (Get_Kind(Expr) == Iir_Aggregate)
 //  Parenthesis around aggregate is useless and change the
 //  context for array aggregate.
-Warning_Msg_Sem
-(Warnid_Parenthesis, +Expr,
-"suspicious parenthesis around aggregate");
-elsif not Flag_Parse_Parenthesis {
-return Expr;
-end if;
+                    Warning_Msg_Sem(Warnid_Parenthesis, Expr, "suspicious parenthesis around aggregate");
+                else if (!Flag_Parse_Parenthesis)
+                    return Expr;
+
 
 //  Create a node for the parenthesis.
-Res = Create_Iir (Iir_Parenthesis_Expression);
-Set_Location (Res, Loc);
-Set_Expression (Res, Expr);
-return Res;
+                auto Res = new Iir_Parenthesis_Expression;
+                Set_Location(Res, Loc);
+                Set_Expression(Res, Expr);
+                return Res;
 
-case Token::Semi_Colon:
+            case Token::Semi_Colon:
 //  Surely a missing parenthesis.
 //  FIXME: in case of multiple missing parenthesises, several
 //    messages will be displayed
-throw std::runtime_error("PARSE ERROR: missing ')' for opening parenthesis at %l", +Loc);
-return Expr;
-default:
+                throw std::runtime_error("PARSE ERROR: missing ')' for opening parenthesis at %l", +Loc);
+                return Expr;
+            default:
 //  Surely a parse error...
-null;
+                //FIXME: CHEK
+                throw std::logic_error("");
+        }
+    } else
+        Expr = nullptr;
+
+    Res = Create_Iir(Iir_Aggregate);
+    Set_Location(Res, Loc);
+    Build_Init(Last);
+    while (1) {
+        if (scanner.currentContext.token == Token::Others) {
+            Assoc = Parse_A_Choice(nullptr);
+            Expect(Token::Double_Arrow);
+            scanner.scan();
+            Expr = Parse_Expression;
+        } else {
+            if (!Expr)
+                Expr = Parse_Expression;
+
+            if (!Expr)
+                return nullptr;
+
+            switch (scanner.currentContext.token) {
+                case Token::Comma:
+                case Token::Right_Paren:
+                    Assoc = Create_Iir(Iir_Choice_By_None);
+                    Location_Copy(Assoc, Expr);
+                default:
+                    Assoc = Parse_Choices(Expr);
+                    Expect(Token::Double_Arrow);
+                    scanner.scan();
+                    Expr = Parse_Expression();
+            }
+        }
+        Set_Associated_Expr(Assoc, Expr);
+        Append_Subchain(Last, Res, Assoc);
+        if (scanner.currentContext.token == Token::Right_Paren)
+            break;
+        Expect(Token::Comma);
+        scanner.scan();
+        Expr = nullptr;
+    }
+    scanner.scan();
+    return Res;
 }
-else
-Expr = nullptr;
-end if;
-Res = Create_Iir (Iir_Aggregate);
-Set_Location (Res, Loc);
-Build_Init (Last);
-loop
-if (scanner.currentContext.token == Token::Others {
-        Assoc = Parse_A_Choice (nullptr);
-Expect (Token::Double_Arrow);
-scanner.scan();
-Expr = Parse_Expression;
-else
-if Expr = nullptr {
-        Expr = Parse_Expression;
-end if;
-if Expr = nullptr {
-return nullptr;
-end if;
-switch (scanner.currentContext.token) {
-case Token::Comma
-| Token::Right_Paren:
-Assoc = Create_Iir (Iir_Choice_By_None);
-Location_Copy (Assoc, Expr);
-default:
-Assoc = Parse_Choices (Expr);
-Expect (Token::Double_Arrow);
-scanner.scan();
-Expr = Parse_Expression;
-}
-end if;
-Set_Associated_Expr (Assoc, Expr);
-Append_Subchain (Last, Res, Assoc);
-exit when scanner.currentContext.token == Token::Right_Paren;
-Expect (Token::Comma);
-scanner.scan();
-Expr = nullptr;
-end loop;
-scanner.scan();
-return Res;
-end Parse_Aggregate;
 
 //  precond : NEW
 //  postcond: next token
 //
 //  [LRM93 7.3.6]
-//  allocator ::= NEW subtype_indication
-//              | NEW qualified_expression
-Parse_Allocator return Iir
-        is
-Loc: Location_Type;
-Res : Iir;
-Expr: Iir;
-begin
-        Loc = scanner.currentContext.getTokenLocation();
+//  allocator ::= NEW subtype_indication | NEW qualified_expression
+//
+Iir* Parser::Parse_Allocator() {
+
+    auto Loc = scanner.currentContext.getTokenLocation();
 
 // Accept 'new'.
-scanner.scan();
-Expr = Parse_Name (Allow_Indexes: false);
-if Get_Kind (Expr) != Iir_Qualified_Expression {
+    scanner.scan();
+    auto Expr = Parse_Name(false);
+    if (Get_Kind(Expr) != Iir_Qualified_Expression) {
 // This is a subtype_indication.
-Res = Create_Iir (Iir_Allocator_By_Subtype);
-Expr = Parse_Subtype_Indication (Expr);
-Set_Subtype_Indication (Res, Expr);
-else
-Res = Create_Iir (Iir_Allocator_By_Expression);
-Set_Expression (Res, Expr);
-end if;
+        Res = new Iir_Allocator_By_Subtype;
+        Expr = Parse_Subtype_Indication(Expr);
+        Res->Subtype_Indication = Expr;
+    } else {
+        Res = new Iir_Allocator_By_Expression;
+        Res->Expression = Expr;
+    }
 
-Set_Location (Res, Loc);
-return Res;
-end Parse_Allocator;
+    Set_Location(Res, Loc);
+    return Res;
+}
 
 //  precond : Token::bit_string
 //  postcond: Token::bit_string
 //
 //  Simply create the node for a bit string.
-Parse_Bit_String return Iir
-        is
-use Name_Table;
-Res : Iir;
-C : Character;
-B : Number_Base_Type;
-begin
-        Res = Create_Iir (Iir_String);
-Res->Location = scanner.currentContext.getTokenLocation();
-Set_String8_Id (Res, Current_String_Id);
-Set_String_Length (Res, Current_String_Length);
-if Nam_Buffer (1) = 's' {
-        Set_Has_Sign (Res, true);
-Set_Has_Signed (Res, true);
-pragma Assert (Nam_Length = 2);
-C = Name_Table.Nam_Buffer (2);
-elsif Nam_Buffer (1) = 'u' {
-        Set_Has_Sign (Res, true);
-Set_Has_Signed (Res, false);
-pragma Assert (Nam_Length = 2);
-C = Nam_Buffer (2);
-else
-Set_Has_Sign (Res, false);
-Set_Has_Signed (Res, false);
-pragma Assert (Nam_Length = 1);
-C = Nam_Buffer (1);
-end if;
-
-switch (C is
-case 'b':
-B = Base_2;
-case 'o':
-B = Base_8;
-case 'd':
-B = Base_10;
-case 'x':
-B = Base_16;
-default:
-raise Internal_Error;
+Iir* Parser::Parse_Bit_String() {
+    char C;
+    auto Res = new Iir_String;
+    Res->Location = scanner.currentContext.getTokenLocation();
+    Res->str = scanner.currentContext.Identifier;
+    if (Res->str[1] = 's') {
+        Set_Has_Sign(Res, true);
+        Set_Has_Signed(Res, true);
+        assert(Nam_Length = 2);
+        C = Name_Table.Nam_Buffer(2);
+    } else if (Nam_Buffer(1) = 'u') {
+        Set_Has_Sign(Res, true);
+        Set_Has_Signed(Res, false);
+        assert(Nam_Length = 2);
+        C = Nam_Buffer(2);
+    } else {
+        Set_Has_Sign(Res, false);
+        Set_Has_Signed(Res, false);
+        assert(Nam_Length = 1);
+        C = Nam_Buffer(1);
+    }
+    Number_Base_Type B;
+    switch (C) {
+        case 'b':
+            Res->Bit_String_Base = Base_2;
+            break;
+        case 'o':
+            Res->Bit_String_Base = Base_8;
+            break;
+        case 'd':
+            Res->Bit_String_Base = Base_10;
+            break;
+        case 'x':
+            Res->Bit_String_Base = Base_16;
+            break;
+        default:
+            throw std::logic_error("");
+    }
+    return Res;
 }
-Set_Bit_String_Base (Res, B);
-
-return Res;
-end Parse_Bit_String;
 
 //  Scan returns an expanded bit value.  Adjust the expanded bit value as
 //  required by the length.
- Resize_Bit_String (Lit : Iir; Nlen : Nat32)
-is
-        use Str_Table;
-
-Old_Len : constant Nat32 = Get_String_Length (Lit);
-Is_Signed : constant Boolean = Get_Has_Signed (Lit);
-Id : constant String8_Id = Get_String8_Id (Lit);
-C : Nat8;
-begin
-if Nlen > Old_Len {
+void Parser::Resize_Bit_String (Iir_String* Lit, int Nlen) {
+//is
+//        use Str_Table;
+//
+//Old_Len : constant Nat32 = Get_String_Length (Lit);
+//Is_Signed : constant Boolean = Get_Has_Signed (Lit);
+//Id : constant String8_Id = Get_String8_Id (Lit);
+//C : Nat8;
+//begin
+    char C;
+    if (Nlen > Lit->str.length()) {
 //  Extend.
 
 //  LRM08 15.8
@@ -4297,29 +4126,17 @@ if Nlen > Old_Len {
 //     of characters in the string is such that the number of
 //     characters in the result of the concatenation is the length of
 //     the bit string literal.
-if Is_Signed {
-if Old_Len = 0 {
-        Error_Msg_Parse
-        (+Lit, "cannot expand an empty signed bit string");
-C = Character'Pos ('0');
-else
-C = Element_String8 (Id, 1);
-end if;
-else
-C = Character'Pos ('0');
-end if;
-Resize_String8 (Nlen);
-//  Shift (position 1 is the MSB).
-for I in reverse 1 .. Old_Len loop
-Set_Element_String8 (Id, I + Nlen - Old_Len,
-Element_String8 (Id, I));
-end loop;
-for I in 1 .. Nlen - Old_Len loop
-Set_Element_String8 (Id, I, C);
-end loop;
-Set_String_Length (Lit, Nlen);
+        if (Lit->Has_Signed) {
+            if (Lit->str.empty())
+                throw std::runtime_error("PARSE ERROR: " + Lit->str + "cannot expand an empty signed bit string");
+            else
+                C = Lit->str.front();
+        } else
+            C = '0';
 
-elsif Nlen < Old_Len {
+        Lit->str.insert(0, Nlen - Lit->str.length(), C);
+
+    } else if (Nlen < Lit->str.length()) {
 //  Reduce.
 
 //  LRM08 15.8
@@ -4338,56 +4155,43 @@ elsif Nlen < Old_Len {
 //     length is the length of the bit string literal.  It is an error
 //     if any of the characters so deleted differs from the leftmost
 //     remaining character.
-if Is_Signed {
-C = Element_String8 (Id, 1 + Old_Len - Nlen);
-else
-C = Character'Pos ('0');
-end if;
-for I in 1 .. Old_Len - Nlen loop
-if Element_String8 (Id, I) != C {
-Error_Msg_Parse
-(+Lit, "truncation of bit string changes the value");
-//  Avoid error storm.
-exit;
-end if;
-end loop;
-//  Shift (position 1 is the MSB).
-for I in 1 .. Nlen loop
-Set_Element_String8 (Id, I,
-        Element_String8 (Id, I + Old_Len - Nlen));
-end loop;
-Resize_String8 (Nlen);
-Set_String_Length (Lit, Nlen);
+        if (Lit->Has_Signed)
+            C = Lit->str[0];
+        else
+            C = '0';
 
-else
+        for (int i = 0; i < Lit->str.length() - Nlen; i++) {
+            if (C != Lit->str[i])
+                throw std::runtime_error("truncation of bit string changes the value");
+        }
+//  Shift (position 1 is the MSB).
+        Lit->str.erase(0, Lit->str.length() - Nlen);
+    } else {
 //  LRM08 15.8
 //  -- If the length is equal to the number of characters in the
 //     expanded bit value, the string literal value is the expanded
 //     bit value itself.
-null;
-end if;
-end Resize_Bit_String;
+
+    }
+}
 
 //  Precond : next token after Token::integer
 //  postcond: likewise
 //
 //  Return an integer_literal or a physical_literal.
-Iir Parse_Integer_Literal (Val : Iir_Int64) 
-        is
-Res : Iir;
-begin
-if (scanner.currentContext.token == Token::Identifier {
+Iir* Parser::Parse_Integer_Literal (long Val) {
+
+    if (scanner.currentContext.token == Token::Identifier) {
 // physical literal
-Res = Create_Iir (Iir_Physical_Int_Literal);
-Set_Unit_Name (Res, Parse_Name (Allow_Indexes: false));
-else
+        Res = new Iir_Physical_Int_Literal;
+        Res->Unit_Name = Parse_Name(false);
+    } else
 // integer literal
-Res = Create_Iir (Iir_Integer_Literal);
-end if;
-Set_Value (Res, Val);
-return Res;
-end Parse_Integer_Literal;
-*/
+        Res = new Iir_Integer_Literal;
+    Res->Set_Value = Val;
+    return Res;
+}
+
 //  precond : next token
 //  postcond: next token
 //
@@ -4904,7 +4708,7 @@ Iir *Parser::Parse_Expression() {
 //  [ 8.4.1 ]
 //  waveform_element ::= VALUE_expression [ AFTER TIME_expression ] | NULL [ AFTER TIME_expression ]
 
-Iir_Waveform* Parser::Parse_Waveform() {
+Iir_Waveform Parser::Parse_Waveform() {
     if (scanner.currentContext.token == Token::Unaffected) {
         if (scanner.state.options.standard == Vhdl_Std::Vhdl_87)
             throw std::runtime_error("PARSE ERROR: 'unaffected' is not allowed in vhdl87");
@@ -5120,29 +4924,27 @@ return Res;
 //
 //  [ 8.1 ]
 //  sensitivity_list ::= SIGNAL_name { , SIGNAL_name }
- Parse_Sensitivity_List (List: Iir_Designator_List)
-is
-        El : Iir;
-begin
-        loop
-El = Parse_Name (Allow_Indexes: true);
-switch (Get_Kind (El) is
-        when Iir_Simple_Name
-| Iir_Parenthesis_Name
-| Iir_Selected_Name
-| Iir_Slice_Name
-| Iir_Attribute_Name
-| Iir_Selected_By_All_Name
-| Iir_Indexed_Name:
-null;
-default:
-throw std::runtime_error("PARSE ERROR: only names are allowed in a sensitivity list");
+Iir* Parser::Parse_Sensitivity_List(std::vector<Iir*>* List) {
+    while (1) {
+        auto El = Parse_Name(true);
+        switch (Get_Kind(El)) {
+            case Iir_Simple_Name:
+            case Iir_Parenthesis_Name:
+            case Iir_Selected_Name:
+            case Iir_Slice_Name:
+            case Iir_Attribute_Name:
+            case Iir_Selected_By_All_Name:
+            case Iir_Indexed_Name:
+                break;
+            default:
+                throw std::runtime_error("PARSE ERROR: only names are allowed in a sensitivity list");
+        }
+        List->push_back(El);
+        if (scanner.currentContext.token != Token::Comma)
+            break;
+        scanner.scan();
+    }
 }
-Append_Element (List, El);
-exit when scanner.currentContext.token != Token::Comma;
-scanner.scan();
-end loop;
-end Parse_Sensitivity_List;
 
 //  precond : ASSERT
 //  postcond: next token
@@ -5186,7 +4988,7 @@ Iir_Report_Statement* Parser::Parse_Report_Statement() {
 
     return Res;
 }
-/*
+
 // precond : WAIT
 // postcond: ';'
 //
@@ -5203,69 +5005,62 @@ Iir_Report_Statement* Parser::Parse_Report_Statement() {
 //
 //  [ 8.1 ]
 //  timeout_clause ::= FOR TIME_expression
-        function Parse_Wait_Statement return Iir_Wait_Statement
-        is
-Res: Iir_Wait_Statement;
-List: Iir_List;
-begin
-        Res = Create_Iir (Iir_Wait_Statement);
-Res->Location = scanner.currentContext.getTokenLocation();
-scanner.scan();
-switch (scanner.currentContext.token) {
-case Token::On:
-List = Create_Iir_List;
-Set_Sensitivity_List (Res, List);
-scanner.scan();
-Parse_Sensitivity_List (List);
-case Token::Until:
-null;
-case Token::For:
-null;
-case Token::Semi_Colon:
-return Res;
-default:
-throw std::runtime_error("PARSE ERROR: 'on', 'until', 'for' or ';' expected");
-Eat_Tokens_Until_Semi_Colon;
-return Res;
-}
-switch (scanner.currentContext.token) {
-case Token::On:
-throw std::runtime_error("PARSE ERROR: only one sensitivity is allowed");
+Iir_Wait_Statement* Parser::Parse_Wait_Statement() {
+    auto Res = new Iir_Wait_Statement;
+    Res->Location = scanner.currentContext.getTokenLocation();
+    scanner.scan();
+    switch (scanner.currentContext.token) {
+        case Token::On:
+            scanner.scan();
+            Parse_Sensitivity_List(&Res->Sensitivity_List);
+        case Token::Until:
+        case Token::For:
+            break;
+        case Token::Semi_Colon:
+            return Res;
+        default:
+            throw std::runtime_error("PARSE ERROR: 'on', 'until', 'for' or ';' expected");
+            Eat_Tokens_Until_Semi_Colon();
+            return Res;
+    }
+    switch (scanner.currentContext.token) {
+        case Token::On:
+            throw std::runtime_error("PARSE ERROR: only one sensitivity is allowed");
 // FIXME: sync
-return Res;
-case Token::Until:
-scanner.scan();
-Set_Condition_Clause (Res, Parse_Expression);
-case Token::For:
-null;
-case Token::Semi_Colon:
-return Res;
-default:
-throw std::runtime_error("PARSE ERROR: 'until', 'for' or ';' expected");
-Eat_Tokens_Until_Semi_Colon;
-return Res;
-}
-switch (scanner.currentContext.token) {
-case Token::On:
-throw std::runtime_error("PARSE ERROR: only one sensitivity clause is allowed");
+            return Res;
+        case Token::Until:
+            scanner.scan();
+            Res->Condition_Clause = Parse_Expression();
+        case Token::For:
+            break;
+        case Token::Semi_Colon:
+            return Res;
+        default:
+            throw std::runtime_error("PARSE ERROR: 'until', 'for' or ';' expected");
+            Eat_Tokens_Until_Semi_Colon();
+            return Res;
+    }
+    switch (scanner.currentContext.token) {
+        case Token::On:
+            throw std::runtime_error("PARSE ERROR: only one sensitivity clause is allowed");
 // FIXME: sync
-return Res;
-case Token::Until:
-throw std::runtime_error("PARSE ERROR: only one condition clause is allowed");
+            return Res;
+        case Token::Until:
+            throw std::runtime_error("PARSE ERROR: only one condition clause is allowed");
 // FIXME: sync
-return Res;
-case Token::For:
-scanner.scan();
-Set_Timeout_Clause (Res, Parse_Expression);
-return Res;
-case Token::Semi_Colon:
-return Res;
-default:
-throw std::runtime_error("PARSE ERROR: 'for' or ';' expected");
-Eat_Tokens_Until_Semi_Colon;
-return Res;
+            return Res;
+        case Token::For:
+            scanner.scan();
+            Res->Timeout_Clause = Parse_Expression();
+            return Res;
+        case Token::Semi_Colon:
+            return Res;
+        default:
+            throw std::runtime_error("PARSE ERROR: 'for' or ';' expected");
+            Eat_Tokens_Until_Semi_Colon;
+            return Res;
+    }
 }
-end Parse_Wait_Statement;
 
 //  precond : IF
 //  postcond: next token.
@@ -5282,59 +5077,53 @@ end Parse_Wait_Statement;
 //        END IF [ IF_label ] ;
 //
 // FIXME: end label.
-Iir_If_Statement Parse_If_Statement (Parent : Iir) 
-        is
-Res: Iir_If_Statement;
-Clause: Iir;
-N_Clause: Iir;
-begin
-        Res = Create_Iir (Iir_If_Statement);
-Res->Location = scanner.currentContext.getTokenLocation();
-Set_Parent (Res, Parent);
-scanner.scan();
-Clause = Res;
-loop
-        Set_Condition (Clause, Parse_Expression);
-Expect (Token::Then, "'then' is expected here");
+Iir_If_Statement* Parser::Parse_If_Statement (Iir* Parent) {
+    auto Res = new Iir_If_Statement;
+    Res->Location = scanner.currentContext.getTokenLocation();
+    Res->Parent = Parent;
+    scanner.scan();
+    auto Clause = Res;
+    while (1) {
+        Clause->Condition = Parse_Expression();
+        Expect(Token::Then, "'then' is expected here");
 
 //  Skip 'then'.
-scanner.scan();
+        scanner.scan();
 
-Set_Sequential_Statement_Chain
-(Clause, Parse_Sequential_Statements (Res));
-exit when scanner.currentContext.token == Token::End;
-N_Clause = Create_Iir (Iir_Elsif);
-Set_Location (N_Clause);
-Set_Else_Clause (Clause, N_Clause);
-Clause = N_Clause;
-if (scanner.currentContext.token == Token::Else {
+        Clause->Sequential_Statement_Chain  = Parse_Sequential_Statements(Res);
+        if (scanner.currentContext.token == Token::End)
+            break;
+        auto N_Clause = new Iir_Elsif;
+        N_Clause->Location = scanner.currentContext.getTokenLocation();
+        Clause->Else_Clause = N_Clause;
+        Clause = N_Clause;
+        if (scanner.currentContext.token == Token::Else) {
 
 //  Skip 'else'.
-scanner.scan();
+            scanner.scan();
 
-Set_Sequential_Statement_Chain
-(Clause, Parse_Sequential_Statements (Res));
-exit;
-elsif (scanner.currentContext.token == Token::Elsif {
+            Clause->Sequential_Statement_Chain = Parse_Sequential_Statements(Res);
+            break;
+        } else if (scanner.currentContext.token == Token::Elsif)
 //  Skip 'elsif'.
-scanner.scan();
-else
-throw std::runtime_error("PARSE ERROR: 'else' or 'elsif' expected");
-end if;
-end loop;
-Expect (Token::End);
-Scan_Expect (Token::If);
-scanner.scan();
-return Res;
-end Parse_If_Statement;
+            scanner.scan();
+        else
+            throw std::runtime_error("PARSE ERROR: 'else' or 'elsif' expected");
 
-Parenthesis_Name_To_Procedure_Call (Name: Iir; Kind : Iir_Kind)
-return Iir
-        is
-Res: Iir;
-Call : Iir_Procedure_Call;
-begin
-        Res = Create_Iir (Kind);
+    }
+    Expect(Token::End);
+    Scan_Expect(Token::If);
+    scanner.scan();
+    return Res;
+}
+/* TODO:FIXME
+Iir* Parser::Parenthesis_Name_To_Procedure_Call (Iir* Name,Iir_Kind Kind ) {
+//return Iir
+//        is
+//Res: Iir;
+//Call : Iir_Procedure_Call;
+//begin
+        auto Res = new Kind;
 Location_Copy (Res, Name);
 Call = Create_Iir (Iir_Procedure_Call);
 Location_Copy (Call, Name);
@@ -5355,33 +5144,29 @@ Error_Kind ("parenthesis_name_to_procedure_call", Name);
 }
 return Res;
 end Parenthesis_Name_To_Procedure_Call;
-
+*/
 //  precond : identifier
 //  postcond: next token
 //
 //  [ LRM93 8.9 ]
 //  parameter_specification ::= identifier IN discrete_range
-Parse_Parameter_Specification (Parent : Iir)
-return Iir_Iterator_Declaration
-        is
-Decl : Iir_Iterator_Declaration;
-begin
-        Decl = Create_Iir (Iir_Iterator_Declaration);
-Set_Location (Decl);
-Set_Parent (Decl, Parent);
+Iir_Iterator_Declaration* Parser::Parse_Parameter_Specification (Iir* Parent) {
+    auto Decl = new Iir_Iterator_Declaration;
+    Decl->Location = scanner.currentContext.getTokenLocation();
+    Decl->Parent = Parent;
 
-Expect (Token::Identifier);
-Set_Identifier (Decl, scanner.currentContext.Identifier);
+    Expect(Token::Identifier);
+    Decl->Identifier = scanner.currentContext.Identifier;
 
 //  Skip identifier
-Scan_Expect (Token::In);
+    Scan_Expect(Token::In);
 
 //  Skip 'in'
-scanner.scan();
+    scanner.scan();
 
-Set_Discrete_Range (Decl, Parse_Discrete_Range);
-return Decl;
-end Parse_Parameter_Specification;
+    Decl->Discrete_Range = Parse_Discrete_Range();
+    return Decl;
+}
 
 //  precond:  '<='
 //  postcond: next token
@@ -5395,51 +5180,48 @@ end Parse_Parameter_Specification;
 //      [ label : ] simple_signal_assignement
 //    | [ label : ] conditional_signal_assignement
 //    | [ label : ] selected_signal_assignement (TODO)
-Iir Parse_Signal_Assignment_Statement (Target : Iir) 
-        is
-Stmt : Iir;
-N_Stmt : Iir;
-Wave_Chain : Iir;
-begin
-        Stmt = Create_Iir (Iir_Simple_Signal_Assignment_Statement);
-Set_Location (Stmt);
-Set_Target (Stmt, Target);
+Iir* Parser::Parse_Signal_Assignment_Statement (Iir* Target) {
+//        is
+//Stmt : Iir;
+//N_Stmt : Iir;
+//Wave_Chain : Iir;
+//begin
+    auto Stmt = new Iir_Simple_Signal_Assignment_Statement;
+    Stmt->Location = scanner.currentContext.getTokenLocation();
+    Set_Target(Stmt, Target);
 
 //  Eat '<='.
-scanner.scan();
+    scanner.scan();
 
-Parse_Delay_Mechanism (Stmt);
+    Parse_Delay_Mechanism(Stmt);
 
-Wave_Chain = Parse_Conditional_Waveforms;
+    auto Wave_Chain = Parse_Conditional_Waveforms;
 
 //  LRM 8.4 Signal assignment statement
 //  It is an error is the reserved word UNAFFECTED appears as a
 //  waveform in a (sequential) signal assignment statement.
-if Get_Kind (Wave_Chain) = Iir_Unaffected_Waveform {
-if scanner.state.options.standard < Vhdl_08 {
-        throw std::runtime_error("PARSE ERROR: 'unaffected' is not allowed in a sequential statement");
-end if;
-Set_Waveform_Chain (Stmt, Wave_Chain);
-elsif Get_Kind (Wave_Chain) = Iir_Conditional_Waveform {
-if scanner.state.options.standard < Vhdl_08 {
-        throw std::runtime_error("PARSE ERROR: conditional signal assignment not allowed in before vhdl08");
-end if;
-N_Stmt =
-Create_Iir (Iir_Conditional_Signal_Assignment_Statement);
-Location_Copy (N_Stmt, Stmt);
-Set_Target (N_Stmt, Target);
-Set_Delay_Mechanism (N_Stmt, Get_Delay_Mechanism (Stmt));
-Set_Reject_Time_Expression
-(N_Stmt, Get_Reject_Time_Expression (Stmt));
-Set_Conditional_Waveform_Chain (N_Stmt, Wave_Chain);
-Free_Iir (Stmt);
-Stmt = N_Stmt;
-else
-Set_Waveform_Chain (Stmt, Wave_Chain);
-end if;
+    if (Get_Kind(Wave_Chain) = Iir_Unaffected_Waveform) {
+        if (scanner.state.options.standard <= Vhdl_Std::Vhdl_08)
+            throw std::runtime_error("PARSE ERROR: 'unaffected' is not allowed in a sequential statement");
+        Set_Waveform_Chain(Stmt, Wave_Chain);
+    } else if (Get_Kind(Wave_Chain) = Iir_Conditional_Waveform) {
+                if (scanner.state.options.standard <= Vhdl_Std::Vhdl_08)
+                throw std::runtime_error("PARSE ERROR: conditional signal assignment not allowed in before vhdl08");
 
-return Stmt;
-end Parse_Signal_Assignment_Statement;
+                N_Stmt = Create_Iir (Iir_Conditional_Signal_Assignment_Statement);
+                Location_Copy (N_Stmt, Stmt);
+                Set_Target (N_Stmt, Target);
+                Set_Delay_Mechanism (N_Stmt, Get_Delay_Mechanism (Stmt));
+                Set_Reject_Time_Expression (N_Stmt, Get_Reject_Time_Expression (Stmt));
+                Set_Conditional_Waveform_Chain (N_Stmt, Wave_Chain);
+                Free_Iir (Stmt);
+                Stmt = N_Stmt;
+        }
+    else
+        Set_Waveform_Chain(Stmt, Wave_Chain);
+
+    return Stmt;
+}
 
 //  precond:  WHEN
 //  postcond: next token
@@ -5449,104 +5231,85 @@ end Parse_Signal_Assignment_Statement;
 //      expression WHEN condition
 //    { ELSE expression WHEN condition }
 //    [ ELSE expression ]
-Iir Parse_Conditional_Expression (Expr : Iir) 
-        is
-Res : Iir;
-El, N_El : Iir;
-begin
-        Res = Create_Iir (Iir_Conditional_Expression);
-Res->Location = scanner.currentContext.getTokenLocation();
-Set_Expression (Res, Expr);
-El = Res;
+Iir* Parser::Parse_Conditional_Expression (Iir* Expr) {
 
-loop
+    auto Res = new Iir_Conditional_Expression;
+    Res->Location = scanner.currentContext.getTokenLocation();
+    Res->Expression = Expr;
+    auto El = Res;
+
+    while (1) {
 //  Eat 'when'
-scanner.scan();
+        scanner.scan();
 
-Set_Condition (El, Parse_Expression);
+        El->Condition = Parse_Expression();
 
-exit when scanner.currentContext.token != Token::Else;
+        if (scanner.currentContext.token != Token::Else)
+            break;
 
-N_El = Create_Iir (Iir_Conditional_Expression);
-Set_Location (N_El);
-Set_Chain (El, N_El);
-El = N_El;
+        auto N_El = Create_Iir(Iir_Conditional_Expression);
+        N_El->Location = scanner.currentContext.getTokenLocation();
+        El->Chain = N_El;
+        El = N_El;
 
 //  Eat 'else'
-scanner.scan();
+        scanner.scan();
 
-Set_Expression (N_El, Parse_Expression);
+        N_El->Expression = Parse_Expression();
 
-exit when scanner.currentContext.token != Token::When;
-end loop;
+        if (scanner.currentContext.token != Token::When)
+            break;
+    }
 
-return Res;
-end Parse_Conditional_Expression;
+    return Res;
+}
 
 //  precond:  ':='
 //  postcond: next token
 //
 //  [ LRM93 8.5 ]
-//  variable_assignment_statement ::=
-//      [ label : ] target = expression ;
-Iir Parse_Variable_Assignment_Statement (Target : Iir) 
-        is
-Stmt : Iir;
-Loc : Location_Type;
-Expr : Iir;
-begin
-        Loc = scanner.currentContext.getTokenLocation();
+//  variable_assignment_statement ::= [ label : ] target = expression ;
+//
+Iir* Parser::Parse_Variable_Assignment_Statement (Iir* Target) {
+    auto Loc = scanner.currentContext.getTokenLocation();
 
 //  Eat ':='
-scanner.scan();
+    scanner.scan();
 
-Expr = Parse_Expression;
+    auto Expr = Parse_Expression();
 
-if (scanner.currentContext.token == Token::When {
-if scanner.state.options.standard < Vhdl_08 {
-        throw std::runtime_error("PARSE ERROR: conditional variable assignment not allowed before vhdl08");
-end if;
-Stmt =
-Create_Iir (Iir_Conditional_Variable_Assignment_Statement);
-Set_Location (Stmt, Loc);
-Set_Target (Stmt, Target);
-Set_Conditional_Expression
-(Stmt, Parse_Conditional_Expression (Expr));
-else
-Stmt = Create_Iir (Iir_Variable_Assignment_Statement);
-Set_Location (Stmt, Loc);
-Set_Target (Stmt, Target);
-Set_Expression (Stmt, Expr);
-end if;
-return Stmt;
-end Parse_Variable_Assignment_Statement;
+    if (scanner.currentContext.token == Token::When) {
+        if (scanner.state.options.standard <= Vhdl_Std::Vhdl_08)
+            throw std::runtime_error("PARSE ERROR: conditional variable assignment not allowed before vhdl08");
+
+        auto Stmt = new Iir_Conditional_Variable_Assignment_Statement;
+        Stmt->Location = Loc;
+        Stmt->Target = Target;
+        Stmt->Conditional_Expression = Parse_Conditional_Expression(Expr);
+        return Stmt;
+    } else {
+        auto Stmt = new Iir_Variable_Assignment_Statement;
+        Stmt->Location = Loc;
+        Stmt->Target = Target;
+        Stmt->Expression = Expr;
+        return Stmt;
+    }
+}
 
 //  precond:  '<=', ':=' or ';'
 //  postcond: next token
-        Iir function Parse_Sequential_Assignment_Statement (Target : Iir) 
-        is
-Stmt : Iir;
-Call : Iir;
-begin
-if (scanner.currentContext.token == Token::Less_Equal {
-return Parse_Signal_Assignment_Statement (Target);
-elsif (scanner.currentContext.token == Token::Assign {
-return Parse_Variable_Assignment_Statement (Target);
-elsif (scanner.currentContext.token == Token::Semi_Colon {
-return Parenthesis_Name_To_Procedure_Call
-(Target, Iir_Procedure_Call_Statement);
-else
-throw std::runtime_error("PARSE ERROR: ""<="" or "":="" expected instead of %t", +scanner.currentContext.token);
-Stmt = Create_Iir (Iir_Procedure_Call_Statement);
-Call = Create_Iir (Iir_Procedure_Call);
-Set_Prefix (Call, Target);
-Set_Procedure_Call (Stmt, Call);
-Set_Location (Call);
-Eat_Tokens_Until_Semi_Colon;
-return Stmt;
-end if;
-end Parse_Sequential_Assignment_Statement;
+Iir* Parser::Parse_Sequential_Assignment_Statement (Iir* Target) {
+    if (scanner.currentContext.token == Token::Less_Equal)
+        return Parse_Signal_Assignment_Statement(Target);
+    else if (scanner.currentContext.token == Token::Assign)
+        return Parse_Variable_Assignment_Statement(Target);
+    else if (scanner.currentContext.token == Token::Semi_Colon)
+        return Parenthesis_Name_To_Procedure_Call(Target, Iir_Procedure_Call_Statement);
+    else
+        throw std::runtime_error("PARSE ERROR: ""<="" or "":="" expected instead of %t", +scanner.currentContext.token);
+}
 
+/*
 //  precond:  CASE
 //  postcond: ';'
 //
@@ -5608,7 +5371,7 @@ end loop;
 Scan_Expect (Token::Case);
 scanner.scan();
 
-if scanner.state.options.standard >= Vhdl_93c {
+if (scanner.state.options.standard >== Vhdl_Std::Vhdl_93c) {
 Check_End_Name (Stmt);
 end if;
 
@@ -5713,7 +5476,7 @@ case Token::If:
 Stmt = Parse_If_Statement (Parent);
 Set_Label (Stmt, Label);
 Set_Location (Stmt, Loc);
-if scanner.state.options.standard >= Vhdl_93c {
+if (scanner.state.options.standard >== Vhdl_Std::Vhdl_93c) {
 Check_End_Name (Stmt);
 end if;
 case Token::Case:
@@ -5824,7 +5587,7 @@ return First_Stmt;
 Set_Parent (Stmt, Parent);
 Set_Location (Stmt, Loc);
 if Label != Null_Identifier {
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         Error_Msg_Sem
         (+Stmt, "this statement can't have a label in vhdl 87");
 else
@@ -5842,7 +5605,7 @@ end if;
 Last_Stmt = Stmt;
 end loop;
 end Parse_Sequential_Statements;
-
+/*
 //  precond : PROCEDURE, FUNCTION, PURE or IMPURE.
 //  postcond: ';'
 //
@@ -5885,7 +5648,7 @@ case Token::Function
 | Token::Impure:
 Kind = Iir_Function_Declaration;
 default:
-raise Internal_Error;
+throw std::logic_error();
 }
 Subprg = Create_Iir (Kind);
 Set_Location (Subprg);
@@ -5902,7 +5665,7 @@ Set_Pure_Flag (Subprg, true);
 case Token::Pure
 | Token::Impure:
 Set_Pure_Flag (Subprg, scanner.currentContext.token == Token::Pure);
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: 'pure' and 'impure' are not allowed in vhdl 87");
 end if;
 Set_Has_Pure (Subprg, true);
@@ -5913,7 +5676,7 @@ scanner.scan();
 
 Expect (Token::Function, "'function' must follow 'pure' or 'impure'");
 default:
-raise Internal_Error;
+throw std::logic_error();
 }
 
 //  Eat 'procedure' or 'function'.
@@ -5961,7 +5724,7 @@ scanner.scan();
 
 switch (scanner.currentContext.token) {
 case Token::Function:
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: 'function' not allowed here by vhdl 87");
 end if;
 if Kind = Iir_Procedure_Declaration {
@@ -5973,7 +5736,7 @@ Set_End_Has_Reserved_Id (Subprg_Body, true);
 scanner.scan();
 
 case Token::Procedure:
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: 'procedure' not allowed here by vhdl 87");
 end if;
 if Kind = Iir_Function_Declaration {
@@ -6063,7 +5826,7 @@ Set_Label (Res, Label);
 Set_Has_Label (Res, Label != Null_Identifier);
 
 if (scanner.currentContext.token == Token::Is {
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: ""is"" not allowed here by vhdl 87");
 end if;
 Set_Has_Is (Res, true);
@@ -6239,7 +6002,8 @@ end if;
 Set_Formal (El, Formal);
 
 Sub_Chain_Append (Res, Last, El);
-exit when scanner.currentContext.token == Token::Right_Paren;
+if (scanner.currentContext.token == Token::Right_Paren)
+ break;
 Expect (Token::Comma);
 scanner.scan();
 Nbr_Assocs = Nbr_Assocs + 1;
@@ -6310,7 +6074,7 @@ Parse_Instantiated_Unit return Iir
         is
 Res : Iir;
 begin
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: component instantiation using keyword 'component', 'entity',",
                 Cont: true);
 throw std::runtime_error("PARSE ERROR:  or 'configuration' is not allowed in vhdl87");
@@ -6339,7 +6103,7 @@ Scan_Expect (Token::Identifier);
 Set_Configuration_Name (Res, Parse_Name (false));
 return Res;
 default:
-raise Internal_Error;
+throw std::logic_error();
 }
 end Parse_Instantiated_Unit;
 
@@ -6440,7 +6204,7 @@ Expect (Token::Right_Paren, "a ')' is expected after guard expression");
 scanner.scan();
 end if;
 if (scanner.currentContext.token == Token::Is {
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: 'is' not allowed here in vhdl87");
 end if;
 scanner.scan();
@@ -6542,7 +6306,7 @@ case
 //  group_declaration
 | Token::Group
 | Token::Begin:
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: declarations not allowed in a generate in vhdl87");
 end if;
 Parse_Declarative_Part (Bod);
@@ -6744,7 +6508,8 @@ Set_Generate_Else_Clause (Last, Clause);
 end if;
 Last = Clause;
 
-exit when scanner.currentContext.token != Token::Elsif;
+if (scanner.currentContext.token != Token::Elsif)
+ break;
 
 //  Create new alternative.
 Clause = Create_Iir (Iir_If_Generate_Statement);
@@ -7040,7 +6805,7 @@ begin
         Res = Create_Iir (Iir_Psl_Assert_Statement);
 
 //  Accept PSL tokens
-if scanner.state.options.standard >= Vhdl_08 {
+if (scanner.state.options.standard >== Vhdl_Std::Vhdl_08) {
 Scanner.Flag_Psl = true;
 end if;
 
@@ -7138,7 +6903,7 @@ end if;
 end if;
 
 if (scanner.currentContext.token == Token::Postponed {
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: 'postponed' is not allowed in vhdl 87");
 else
 Postponed = true;
@@ -7286,7 +7051,8 @@ Sub_Chain_Append (First, Last, Library);
 //  Skip identifier.
 scanner.scan();
 
-exit when scanner.currentContext.token == Token::Semi_Colon;
+if (scanner.currentContext.token == Token::Semi_Colon)
+ break;
 Expect (Token::Comma);
 
 Set_Has_Identifier_List (Library, true);
@@ -7326,7 +7092,8 @@ Set_Use_Clause_Chain (Last, Use_Clause);
 end if;
 Last = Use_Clause;
 
-exit when scanner.currentContext.token == Token::Semi_Colon;
+if (scanner.currentContext.token == Token::Semi_Colon)
+ break;
 Expect (Token::Comma);
 scanner.scan();
 end loop;
@@ -7374,7 +7141,7 @@ Parse_Concurrent_Statements (Res);
 Set_End_Location (Unit);
 scanner.scan();
 if (scanner.currentContext.token == Token::Architecture {
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: 'architecture' keyword not allowed here by vhdl 87");
 end if;
 Set_End_Has_Reserved_Id (Res, true);
@@ -7408,7 +7175,8 @@ Res = Create_Iir_List;
 loop
         Append_Element (Res, Current_Text);
 scanner.scan();
-exit when scanner.currentContext.token != Token::Comma;
+if (scanner.currentContext.token != Token::Comma)
+ break;
 Expect (Token::Comma);
 scanner.scan();
 end loop;
@@ -7667,7 +7435,8 @@ loop
         Scan_Expect (Token::Identifier);
 Append_Element (List, Current_Text);
 scanner.scan();
-exit when scanner.currentContext.token != Token::Comma;
+if (scanner.currentContext.token != Token::Comma)
+ break;
 end loop;
 return Parse_Component_Configuration (Loc, List);
 case Token::Left_Paren:
@@ -7709,7 +7478,7 @@ begin
 loop
 switch (scanner.currentContext.token) {
 case Token::Invalid:
-raise Internal_Error;
+throw std::logic_error();
 case Token::Use:
 Append_Subchain (Last, Parent, Parse_Use_Clause);
 case Token::Attribute:
@@ -7784,7 +7553,7 @@ Set_End_Location (Unit);
 scanner.scan();
 
 if (scanner.currentContext.token == Token::Configuration {
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: 'configuration' keyword not allowed here by vhdl 87");
 end if;
 Set_End_Has_Reserved_Id (Res, true);
@@ -7859,7 +7628,7 @@ Set_End_Location (Parent);
 scanner.scan();
 
 if (scanner.currentContext.token == Token::Package {
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: 'package' keyword not allowed here by vhdl 87");
 end if;
 Set_End_Has_Reserved_Id (Res, true);
@@ -7904,7 +7673,7 @@ Set_End_Location (Parent);
 scanner.scan();
 
 if (scanner.currentContext.token == Token::Package {
-if scanner.state.options.standard = Vhdl_87 {
+if (scanner.state.options.standard == Vhdl_Std::Vhdl_87) {
         throw std::runtime_error("PARSE ERROR: 'package' keyword not allowed here by vhdl 87");
 end if;
 Set_End_Has_Reserved_Id (Res, true);
@@ -8060,7 +7829,7 @@ void Parser::Parse_Context_Clause(Iir* Unit) {
 //       context_clause
 //    END [ CONTEXT ] [ /context/_simple_name ] ;
 void Parser::Parse_Context_Declaration(Iir* Unit, Iir* Decl) {
-    Set_Library_Unit(Unit, Decl);
+    Unit->Library_Unit = Decl;
 
 //  Skip 'is'
     scanner.scan();
@@ -8068,13 +7837,13 @@ void Parser::Parse_Context_Declaration(Iir* Unit, Iir* Decl) {
     Parse_Context_Clause(Decl);
 
     Expect(Token::End);
-    Set_End_Location(Unit);
+    Unit->End_Location = scanner.currentContext.getTokenLocation();
 
 //  Skip 'end'
     scanner.scan();
 
     if (scanner.currentContext.token == Token::Context) {
-        Set_End_Has_Reserved_Id(Decl, true);
+        Decl->End_Has_Reserved_Id = true;
 
 //  Skip 'context'.
         scanner.scan();

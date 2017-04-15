@@ -467,7 +467,7 @@ struct Iir_Block_Configuration_Abs: public virtual Iir {
 
 struct Iir_Component_Name_Abs: public virtual Iir {
     std::vector<Iir*> Instantiation_List;
-    Iir* Binding_Indication;
+    Iir_Binding_Indication* Binding_Indication;
     Iir* Component_Name;
 };
 
