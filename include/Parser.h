@@ -108,8 +108,7 @@ private:
     void Parse_Declarative_Part (Iir* parent);
     Iir* Parse_Tolerance_Aspect_Opt();
 
-    //TODO: check and fix this
-    Iir_Package_Body* Parse_Package (Iir* parent);
+    Iir* Parse_Package (Iir* parent);
 
     Iir* Parse_Context_Reference(Location_Type Loc, Iir* Name);
 
@@ -226,15 +225,41 @@ private:
     Iir* Parse_A_Choice (Iir* Expr);
     Iir* Parse_Choices (Iir* Expr);
     Iir* Parse_Allocator();
-    void Parser::Resize_Bit_String (Iir_String* Lit, int Nlen);
-    Iir* Parser::Parse_Bit_String();
-    Iir* Parser::Parse_Integer_Literal (long Val);
-    Iir_Wait_Statement* Parser::Parse_Wait_Statement();
-    Iir_If_Statement* Parser::Parse_If_Statement (Iir* Parent);
-    Iir_Iterator_Declaration* Parser::Parse_Parameter_Specification (Iir* Parent);
-    Iir* Parser::Parse_Signal_Assignment_Statement (Iir* Target);
-    Iir* Parser::Parse_Conditional_Expression (Iir* Expr);
-    Iir* Parser::Parse_Variable_Assignment_Statement (Iir* Target);
-    Iir* Parser::Parse_Sequential_Assignment_Statement (Iir* Target);
+    void Resize_Bit_String (Iir_String* Lit, int Nlen);
+    Iir* Parse_Bit_String();
+    Iir* Parse_Integer_Literal (long Val);
+    Iir_Wait_Statement* Parse_Wait_Statement();
+    Iir_If_Statement* Parse_If_Statement (Iir* Parent);
+    Iir_Iterator_Declaration* Parse_Parameter_Specification (Iir* Parent);
+    Iir* Parse_Signal_Assignment_Statement (Iir* Target);
+    Iir* Parse_Conditional_Expression (Iir* Expr);
+    Iir* Parse_Variable_Assignment_Statement (Iir* Target);
+    Iir* Parse_Sequential_Assignment_Statement (Iir* Target);
+    Iir_Case_Statement* Parse_Case_Statement (std::string Label );
+    Iir* Parse_Process_Statement(std::string Label, Location_Type Loc, bool Is_Postponed);
+    Iir* Check_Formal_Form (Iir* Formal);
+    Iir* Parse_Generic_Map_Aspect();
+    Iir* Parse_Port_Map_Aspect();
+    Iir* Parse_Instantiated_Unit();
+    Iir_Component_Instantiation_Statement* Parse_Component_Instantiation (Iir* Name);
+    Iir_Block_Header* Parse_Block_Header();
+    Iir_Block_Statement* Parse_Block_Statement (std::string Label, Location_Type Loc);
+    Iir* Parse_Generate_Statement_Body (Iir* Parent, std::string Label );
+    bool Is_Early_End();
+    Iir_For_Generate_Statement* Parse_For_Generate_Statement (std::string Label, Location_Type Loc);
+    Iir_If_Generate_Statement* Parse_If_Generate_Statement (std::string Label , Location_Type Loc);
+    Iir Parse_Case_Generate_Alternative (Iir* Parent);
+    Iir_Case_Generate_Statement* Parse_Case_Generate_Statement(std::string Label, Location_Type Loc);
+    Iir_Architecture_Body* Parse_Architecture_Body (Iir_Design_Unit Unit);
+    std::vector<Iir*> Parse_Instantiation_List();
+    Iir* Parse_Entity_Aspect();
+    Iir_Component_Configuration* Parse_Component_Configuration (Location_Type Loc, std::vector<Iir*> Inst_List);
+    Iir_Block_Configuration* Parse_Block_Configuration_Suffix (Location_Type Loc, Iir* Block_Spec );
+    void Parser::Parse_Configuration_Declarative_Part (Iir* Parent);
+    void Parser::Parse_Configuration_Declaration (Iir_Design_Unit* Unit);
+    Iir_Package_Header* Parser::Parse_Package_Header();
+    Iir_Package_Declaration* Parser::Parse_Package_Declaration(Iir* Parent, std::string Id, Location_Type Loc);
+    Iir_Package_Body* Parse_Package_Body (Iir* Parent);
+    Iir_Package_Instantiation_Declaration* Parse_Package_Instantiation_Declaration(Iir* Parent, std::string Id, Location_Type Loc);
 };
 #endif // AVLC_PARSER_H

@@ -2054,7 +2054,7 @@ struct Iir_If_Generate_Statement
 };
 
 struct Iir_Case_Statement_Alternative_Chain_Abs: public virtual Iir {
-    Iir* Case_Statement_Alternative_Chain;
+    std::vector<Iir*> Case_Statement_Alternative;
 };
 
 struct Iir_Case_Generate_Statement
