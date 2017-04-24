@@ -87,7 +87,7 @@ void Parser::Check_End_Name(std::string Name, Iir* Decl) {
         if (scanner.currentContext.Identifier != Name)
             throw std::runtime_error("PARSE ERROR: misspelling, %i expected" + Name);
         else {
-            static_cast<Iir_End_Has_Identifier_Abs*>(Decl)->End_Has_Identifier = true;
+            Decl->End_Has_Identifier = true;
             //TODO: Take care of Xrefs
             //Xrefs.Xref_End(Get_Token_Location, Decl);
         }
@@ -100,7 +100,7 @@ void Parser::Check_End_Name(std::string Name, Iir* Decl) {
 }
 
 inline void Parser::Check_End_Name(Iir* Decl) {
-    Check_End_Name(static_cast<Iir_Identifier_Abs*>(Decl)->Identifier, Decl);
+    Check_End_Name(Decl->Identifier, Decl);
 }
 
 
@@ -288,10 +288,10 @@ Iir* Parser::Parse_Discrete_Range() {
 
 //  Convert the STR (0 .. LEN - 1) into a operator symbol identifier.
 //  Emit an error message if the name is not an operator name.
-unsigned int Parser::Str_To_Operator_Name (std::string str/*FIXME: , Loc : Location_Type*/) {
+unsigned int Parser::Str_To_Operator_Name (std::string str) {
     //  LRM93 2.1
     //  Extra spaces are not allowed in an operator symbol, and the
-    //  case of letters is not signifiant.
+    //  case of letters is not significant.
 
     //  LRM93 2.1
     //  The sequence of characters represented by an operator symbol
@@ -309,8 +309,8 @@ unsigned int Parser::Str_To_Operator_Name (std::string str/*FIXME: , Loc : Locat
 }
 
 
-inline unsigned int Parser::Scan_To_Operator_Name (/*FIXME: Loc : Location_Type*/) {
-    return Str_To_Operator_Name(scanner.currentContext.Identifier/*FIXME:, Loc*/);
+inline unsigned int Parser::Scan_To_Operator_Name () {
+    return Str_To_Operator_Name(scanner.currentContext.Identifier);
 }
 
 
@@ -319,7 +319,7 @@ inline unsigned int Parser::Scan_To_Operator_Name (/*FIXME: Loc : Location_Type*
 Iir* Parser::String_To_Operator_Symbol (Iir* str) {
     auto Id = Str_To_Operator_Name(static_cast<Iir_String*>(str)->str);
     auto result = new Iir_Operator_Symbol;
-    //FIXME: Location_Copy(result, Str);
+    result->Location = str->Location;
     result->Identifier = Id;
     //FIXME: delete str;
     return result;
@@ -395,7 +395,7 @@ Iir* Parser::Parse_Name_Suffix(Iir* Pfx, bool Allow_Indexes = true) {
                 // A qualified expression.
                 result = new Iir_Qualified_Expression;
                 result->Type_Mark = Prefix;
-                Location_Copy(result, Prefix);
+                result->Location = Prefix->Location;
                 result->Expression = Parse_Aggregate;
                 return result;
             }
@@ -460,7 +460,7 @@ Iir* Parser::Parse_Name_Suffix(Iir* Pfx, bool Allow_Indexes = true) {
                 result = new Iir_Selected_Name;
                 result->Location = scanner.currentContext.getTokenLocation();
                 Set_Prefix(result, Prefix);
-                Set_Identifier(result, Scan_To_Operator_Name(Get_Token_Location));
+                    result->Identifier =Scan_To_Operator_Name();
                 break;
             default:
                 throw std::runtime_error("PARSE ERROR: an identifier or all is expected");
@@ -479,23 +479,17 @@ Iir* Parser::Parse_Name_Suffix(Iir* Pfx, bool Allow_Indexes = true) {
 //
 //  LRM08 8.7 External names
 //
-//  external_pathname ::=
-//      package_pathname | absolute_pathname | relative_pathname
+//  external_pathname ::= package_pathname | absolute_pathname | relative_pathname
 //
-//  package_pathname ::=
-//    @ library_logical_name . package_simple_name .
-//      { package_simple_name . } object_simple_name
+//  package_pathname ::= @ library_logical_name . package_simple_name . { package_simple_name . } object_simple_name
 //
-//  absolute_pathname ::=
-//    . partial_pathname
+//  absolute_pathname ::=  . partial_pathname
 //
-//  relative_pathname ::=
-//    { ^ . } partial_pathname
+//  relative_pathname ::= { ^ . } partial_pathname
 //
 //  partial_pathname ::= { pathname_element . } object_simple_name
 //
-//  pathname_element ::=
-//      entity_simple_name | component_instantiation_label | block_label
+//  pathname_element ::= entity_simple_name | component_instantiation_label | block_label
 //      | generate_statement_label [ ( static_expression ) ] | package_simple_name
 Iir* Parser::Parse_External_Pathname() {
     Iir* result;
@@ -1180,7 +1174,7 @@ end Parse_Interface_Subprogram_Declaration;
 //  interface_list ::= interface_element { ';' interface_element }
 //
 //  interface_element ::= interface_declaration
-Iir* Parser::Parse_Interface_List (Interface_Type Ctxt, Iir Parent) {
+Iir* Parser::Parse_Interface_List (Interface_Type Ctxt, Iir* Parent) {
 //Res, Last : Iir;
 //Inters : Iir;
 //Next : Iir;
@@ -1222,7 +1216,7 @@ Iir* Parser::Parse_Interface_List (Interface_Type Ctxt, Iir Parent) {
 
                 Inters = new Iir_Interface_Type_Declaration;
                 Scan_Expect(Token::Identifier, "an identifier is expected after 'type'");
-                Set_Identifier(Inters, scanner.currentContext.Identifier);
+                Inters->Identifier = scanner.currentContext.Identifier;
                 Inters->Location = scanner.currentContext.getTokenLocation();
                 break;
 //  Skip identifier
@@ -1294,8 +1288,6 @@ Iir* Parser::Parse_Interface_List (Interface_Type Ctxt, Iir Parent) {
 //  [ 1.1.1.2 ]
 //  port_list ::= PORT_interface_list
 void Parser::Parse_Port_Clause (Iir* Parent) {
-    El :
-    Iir;
 //  Skip 'port'
     assert(scanner.currentContext.token == Token::Port);
     scanner.scan();
@@ -1322,14 +1314,14 @@ void Parser::Parse_Port_Clause (Iir* Parent) {
 //  generic_clause ::= GENERIC ( generic_list ) ;
 //
 //  [ LRM93 1.1.1.1, LRM08 6.5.6.2]
-//  generic_list ::= GENERIC_interface_list
+//  generic_list ::= GENERIC _interface_list
 void Parser::Parse_Generic_Clause (Iir* Parent) {
 //  Skip 'generic'
     assert (scanner.currentContext.token == Token::Generic);
     scanner.scan();
 
     auto Res = Parse_Interface_List(Interface_Type::Generic, Parent);
-    Set_Generic_Chain(Parent, Res);
+    Parent->Generic_Chain = Res;
 
     Scan_Semi_Colon("generic clause");
 }
@@ -1833,14 +1825,14 @@ Iir* Parser::Parse_Protected_Type_Definition(std::string Ident, Location_Type Lo
 //                           | physical_type_definition
 //
 //  [ LRM93 3.2 ]
-//  composite_type_definition ::= array_type_definition
-//                              | record_type_definition
+//  composite_type_definition ::= array_type_definition | record_type_definition
 //
 //  [ LRM93 3.1.2 ]
 //  integer_type_definition ::= range_constraint
 //
 //  [ LRM93 3.1.4 ]
 //  floating_type_definition ::= range_constraint
+//
 Iir* Parser::Parse_Type_Declaration (Iir* Parent) {
 //Def : Iir;
     Iir* Decl;
@@ -2138,6 +2130,7 @@ Iir* Parser::Parse_Subtype_Indication (Iir* Name = nullptr) {
 // FIXME: location.
     Iir* Resolution_Indication = nullptr;
     Iir* Def = nullptr;
+    Iir* Type_Mark;
 
     if (Name) {
 //  The type_mark was already parsed.
@@ -2180,7 +2173,7 @@ Iir* Parser::Parse_Subtype_Indication (Iir* Name = nullptr) {
             break;
 
         default:
-            Tolerance = Parse_Tolerance_Aspect_Opt;
+            Tolerance = Parse_Tolerance_Aspect_Opt();
             if (Resolution_Indication || Tolerance) {
                 //  A subtype needs to be created.
                 Def = new Iir_Subtype_Definition;
@@ -2483,7 +2476,7 @@ Iir* Parser::Parse_Quantity_Declaration (Iir* Parent) {
             Sub_Chain_Init(First, Last);
             while (Object) {
                 New_Object = Create_Iir(Kind);
-                Location_Copy(New_Object, Object);
+                New_Object->Location = Object->Location;
                 New_Object->Identifier = Get_Identifier(Object);
                 New_Object->Parent = Parent;
                 New_Object->Tolerance = Tolerance;
@@ -2512,7 +2505,7 @@ Iir* Parser::Parse_Quantity_Declaration (Iir* Parent) {
 //  to a declaration.
                     auto Object = new Iir_Through_Quantity_Declaration;
                     New_Object = Object;
-                    Location_Copy(Object, Plus_Terminal);
+                    Object->Location = Plus_Terminal->Location;
                     if (Get_Kind(Plus_Terminal) != Iir_Simple_Name)
                         throw std::runtime_error("PARSE ERROR: identifier for quantity declaration expected");
                     else
@@ -2866,7 +2859,7 @@ Iir* Parser::Parse_Alias_Declaration() {
         case Token::Character:
             Ident = scanner.currentContext.Identifier;
         case Token::String:
-            Ident = Scan_To_Operator_Name(Get_Token_Location);
+            Ident = Scan_To_Operator_Name(scanner.currentContext.getTokenLocation());
 //  FIXME: vhdl87
 //  FIXME: operator symbol.
         default:
@@ -3307,7 +3300,7 @@ Iir* Parser::Get_Package_Parent (Iir* Decl) {
     }
 }
 
-/*
+
 //  precond : next token
 //  postcond: next token
 //
@@ -3499,86 +3492,85 @@ Iir* Parser::Get_Package_Parent (Iir* Decl) {
 //
 //  (*): block means block_declarative_item, ie: block_statement,
 //       architecture_body and generate_statement)
- Parse_Declarative_Part (Parent : Iir)
-is
-        use Declaration_Chain_Handling;
-Last_Decl : Iir;
-Decl : Iir;
-Package_Parent_Cache : Iir;
-
+void Parser::Parse_Declarative_Part (Iir* Parent) {
+/*
 Package_Parent return Iir is
 begin
 if Package_Parent_Cache = nullptr {
         Package_Parent_Cache = Get_Package_Parent (Parent);
 end if;
 return Package_Parent_Cache;
-end Package_Parent;
-begin
-        Package_Parent_Cache = nullptr;
-Build_Init (Last_Decl);
-loop
-        Decl = nullptr;
-switch (scanner.currentContext.token) {
-case Token::Invalid:
-throw std::logic_error();
-case Token::Type:
-Decl = Parse_Type_Declaration (Parent);
+end Package_Parent;*/
+
+    auto Package_Parent_Cache = nullptr;
+    Build_Init(Last_Decl);
+    while (1) {
+        Iir* Decl = nullptr;
+        switch (scanner.currentContext.token) {
+            case Token::Invalid:
+                throw std::logic_error("");
+            case Token::Type:
+                Decl = Parse_Type_Declaration(Parent);
 
 //  LRM 2.5  Package declarations
 //  If a package declarative item is a type declaration that is
 //  a full type declaration whose type definition is a
 //  protected_type definition, then that protected type
 //  definition must not be a protected type body.
-if Decl != nullptr
-        && Get_Kind (Decl) = Iir_Protected_Type_Body
-{
-switch (Get_Kind (Parent) is
-        when Iir_Package_Declaration:
-throw std::runtime_error("PARSE ERROR:" + +Decl, "protected type body not "
-& "allowed in package declaration");
-default:
-null;
-}
-end if;
-case Token::Subtype:
-Decl = Parse_Subtype_Declaration (Parent);
-case Token::Nature:
-Decl = Parse_Nature_Declaration;
-case Token::Terminal:
-Decl = Parse_Terminal_Declaration (Parent);
-case Token::Quantity:
-Decl = Parse_Quantity_Declaration (Parent);
-case Token::Signal:
+                if (Decl && Get_Kind(Decl) == Iir_Protected_Type_Body) {
+                    switch (Get_Kind(Parent)) {
+                        case Iir_Package_Declaration:
+                            throw std::runtime_error("PARSE ERROR:" + +Decl,
+                                                     "protected type body not allowed in package declaration");
+                        default:
+                            break;
+                    }
+                }
+            case Token::Subtype:
+                Decl = Parse_Subtype_Declaration(Parent);
+                break;
+            case Token::Nature:
+                Decl = Parse_Nature_Declaration()
+                break;;
+            case Token::Terminal:
+                Decl = Parse_Terminal_Declaration(Parent);
+                break;
+            case Token::Quantity:
+                Decl = Parse_Quantity_Declaration(Parent);
+                break;
+            case Token::Signal:
 //  LRM08 4.7 Package declarations
 //  For package declaration that appears in a subprogram body,
 //  a process statement, or a protected type body, [...]
 //  Moreover, it is an eror if [...] a signal declaration [...]
 //  appears as a package declarative item of such a package
 //  declaration.
-switch (Get_Kind (Package_Parent) is
-        when Iir_Function_Body
-| Iir_Procedure_Body:
-throw std::runtime_error("PARSE ERROR: signal declaration not allowed in subprogram body");
-case Iir_Kinds_Process_Statement:
-throw std::runtime_error("PARSE ERROR: signal declaration not allowed in process");
-case Iir_Protected_Type_Body
-| Iir_Protected_Type_Declaration:
-throw std::runtime_error("PARSE ERROR: signal declaration not allowed in protected type");
-case Iir_Package_Body:
-throw std::runtime_error("PARSE ERROR: signal declaration not allowed in package body");
-case Iir_Entity_Declaration
-| Iir_Architecture_Body
-| Iir_Block_Statement
-| Iir_Generate_Statement_Body
-| Iir_Package_Declaration:
-null;
-default:
-Error_Kind ("parse_declarative_part", Package_Parent);
-}
-Decl = Parse_Object_Declaration (Parent);
-case Token::Constant:
-Decl = Parse_Object_Declaration (Parent);
-case Token::Variable:
+                switch (Get_Kind(Package_Parent)) {
+                    case Iir_Function_Body:
+                    case Iir_Procedure_Body:
+                        throw std::runtime_error("PARSE ERROR: signal declaration not allowed in subprogram body");
+                    case Iir_Kinds_Process_Statement:
+                        throw std::runtime_error("PARSE ERROR: signal declaration not allowed in process");
+                    case Iir_Protected_Type_Body:
+                    case Iir_Protected_Type_Declaration:
+                        throw std::runtime_error("PARSE ERROR: signal declaration not allowed in protected type");
+                    case Iir_Package_Body:
+                        throw std::runtime_error("PARSE ERROR: signal declaration not allowed in package body");
+                    case Iir_Entity_Declaration:
+                    case Iir_Architecture_Body:
+                    case Iir_Block_Statement:
+                    case Iir_Generate_Statement_Body:
+                    case Iir_Package_Declaration:
+                        break;
+                    default:
+                        Error_Kind("parse_declarative_part", Package_Parent);
+                }
+                Decl = Parse_Object_Declaration(Parent);
+                break;
+            case Token::Constant:
+                Decl = Parse_Object_Declaration(Parent);
+                break;
+            case Token::Variable:
 //  LRM93 4.3.1.3  Variable declarations
 //  Variable declared immediatly within entity declarations,
 //  architectures bodies, packages, packages bodies, and blocks
@@ -3588,30 +3580,29 @@ case Token::Variable:
 //  Variables may appear in protected type bodies; such
 //  variables, which must not be shared variables, represent
 //  shared data.
-switch (Get_Kind (Package_Parent) is
-        when Iir_Entity_Declaration
-| Iir_Architecture_Body
-| Iir_Block_Statement
-| Iir_Generate_Statement_Body
-| Iir_Package_Declaration
-| Iir_Package_Body
-| Iir_Protected_Type_Declaration:
+                switch (Get_Kind(Package_Parent)) {
+                    case Iir_Entity_Declaration:
+                    case Iir_Architecture_Body:
+                    case Iir_Block_Statement:
+                    case Iir_Generate_Statement_Body:
+                    case Iir_Package_Declaration:
+                    case Iir_Package_Body:
+                    case Iir_Protected_Type_Declaration:
 //  FIXME: replace HERE with the kind of declaration
 //  ie: "not allowed in a package" rather than "here".
-throw std::runtime_error("PARSE ERROR: non-shared variable declaration not allowed here");
-case Iir_Function_Body
-| Iir_Procedure_Body
-| Iir_Kinds_Process_Statement
-| Iir_Protected_Type_Body:
-null;
-default:
-Error_Kind ("parse_declarative_part", Package_Parent);
-}
-Decl = Parse_Object_Declaration (Parent);
-case Token::Shared:
-if scanner.state.options.standard <= Vhdl_87 {
-throw std::runtime_error("PARSE ERROR: shared variable not allowed in vhdl 87");
-end if;
+                        throw std::runtime_error("PARSE ERROR: non-shared variable declaration not allowed here");
+                    case Iir_Function_Body:
+                    case Iir_Procedure_Body:
+                    case Iir_Kinds_Process_Statement:
+                    case Iir_Protected_Type_Body:
+                        null;
+                    default:
+                        Error_Kind("parse_declarative_part", Package_Parent);
+                }
+                Decl = Parse_Object_Declaration(Parent);
+            case Token::Shared:
+                if (scanner.state.options.standard <= Vhdl_Std::Vhdl_87)
+                    throw std::runtime_error("PARSE ERROR: shared variable not allowed in vhdl 87");
 //  LRM08 4.7 Package declarations
 //  For package declaration that appears in a subprogram body,
 //  a process statement, or a protected type body, it is an
@@ -3633,169 +3624,169 @@ end if;
 //  Variables may appear in proteted type bodies; such
 //  variables, which must not be shared variables, represent
 //  shared data.
-switch (Get_Kind (Package_Parent) is
-        when Iir_Entity_Declaration
-| Iir_Architecture_Body
-| Iir_Block_Statement
-| Iir_Generate_Statement_Body
-| Iir_Package_Declaration
-| Iir_Package_Body
-| Iir_Protected_Type_Declaration:
-null;
-case Iir_Function_Body
-| Iir_Procedure_Body
-| Iir_Kinds_Process_Statement
-| Iir_Protected_Type_Body:
-throw std::runtime_error("PARSE ERROR: shared variable declaration not allowed here");
-default:
-Error_Kind ("parse_declarative_part", Package_Parent);
-}
-Decl = Parse_Object_Declaration (Parent);
-case Token::File:
-Decl = Parse_Object_Declaration (Parent);
-case Token::Function
-| Token::Procedure
-| Token::Pure
-| Token::Impure:
-Decl = Parse_Subprogram_Declaration;
-if Decl != nullptr
-        && Get_Subprogram_Body (Decl) != nullptr
-        {
-if Get_Kind (Parent) = Iir_Package_Declaration {
-        Error_Msg_Parse
-        (+Decl, "subprogram body not allowed in a package");
-end if;
-end if;
-case Token::Alias:
-Decl = Parse_Alias_Declaration;
-case Token::Component:
-switch (Get_Kind (Parent) is
-        when Iir_Entity_Declaration
-| Iir_Procedure_Body
-| Iir_Function_Body
-| Iir_Kinds_Process_Statement
-| Iir_Package_Body
-| Iir_Protected_Type_Body
-| Iir_Protected_Type_Declaration:
-throw std::runtime_error("PARSE ERROR: component declaration are not allowed here");
-case Iir_Architecture_Body
-| Iir_Block_Statement
-| Iir_Generate_Statement_Body
-| Iir_Package_Declaration:
-null;
-default:
-Error_Kind ("parse_declarative_part", Package_Parent);
-}
-Decl = Parse_Component_Declaration;
-case Token::For:
-switch (Get_Kind (Parent) is
-        when Iir_Entity_Declaration
-| Iir_Function_Body
-| Iir_Procedure_Body
-| Iir_Kinds_Process_Statement
-| Iir_Package_Declaration
-| Iir_Package_Body
-| Iir_Protected_Type_Body
-| Iir_Protected_Type_Declaration:
-throw std::runtime_error("PARSE ERROR: configuration specification not allowed here");
-case Iir_Architecture_Body
-| Iir_Block_Statement
-| Iir_Generate_Statement_Body:
-null;
-default:
-Error_Kind ("parse_declarative_part", Package_Parent);
-}
-Decl = Parse_Configuration_Specification;
-case Token::Attribute:
-Decl = Parse_Attribute;
-case Token::Disconnect:
+                switch (Get_Kind(Package_Parent)) {
+                    case Iir_Entity_Declaration:
+                    case Iir_Architecture_Body:
+                    case Iir_Block_Statement:
+                    case Iir_Generate_Statement_Body:
+                    case Iir_Package_Declaration:
+                    case Iir_Package_Body:
+                    case Iir_Protected_Type_Declaration:
+                        null;
+                    case Iir_Function_Body:
+                    case Iir_Procedure_Body:
+                    case Iir_Kinds_Process_Statement:
+                    case Iir_Protected_Type_Body:
+                        throw std::runtime_error("PARSE ERROR: shared variable declaration not allowed here");
+                    default:
+                        Error_Kind("parse_declarative_part", Package_Parent);
+                }
+                Decl = Parse_Object_Declaration(Parent);
+                break;
+            case Token::File:
+                Decl = Parse_Object_Declaration(Parent);
+                break;
+            case Token::Function:
+            case Token::Procedure:
+            case Token::Pure:
+            case Token::Impure:
+                Decl = Parse_Subprogram_Declaration;
+                if (Decl && Get_Subprogram_Body(Decl) != nullptr) {
+                    if (Get_Kind(Parent) = Iir_Package_Declaration)
+                        Error_Msg_Parse(+Decl, "subprogram body not allowed in a package");
+                }
+                break;
+            case Token::Alias:
+                Decl = Parse_Alias_Declaration();
+                break;
+            case Token::Component:
+                switch (Get_Kind(Parent)) {
+                    case Iir_Entity_Declaration:
+                    case Iir_Procedure_Body:
+                    case Iir_Function_Body:
+                    case Iir_Kinds_Process_Statement:
+                    case Iir_Package_Body:
+                    case Iir_Protected_Type_Body:
+                    case Iir_Protected_Type_Declaration:
+                        throw std::runtime_error("PARSE ERROR: component declaration are not allowed here");
+                    case Iir_Architecture_Body:
+                    case Iir_Block_Statement:
+                    case Iir_Generate_Statement_Body:
+                    case Iir_Package_Declaration:
+                        break;
+                    default:
+                        throw std::runtime_error("parse_declarative_part", Package_Parent);
+                }
+                Decl = Parse_Component_Declaration();
+                break;
+            case Token::For:
+                switch (Get_Kind(Parent)) {
+                    case Iir_Entity_Declaration:
+                    case Iir_Function_Body:
+                    case Iir_Procedure_Body:
+                    case Iir_Kinds_Process_Statement:
+                    case Iir_Package_Declaration:
+                    case Iir_Package_Body:
+                    case Iir_Protected_Type_Body:
+                    case Iir_Protected_Type_Declaration:
+                        throw std::runtime_error("PARSE ERROR: configuration specification not allowed here");
+                    case Iir_Architecture_Body:
+                    case Iir_Block_Statement:
+                    case Iir_Generate_Statement_Body:
+                        break;
+                    default:
+                        throw std::runtime_error("parse_declarative_part", Package_Parent);
+                }
+                Decl = Parse_Configuration_Specification();
+                break;
+            case Token::Attribute:
+                Decl = Parse_Attribute();
+                break;
+            case Token::Disconnect:
 //  LRM08 4.7 Package declarations
 //  For package declaration that appears in a subprogram body,
 //  a process statement, or a protected type body, [...]
 //  Moreover, it is an eror if [...] a disconnection
 //  specification [...] appears as a package declarative item
 //  of such a package declaration.
-switch (Get_Kind (Parent) is
-        when Iir_Function_Body
-| Iir_Procedure_Body
-| Iir_Kinds_Process_Statement
-| Iir_Protected_Type_Body
-| Iir_Package_Body
-| Iir_Protected_Type_Declaration:
-throw std::runtime_error("PARSE ERROR: disconnect specification not allowed here");
-case Iir_Entity_Declaration
-| Iir_Architecture_Body
-| Iir_Block_Statement
-| Iir_Generate_Statement_Body
-| Iir_Package_Declaration:
-null;
-default:
-Error_Kind ("parse_declarative_part", Parent);
-}
-Decl = Parse_Disconnection_Specification;
-case Token::Use:
-Decl = Parse_Use_Clause;
-case Token::Group:
-Decl = Parse_Group;
-case Token::Package:
-if Vhdl_Std < Vhdl_08 {
-        throw std::runtime_error("PARSE ERROR: nested package not allowed before vhdl 2008");
-end if;
-Decl = Parse_Package (Parent);
-if Decl != nullptr
-        && Get_Kind (Decl) = Iir_Package_Body
-{
-if Get_Kind (Parent) = Iir_Package_Declaration {
-        Error_Msg_Parse
-        (+Decl, "package body not allowed in a package");
-end if;
-end if;
-case Token::Identifier:
-if Vhdl_Std >= Vhdl_08
-        && scanner.currentContext.Identifier = Name_Default
-{
+                switch (Get_Kind(Parent)) {
+                    case Iir_Function_Body:
+                    case Iir_Procedure_Body:
+                    case Iir_Kinds_Process_Statement:
+                    case Iir_Protected_Type_Body:
+                    case Iir_Package_Body:
+                    case Iir_Protected_Type_Declaration:
+                        throw std::runtime_error("PARSE ERROR: disconnect specification not allowed here");
+                    case Iir_Entity_Declaration:
+                    case Iir_Architecture_Body:
+                    case Iir_Block_Statement:
+                    case Iir_Generate_Statement_Body:
+                    case Iir_Package_Declaration:
+                        break;
+                    default:
+                        throw std::runtime_error("parse_declarative_part", Parent);
+                }
+                Decl = Parse_Disconnection_Specification();
+                break;
+            case Token::Use:
+                Decl = Parse_Use_Clause();
+                break;
+            case Token::Group:
+                Decl = Parse_Group();
+                break;
+            case Token::Package:
+                if (scanner.state.options.standard < Vhdl_Std::Vhdl_08)
+                    throw std::runtime_error("PARSE ERROR: nested package not allowed before vhdl 2008");
+
+                Decl = Parse_Package(Parent);
+                if (Decl && Get_Kind(Decl) = Iir_Package_Body) {
+                    if (Get_Kind(Parent) = Iir_Package_Declaration)
+                        throw std::runtime_error(+Decl, "package body not allowed in a package");
+                }
+                break;
+            case Token::Identifier:
+                if (scanner.state.options.standard >= Vhdl_Std::Vhdl_08 &&
+                    scanner.currentContext.Identifier == Keywords::Name_Default) {
 //  This identifier is a PSL keyword.
-Xrefs.Xref_Keyword (Get_Token_Location);
+//TODO: Xrefs.Xref_Keyword (Get_Token_Location);
 
 //  Check whether default clock are allowed in this region.
-switch (Get_Kind (Parent) is
-        when Iir_Function_Body
-| Iir_Procedure_Body
-| Iir_Kinds_Process_Statement
-| Iir_Protected_Type_Body
-| Iir_Package_Declaration
-| Iir_Package_Body
-| Iir_Protected_Type_Declaration:
-throw std::runtime_error("PARSE ERROR: PSL default clock declaration not allowed here");
-case Iir_Entity_Declaration
-| Iir_Architecture_Body
-| Iir_Block_Statement
-| Iir_Generate_Statement_Body:
-null;
-default:
-Error_Kind ("parse_declarative_part", Parent);
-}
-Decl = Parse_Psl_Default_Clock;
-else
-throw std::runtime_error("PARSE ERROR: object class keyword such as 'variable' is expected");
-Eat_Tokens_Until_Semi_Colon;
-end if;
-case Token::Semi_Colon:
-throw std::runtime_error("PARSE ERROR: ';' (semi colon) not allowed alone");
-scanner.scan();
-default:
-exit;
-}
-if Decl != nullptr {
-Append_Subchain (Last_Decl, Parent, Decl);
-end if;
+                    switch (Get_Kind(Parent)) {
+                        case Iir_Function_Body:
+                        case Iir_Procedure_Body:
+                        case Iir_Kinds_Process_Statement:
+                        case Iir_Protected_Type_Body:
+                        case Iir_Package_Declaration:
+                        case Iir_Package_Body:
+                        case Iir_Protected_Type_Declaration:
+                            throw std::runtime_error("PARSE ERROR: PSL default clock declaration not allowed here");
+                        case Iir_Entity_Declaration:
+                        case Iir_Architecture_Body:
+                        case Iir_Block_Statement:
+                        case Iir_Generate_Statement_Body:
+                            break;
+                        default:
+                            throw std::runtime_error("parse_declarative_part", Parent);
+                    }
+                    Decl = Parse_Psl_Default_Clock();
+                } else
+                    throw std::runtime_error("PARSE ERROR: object class keyword such as 'variable' is expected");
+                break;
+            case Token::Semi_Colon:
+                throw std::runtime_error("PARSE ERROR: ';' (semi colon) not allowed alone");
+            default:
+                //TODO: BREAK EXTERNAL LOOP
+        }
+        if (Decl)
+            Append_Subchain(Last_Decl, Parent, Decl);
 
-if (scanner.currentContext.token == Token::Semi_Colon or scanner.currentContext.token == Token::Invalid {
-        scanner.scan();
-end if;
-end loop;
-end Parse_Declarative_Part;
-*/
+
+        if (scanner.currentContext.token == Token::Semi_Colon or scanner.currentContext.token == Token::Invalid)
+            scanner.scan();
+
+    }
+}
+
 //  precond : ENTITY
 //  postcond: ';'
 //
@@ -3881,17 +3872,17 @@ Iir* Parser::Parse_A_Choice (Iir* Expr) {
 
     if (Is_Range_Attribute_Name(Expr1)) {
         A_Choice = new Iir_Choice_By_Range;
-        Location_Copy(A_Choice, Expr1);
+        A_Choice->Location = Expr1->Location;
         A_Choice->Choice_Range = Expr1;
         return A_Choice;
     } else if (scanner.currentContext.token == Token::To || scanner.currentContext.token == Token::Downto) {
         A_Choice = new Iir_Choice_By_Range;
-        Location_Copy(A_Choice, Expr1);
+        A_Choice->Location = Expr1->Location;
         A_Choice->Choice_Range = Parse_Range_Expression(Expr1);
         return A_Choice;
     } else {
         A_Choice = new Iir_Choice_By_Expression;
-        Location_Copy(A_Choice, Expr1);
+        A_Choice->Location = Expr1->Location;
         A_Choice->Choice_Expression = Expr1;
         return A_Choice;
     }
@@ -4002,7 +3993,7 @@ Iir* Parser::Parse_Aggregate() {
                 case Token::Comma:
                 case Token::Right_Paren:
                     Assoc = Create_Iir(Iir_Choice_By_None);
-                    Location_Copy(Assoc, Expr);
+                    Assoc->Location = Expr->Location;
                 default:
                     Assoc = Parse_Choices(Expr);
                     Expect(Token::Double_Arrow);
@@ -5209,7 +5200,7 @@ Iir* Parser::Parse_Signal_Assignment_Statement (Iir* Target) {
                 throw std::runtime_error("PARSE ERROR: conditional signal assignment not allowed in before vhdl08");
 
                 N_Stmt = Create_Iir (Iir_Conditional_Signal_Assignment_Statement);
-                Location_Copy (N_Stmt, Stmt);
+                N_Stmt->Location = Stmt->Location;
                 Set_Target (N_Stmt, Target);
                 Set_Delay_Mechanism (N_Stmt, Get_Delay_Mechanism (Stmt));
                 Set_Reject_Time_Expression (N_Stmt, Get_Reject_Time_Expression (Stmt));
@@ -5306,7 +5297,7 @@ Iir* Parser::Parse_Sequential_Assignment_Statement (Iir* Target) {
     else if (scanner.currentContext.token == Token::Semi_Colon)
         return Parenthesis_Name_To_Procedure_Call(Target, Iir_Procedure_Call_Statement);
     else
-        throw std::runtime_error("PARSE ERROR: ""<="" or "":="" expected instead of %t", +scanner.currentContext.token);
+        throw std::runtime_error("PARSE ERROR: ""<="" or "":="" expected instead of %t" +scanner.currentContext.token);
 }
 
 
@@ -5685,7 +5676,7 @@ if Kind = Iir_Function_Declaration {
 else
 Subprg_Body = Create_Iir (Iir_Procedure_Body);
 end if;
-Location_Copy (Subprg_Body, Subprg);
+    Location_Copy (Subprg_Body, Subprg);
 
 Set_Subprogram_Body (Subprg, Subprg_Body);
 Set_Subprogram_Specification (Subprg_Body, Subprg);
@@ -5778,7 +5769,7 @@ Iir* Parser::Parse_Process_Statement(std::string Label, Location_Type Loc, bool 
     scanner.scan();
 
     if (scanner.currentContext.token == Token::Left_Paren) {
-        Res = Create_Iir(Iir_Sensitized_Process_Statement);
+        Res = new Iir_Sensitized_Process_Statement;
 
 //  Skip '('
         scanner.scan();
@@ -5927,7 +5918,7 @@ Iir* Parser::Parse_Association_List() {
     Nbr_Assocs = 1;
     while (1) {
 //  Parse formal and actual.
-        Loc = scanner.currentContext.getTokenLocation();
+        auto Loc = scanner.currentContext.getTokenLocation();
         Formal = nullptr;
 
         if (scanner.currentContext.token != Token::Open) {
@@ -5941,7 +5932,7 @@ Iir* Parser::Parse_Association_List() {
                     if (!Actual) {
 //  Left expression is missing ie: (downto x).
                         scanner.scan();
-                        Actual = Parse_Expression;
+                        Actual = Parse_Expression();
                     } else
                         Actual = Parse_Range_Expression(Actual);
                     if (Nbr_Assocs != 1)
@@ -6035,7 +6026,7 @@ Iir* Parser::Parse_Port_Map_Aspect() {
     return Parse_Association_List_In_Parenthesis();
 }
 
-//  precond : COMPONENT | ENTIY | CONFIGURATION
+//  precond : COMPONENT | ENTITY | CONFIGURATION
 //  postcond : next_token
 //
 //  instantiated_unit ::=
@@ -7453,10 +7444,8 @@ void Parser::Parse_Configuration_Declaration (Iir_Design_Unit* Unit) {
 //  precond : generic
 //  postcond: next token
 //
-//  LRM08 4.7
-//  package_header ::=
-//      [ generic_clause       // LRM08 6.5.6.2
-//      [ generic_map aspect ; ] ]
+//  LRM08 4.7, 6.5.6.2
+//  package_header ::= [ generic_clause  [ generic_map aspect ; ] ]
 Iir_Package_Header* Parser::Parse_Package_Header() {
 
     auto Res = new Iir_Package_Header;
@@ -7464,7 +7453,7 @@ Iir_Package_Header* Parser::Parse_Package_Header() {
     Parse_Generic_Clause(Res);
 
     if (scanner.currentContext.token == Token::Generic) {
-        Set_Generic_Map_Aspect_Chain(Res, Parse_Generic_Map_Aspect());
+        Res->Generic_Map_Aspect_Chain =Parse_Generic_Map_Aspect();
         Scan_Semi_Colon("generic map aspect");
     }
     return Res;
@@ -7481,21 +7470,21 @@ Iir_Package_Header* Parser::Parse_Package_Header() {
 //      END [ PACKAGE ] [ PACKAGE_simple_name ] ;
 Iir_Package_Declaration* Parser::Parse_Package_Declaration(Iir* Parent, std::string Id, Location_Type Loc) {
     auto Res = new Iir_Package_Declaration;
-    Set_Location(Res, Loc);
-    Set_Identifier(Res, Id);
-    Set_Parent(Res, Parent);
+    Res->Location = Loc;
+    Res->Identifier = Id;
+    Res->Parent = Parent;
 
     if (scanner.currentContext.token == Token::Generic) {
         if (scanner.state.options.standard < Vhdl_Std::Vhdl_08)
             throw std::runtime_error("PARSE ERROR: generic packages not allowed before vhdl 2008");
 
-        Set_Package_Header(Res, Parse_Package_Header);
+        Res->Package_Header = Parse_Package_Header();
     }
 
     Parse_Declarative_Part(Res);
 
     Expect(Token::End);
-    Set_End_Location(Parent);
+    Parent->End_Location = scanner.currentContext.getTokenLocation();
 
 //  Skip 'end'
     scanner.scan();
@@ -7504,7 +7493,7 @@ Iir_Package_Declaration* Parser::Parse_Package_Declaration(Iir* Parent, std::str
         if (scanner.state.options.standard == Vhdl_Std::Vhdl_87)
             throw std::runtime_error("PARSE ERROR: 'package' keyword not allowed here by vhdl 87");
 
-        Set_End_Has_Reserved_Id(Res, true);
+        Res->End_Has_Reserved_Id = true;
 
 //  Skip 'package'.
         scanner.scan();
@@ -7776,8 +7765,7 @@ end Parse_Context_Declaration_Or_Reference;
 */
 
 // Parse a design_unit.
-// The lexical scanner must have been initialized, but without a
-// current_token.
+// The lexical scanner must have been initialized, but without a current_token.
 //
 //  [ 11.1 ]
 //  design_unit ::= context_clause library_unit
@@ -7827,8 +7815,7 @@ Iir_Design_Unit* Parser::Parse_Design_Unit() {
 Iir_Design_File* Parser::Parse_Design_File () {
     auto result = new Iir_Design_File();
     currentNode = result;
-    Iir_Design_Unit* lastDesign = nullptr;
-    for (Iir_Design_Unit* design = Parse_Design_Unit(); design != nullptr; design = Parse_Design_Unit()) {
+    for (Iir_Design_Unit* design = Parse_Design_Unit(); design; design = Parse_Design_Unit()) {
         result->Design_Units.push_back(design);
         design->Design_File = result;
     }

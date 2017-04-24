@@ -104,7 +104,7 @@ private:
     void Parse_Component_Specification (Iir* Res);
     Iir_Binding_Indication* Parse_Binding_Indication();
     Iir* Parse_Aggregate();
-    Iir_Signature Parse_Signature();
+
     void Parse_Declarative_Part (Iir* parent);
     Iir* Parse_Tolerance_Aspect_Opt();
 
@@ -140,7 +140,7 @@ private:
 
     Iir* Parse_Discrete_Range();
 
-    unsigned int Scan_To_Operator_Name();
+    unsigned int Scan_To_Operator_Name(Location_Type Loc);
 
     Iir* Parse_Name_Suffix(Iir* Pfx, bool Allow_Indexes);
 
@@ -181,28 +181,28 @@ private:
 
     Iir* Parse_Type_Declaration(Iir* Parent);
 
-    Iir_Physical_Type_Definition* Parser::Parse_Physical_Type_Definition (Iir* Parent);
-    Iir_Record_Type_Definition* Parser::Parse_Record_Type_Definition();
-    Iir_Access_Type_Definition* Parser::Parse_Access_Type_Definition();
-    Iir_File_Type_Definition* Parser::Parse_File_Type_Definition();
-    Iir* Parser::Parse_Protected_Type_Definition(std::string Ident, Location_Type Loc);
-    Iir_Subtype_Declaration* Parser::Parse_Subtype_Declaration (Iir* Parent);
-    Iir* Parser::Parse_Nature_Declaration();
-    Iir_Report_Statement* Parser::Parse_Report_Statement();
+    Iir_Physical_Type_Definition* Parse_Physical_Type_Definition (Iir* Parent);
+    Iir_Record_Type_Definition* Parse_Record_Type_Definition();
+    Iir_Access_Type_Definition* Parse_Access_Type_Definition();
+    Iir_File_Type_Definition* Parse_File_Type_Definition();
+    Iir* Parse_Protected_Type_Definition(std::string Ident, Location_Type Loc);
+    Iir_Subtype_Declaration* Parse_Subtype_Declaration (Iir* Parent);
+    Iir* Parse_Nature_Declaration();
+    Iir_Report_Statement* Parse_Report_Statement();
     void Check_Type_Mark(Iir *Mark);
     void Parse_Context_Clause(Iir* Unit);
     void Parse_Context_Declaration(Iir* Unit, Iir* Decl);
     Iir* Parse_Interface_Package_Declaration();
     Iir* Parse_Subprogram_Designator (Iir* Subprg);
     Iir* Parse_Interface_Subprogram_Declaration();
-    Iir* Parse_Interface_List (Interface_Type Ctxt, Iir Parent);
+
     void Parse_Port_Clause (Iir* Parent);
     void Parse_Generic_Clause (Iir* Parent);
     void Parse_Generic_Port_Clauses (Iir* Parent);
     Iir_Enumeration_Type_Definition* Parse_Enumeration_Type_Definition (Iir* Parent);
     Iir* Parse_Array_Definition();
     Iir* Parse_Element_Constraint();
-    Iir* Parse_Sensitivity_List(Iir_Designator_List* List);
+    Iir* Parse_Sensitivity_List(std::vector<Iir*>* List);
     Iir* Parse_Subnature_Indication();
     Iir* Parse_Terminal_Declaration (Iir* Parent);
     Iir* Parse_Quantity_Declaration (Iir* Parent);
@@ -255,10 +255,10 @@ private:
     Iir* Parse_Entity_Aspect();
     Iir_Component_Configuration* Parse_Component_Configuration (Location_Type Loc, std::vector<Iir*> Inst_List);
     Iir_Block_Configuration* Parse_Block_Configuration_Suffix (Location_Type Loc, Iir* Block_Spec );
-    void Parser::Parse_Configuration_Declarative_Part (Iir* Parent);
-    void Parser::Parse_Configuration_Declaration (Iir_Design_Unit* Unit);
-    Iir_Package_Header* Parser::Parse_Package_Header();
-    Iir_Package_Declaration* Parser::Parse_Package_Declaration(Iir* Parent, std::string Id, Location_Type Loc);
+    void Parse_Configuration_Declarative_Part (Iir* Parent);
+    void Parse_Configuration_Declaration (Iir_Design_Unit* Unit);
+    Iir_Package_Header* Parse_Package_Header();
+    Iir_Package_Declaration* Parse_Package_Declaration(Iir* Parent, std::string Id, Location_Type Loc);
     Iir_Package_Body* Parse_Package_Body (Iir* Parent);
     Iir_Package_Instantiation_Declaration* Parse_Package_Instantiation_Declaration(Iir* Parent, std::string Id, Location_Type Loc);
 };

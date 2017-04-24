@@ -50,12 +50,6 @@ struct Iir_Type_Declarator_Abs: public virtual Iir {
     Iir* Type_Declarator;
 };
 
-using Iir_Base_Type_Abs = Iir_Type_Declarator_Abs;
-
-using Iir_Resolved_Flag_Abs = Iir_Type_Declarator_Abs;
-
-using Iir_Signal_Type_Flag_Abs = Iir_Type_Declarator_Abs;
-
 struct Iir_Has_Signal_Flag_Abs: public virtual Iir {
     bool Has_Signal_Flag;
 };
@@ -119,7 +113,7 @@ struct Iir_Identifier_Abs: public virtual Iir {
     std::string Identifier;
 };
 
-struct  Iir_Design_Unit
+struct Iir_Design_Unit
         : public Iir_Date_Abs,
           public Iir_Context_Items_Abs,
           // public Iir_Chain_Abs, NOTE: use Iir_File's vector
@@ -207,8 +201,6 @@ struct Iir_Physical_Unit_Abs: public virtual Iir {
     Iir_Unit_Declaration* Physical_Unit;
 };
 
-using Iir_Unit_Name_Abs = Iir_Physical_Unit_Abs;
-
 struct Iir_Physical_Int_Literal
         : public Iir_Value_Abs,
           public Iir_Literal_Origin_Abs,
@@ -271,10 +263,6 @@ struct Iir_Formal_Abs: public virtual Iir {
 struct Iir_Actual_Abs: public virtual Iir {
     Iir* Actual;
 };
-
-using Iir_Whole_Association_Flag_Abs = Iir_Formal_Abs;
-
-using Iir_Collapse_Signal_Flag_Abs = Iir_Formal_Abs;
 
 struct Iir_Association_Element_By_Expression
         : public Iir_Formal_Abs,
@@ -464,16 +452,12 @@ struct Iir_Block_Header
 struct Iir_Block_Configuration_Abs: public virtual Iir {
     Iir* Block_Configuration;
 };
-
+struct Iir_Binding_Indication;
 struct Iir_Component_Name_Abs: public virtual Iir {
     std::vector<Iir*> Instantiation_List;
     Iir_Binding_Indication* Binding_Indication;
     Iir* Component_Name;
 };
-
-using Iir_Instantiation_List_Abs = Iir_Component_Name_Abs;
-
-using Iir_Binding_Indication_Abs = Iir_Component_Name_Abs;
 
 struct Iir_Is_Ref_Abs: public virtual Iir {
     bool Is_Ref;
@@ -549,8 +533,6 @@ struct Iir_Parameter_Association_Chain_Abs: public virtual Iir {
     Iir* Parameter_Association_Chain;
     Iir* Method_Object;
 };
-
-using Iir_Method_Object_Abs = Iir_Parameter_Association_Chain_Abs;
 
 struct Iir_Procedure_Call
         : public Iir_Prefix_Abs,
@@ -638,8 +620,6 @@ struct Iir_Designated_Type_Abs: public virtual Iir {
     Iir* Designated_Subtype_Indication;
 };
 
-using Iir_Designated_Subtype_Indication_Abs = Iir_Designated_Type_Abs;
-
 struct Iir_Access_Type_Definition
         : public Iir_Type_Declarator_Abs,
           public Iir_Incomplete_Type_Ref_Chain_Abs,
@@ -710,10 +690,6 @@ struct Iir_Index_Subtype_List_Abs: public virtual Iir {
     bool Index_Constraint_Flag;
 };
 
-using Iir_Element_Subtype_Abs = Iir_Index_Subtype_List_Abs;
-
-using Iir_Index_Constraint_Flag_Abs = Iir_Index_Subtype_List_Abs;
-
 struct Iir_Array_Type_Definition
         : public Iir_Type_Declarator_Abs,
           public Iir_Type_Staticness_Abs,
@@ -777,25 +753,31 @@ struct Iir_Physical_Subtype_Definition
           public Iir_Is_Ref_Abs {
 };
 
-struct Iir_Floating_Subtype_Definition
+struct Iir_Floating_Type_Definition
         : public Iir_Type_Declarator_Abs,
           public Iir_Range_Constraint_Abs,
-          public Iir_Resolution_Indication_Abs,
-          public Iir_Tolerance_Abs,
           public Iir_Type_Staticness_Abs,
           public Iir_Has_Signal_Flag_Abs,
-          public Iir_Subtype_Type_Mark_Abs,
           public Iir_Is_Ref_Abs {
 };
 
-struct Iir_Integer_Subtype_Definition
+struct Iir_Floating_Subtype_Definition : public Iir_Floating_Type_Definition,
+                                         public Iir_Resolution_Indication_Abs,
+                                         public Iir_Tolerance_Abs,
+                                         public Iir_Subtype_Type_Mark_Abs {
+};
+
+struct Iir_Integer_Type_Definition
         : public Iir_Type_Declarator_Abs,
           public Iir_Range_Constraint_Abs,
-          public Iir_Resolution_Indication_Abs,
           public Iir_Type_Staticness_Abs,
           public Iir_Has_Signal_Flag_Abs,
-          public Iir_Subtype_Type_Mark_Abs,
           public Iir_Is_Ref_Abs {
+};
+
+struct Iir_Integer_Subtype_Definition : public Iir_Integer_Type_Definition,
+                                        public Iir_Resolution_Indication_Abs,
+                                        public Iir_Subtype_Type_Mark_Abs {
 };
 
 struct Iir_Enumeration_Subtype_Definition
@@ -818,22 +800,6 @@ struct Iir_Enumeration_Type_Definition
           public Iir_Is_Ref_Abs {
     std::vector<Iir_Enumeration_Literal*> Enumeration_Literal_List;
     bool Only_Characters_Flag;
-};
-
-struct Iir_Integer_Type_Definition
-        : public Iir_Type_Declarator_Abs,
-          public Iir_Range_Constraint_Abs,
-          public Iir_Type_Staticness_Abs,
-          public Iir_Has_Signal_Flag_Abs,
-          public Iir_Is_Ref_Abs {
-};
-
-struct Iir_Floating_Type_Definition
-        : public Iir_Type_Declarator_Abs,
-          public Iir_Range_Constraint_Abs,
-          public Iir_Type_Staticness_Abs,
-          public Iir_Has_Signal_Flag_Abs,
-          public Iir_Is_Ref_Abs {
 };
 
 struct Iir_Physical_Type_Definition
@@ -894,8 +860,6 @@ struct Iir_Type_Definition_Abs: public virtual Iir {
     Iir* Incomplete_Type_Declaration;
     Iir* Type_Definition;
 };
-
-using Iir_Incomplete_Type_Declaration_Abs = Iir_Type_Definition_Abs;
 
 struct Iir_Use_Flag_Abs: public virtual Iir {
     bool Use_Flag;
@@ -983,8 +947,6 @@ struct Iir_Uninstantiated_Package_Name_Abs: public virtual Iir {
     Iir* Uninstantiated_Package_Name;
     Iir* Uninstantiated_Package_Decl;
 };
-
-using Iir_Uninstantiated_Package_Decl_Abs = Iir_Uninstantiated_Package_Name_Abs;
 
 struct Iir_Package_Instantiation_Declaration
         : public Iir_Attribute_Value_Chain_Abs,
@@ -1183,8 +1145,6 @@ struct Iir_PSL_Clock_Abs: public virtual Iir {
     PSL_Node PSL_Clock;
 };
 
-using Iir_PSL_NFA_Abs = Iir_PSL_Clock_Abs;
-
 struct Iir_Psl_Declaration
         : public Iir_Chain_Abs,
           public Iir_Identifier_Abs,
@@ -1200,10 +1160,6 @@ struct Iir_PSL_Nbr_States_Abs: public virtual Iir {
     int PSL_Nbr_States;
     std::vector<Iir*> PSL_Clock_Sensitivity;
 };
-
-using Iir_PSL_Clock_Sensitivity_Abs = Iir_PSL_Nbr_States_Abs;
-
-using Iir_PSL_EOS_Flag_Abs = Iir_PSL_Nbr_States_Abs;
 
 struct Iir_Psl_Endpoint_Declaration
         : public Iir_Chain_Abs,
@@ -1248,8 +1204,6 @@ struct Iir_Plus_Terminal_Abs: public virtual Iir {
     Iir* Minus_Terminal;
     Iir* Plus_Terminal;
 };
-
-using Iir_Minus_Terminal_Abs = Iir_Plus_Terminal_Abs;
 
 struct Iir_Across_Quantity_Declaration
         : public Iir_Chain_Abs,
@@ -1316,10 +1270,6 @@ struct Iir_Subprogram_Body_Abs: public virtual Iir {
     bool Hide_Implicit_Flag;
 };
 
-using Iir_Overload_Number_Abs = Iir_Subprogram_Body_Abs;
-
-using Iir_Subprogram_Depth_Abs = Iir_Interface_Declaration_Chain_Abs;
-
 struct Iir_Return_Type_Abs: public virtual Iir {
     bool Has_Pure;
     Iir* Return_Type;
@@ -1327,25 +1277,9 @@ struct Iir_Return_Type_Abs: public virtual Iir {
     bool Resolution_Function_Flag;
 };
 
-using Iir_Implicit_Definition_Abs = Iir_Subprogram_Body_Abs;
-
-using Iir_Resolution_Function_Flag_Abs = Iir_Return_Type_Abs;
-
 struct Iir_Wait_State_Abs: public virtual Iir {
     Tri_State_Type Wait_State;
 };
-
-using Iir_All_Sensitized_State_Abs = Iir_Interface_Declaration_Chain_Abs;
-
-using Iir_Pure_Flag_Abs = Iir_Return_Type_Abs;
-
-using Iir_Hide_Implicit_Flag_Abs = Iir_Subprogram_Body_Abs;
-
-using Iir_Has_Pure_Abs = Iir_Return_Type_Abs;
-
-using Iir_Has_Body_Abs = Iir_Subprogram_Body_Abs;
-
-using Iir_Has_Parameter_Abs = Iir_Interface_Declaration_Chain_Abs;
 
 struct Iir_Function_Declaration
         : public Iir_Chain_Abs,
@@ -1400,8 +1334,6 @@ struct Iir_Subprogram_Specification_Abs: public virtual Iir {
 struct Iir_Sequential_Statement_Chain_Abs: public virtual Iir {
     Iir* Sequential_Statement_Chain;
 };
-
-using Iir_Impure_Depth_Abs = Iir_Subprogram_Specification_Abs;
 
 struct Iir_Callees_List_Abs: public virtual Iir {
     std::vector<Iir*> Callees_List;
@@ -1474,8 +1406,6 @@ struct Iir_Guarded_Signal_Flag_Abs: public virtual Iir {
     bool Guarded_Signal_Flag;
     Iir_Signal_Kind Signal_Kind;
 };
-
-using Iir_Signal_Kind_Abs = Iir_Guarded_Signal_Flag_Abs;
 
 struct Iir_Has_Active_Flag_Abs: public virtual Iir {
     bool Has_Active_Flag;
@@ -1845,8 +1775,6 @@ struct Iir_Postponed_Flag_Abs: public virtual Iir {
     bool Postponed_Flag;
 };
 
-using Iir_End_Has_Postponed_Abs = Iir_Process_Origin_Abs;
-
 struct Iir_Has_Label_Abs: public virtual Iir {
     bool Has_Label;
 };
@@ -1910,33 +1838,47 @@ struct Iir_Guard_Abs: public virtual Iir {
     Iir* Guard;
 };
 
-using Iir_Delay_Mechanism_Abs = Iir_Guarded_Target_State_Abs;
-
-using Iir_Reject_Time_Expression_Abs = Iir_Guarded_Target_State_Abs;
-
-struct Iir_Concurrent_Simple_Signal_Assignment
+struct Iir_Simple_Signal_Assignment_Statement
         : public Iir_Guarded_Target_State_Abs,
           public Iir_Chain_Abs,
           public Iir_Label_Abs,
           public Iir_Visible_Flag_Abs,
           public Iir_Target_Abs,
-          public Iir_Guard_Abs,
-          public Iir_Postponed_Flag_Abs,
           public Iir_Parent_Abs {
     Iir_Waveform waveform;
 };
 
 using Iir_Conditional_Waveforms = std::vector<Iir_Conditional_Waveform*>;
 
-struct Iir_Concurrent_Conditional_Signal_Assignment
+struct Iir_Conditional_Signal_Assignment_Statement
         : public Iir_Guarded_Target_State_Abs,
           public Iir_Chain_Abs,
           public Iir_Label_Abs,
           public Iir_Visible_Flag_Abs,
           public Iir_Target_Abs,
-          public Iir_Guard_Abs,
-          public Iir_Postponed_Flag_Abs,
           public Iir_Parent_Abs {
+    Iir_Conditional_Waveforms conditional_waveforms;
+};
+
+struct Iir_Selected_Waveform_Assignment_Statement
+        : public Iir_Guarded_Target_State_Abs,
+          public Iir_Chain_Abs,
+          public Iir_Label_Abs,
+          public Iir_Visible_Flag_Abs,
+          public Iir_Target_Abs,
+          public Iir_Expression_Abs,
+          public Iir_Selected_Waveform_Chain_Abs,
+          public Iir_Parent_Abs {
+};
+
+struct Iir_Concurrent_Simple_Signal_Assignment : public Iir_Simple_Signal_Assignment_Statement,
+                                                 public Iir_Guard_Abs,
+                                                 public Iir_Postponed_Flag_Abs {
+};
+
+struct Iir_Concurrent_Conditional_Signal_Assignment : public Iir_Conditional_Signal_Assignment_Statement,
+                                                      public Iir_Guard_Abs,
+                                                      public Iir_Postponed_Flag_Abs {
     Iir_Conditional_Waveforms conditional_waveforms;
 };
 
@@ -1944,17 +1886,9 @@ struct Iir_Selected_Waveform_Chain_Abs: public virtual Iir {
     Iir* Selected_Waveform_Chain;
 };
 
-struct Iir_Concurrent_Selected_Signal_Assignment
-        : public Iir_Guarded_Target_State_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Label_Abs,
-          public Iir_Visible_Flag_Abs,
-          public Iir_Target_Abs,
-          public Iir_Guard_Abs,
-          public Iir_Postponed_Flag_Abs,
-          public Iir_Expression_Abs,
-          public Iir_Selected_Waveform_Chain_Abs,
-          public Iir_Parent_Abs {
+struct Iir_Concurrent_Selected_Signal_Assignment : public Iir_Selected_Waveform_Assignment_Statement,
+                                                   public Iir_Guard_Abs,
+                                                   public Iir_Postponed_Flag_Abs {
 };
 
 struct Iir_Assertion_Condition_Abs: public virtual Iir {
@@ -1966,30 +1900,16 @@ struct Iir_Report_Expression_Abs: public virtual Iir {
     Iir* Severity_Expression;
 };
 
-using Iir_Severity_Expression_Abs = Iir_Report_Expression_Abs;
-
-struct Iir_Concurrent_Assertion_Statement
-        : public Iir_Chain_Abs,
-          public Iir_Label_Abs,
-          public Iir_Visible_Flag_Abs,
-          public Iir_Postponed_Flag_Abs,
-          public Iir_Assertion_Condition_Abs,
-          public Iir_Report_Expression_Abs,
-          public Iir_Parent_Abs {
+struct Iir_Concurrent_Assertion_Statement : public Iir_Assertion_Statement,
+                                            public Iir_Postponed_Flag_Abs {
 };
 
 struct Iir_Procedure_Call_Abs: public virtual Iir {
     Iir* Procedure_Call;
 };
 
-struct Iir_Concurrent_Procedure_Call_Statement
-        : public Iir_Chain_Abs,
-          public Iir_Label_Abs,
-          public Iir_Visible_Flag_Abs,
-          public Iir_Postponed_Flag_Abs,
-          public Iir_Parent_Abs,
-          public Iir_Procedure_Call_Abs,
-          public Iir_Suspend_Flag_Abs {
+struct Iir_Concurrent_Procedure_Call_Statement : public Iir_Procedure_Call_Statement,
+                                                 public Iir_Postponed_Flag_Abs {
 };
 
 struct Iir_Psl_Assert_Statement
@@ -2131,37 +2051,6 @@ struct Iir_If_Generate_Else_Clause
           public Iir_Generate_Statement_Body_Abs,
           public Iir_Generate_Else_Clause_Abs,
           public Iir_Condition_Abs,
-          public Iir_Parent_Abs {
-};
-
-struct Iir_Simple_Signal_Assignment_Statement
-        : public Iir_Guarded_Target_State_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Label_Abs,
-          public Iir_Visible_Flag_Abs,
-          public Iir_Target_Abs,
-          public Iir_Parent_Abs {
-    Iir_Waveform waveform;
-};
-
-struct Iir_Conditional_Signal_Assignment_Statement
-        : public Iir_Guarded_Target_State_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Label_Abs,
-          public Iir_Visible_Flag_Abs,
-          public Iir_Target_Abs,
-          public Iir_Parent_Abs {
-    Iir_Conditional_Waveforms conditional_waveforms;
-};
-
-struct Iir_Selected_Waveform_Assignment_Statement
-        : public Iir_Guarded_Target_State_Abs,
-          public Iir_Chain_Abs,
-          public Iir_Label_Abs,
-          public Iir_Visible_Flag_Abs,
-          public Iir_Target_Abs,
-          public Iir_Expression_Abs,
-          public Iir_Selected_Waveform_Chain_Abs,
           public Iir_Parent_Abs {
 };
 
@@ -2321,8 +2210,6 @@ struct Iir_Named_Entity_Abs: public virtual Iir {
 struct Iir_Alias_Declaration_Abs: public virtual Iir {
     Iir* Alias_Declaration;
 };
-
-using Iir_Is_Forward_Ref_Abs = Iir_Named_Entity_Abs;
 
 struct Iir_Character_Literal
         : public Iir_Type_Abs,
@@ -2563,8 +2450,6 @@ struct Iir_Attr_Chain_Abs: public virtual Iir {
     Iir* Signal_Attribute_Declaration;
     Iir* Attr_Chain;
 };
-
-using Iir_Signal_Attribute_Declaration_Abs = Iir_Attr_Chain_Abs;
 
 struct Iir_Delayed_Attribute
         : public Iir_Type_Abs,
