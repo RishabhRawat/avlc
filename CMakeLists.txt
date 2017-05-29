@@ -1,8 +1,7 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8)
 project(avlc)
 
-#set(CMAKE_CXX_STANDARD 17)
-set (CMAKE_CXX_FLAGS "--std=c++17 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_STANDARD 17)
 
 set(SOURCE_FILES
         src/main.cpp
@@ -21,14 +20,14 @@ set(SOURCE_FILES
         src/standardPackage.cpp
         include/iir_utils.h
         src/iir_utils.cpp
-        include/iir.h)
+        )
 
 
 #set( CMAKE_CXX_FLAGS "-fstack-protector -fstack-protector-all -Wall -Wextra -pedantic -Werror ${CMAKE_CXX_FLAGS}" )
 set( CMAKE_CXX_FLAGS_DEBUG "-ggdb" )
 set( CMAKE_CXX_FLAGS_RELEASE "-O3 " )
 
-set(TESTF src/Parser.cpp)
+set(TESTF src/packageHandler.cpp)
 
 include_directories(libs)
 include_directories(include)
