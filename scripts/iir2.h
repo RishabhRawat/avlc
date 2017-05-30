@@ -28,7 +28,8 @@
 #include <optional>
 
 
-#define smartVisit(var, sub) std::visit([](auto val) {return val->sub;}, var)
+#define getVariantValue(var, sub) std::visit([](auto val) {return val->sub;}, var)
+#define setVariantValue(var, sub, value) std::visit([value](auto val) {return val->sub = value;}, var)
 
 namespace IIR {
 
@@ -320,49 +321,222 @@ namespace IIR {
         Driving_Value
     };
 
+    struct Base;
+    struct Error;
+    struct Design_File;
     struct Design_Unit;
-
-    struct Library_Declaration;
-
-    struct Entity_Declaration;
-
-    struct Architecture_Body;
-
-    struct Package_Declaration;
-
-    struct Package_Instantiation_Declaration;
-
-    struct Package_Body;
-
-    struct Design_Unit;
-
-    struct Library_Declaration;
-
-    struct Unit_Declaration;
-
-    struct Binding_Indication;
-
-    struct Enumeration_Literal;
-
-    struct Entity_Declaration;
-
-    struct Architecture_Body;
-
-    struct Package_Declaration;
-
-    struct Package_Instantiation_Declaration;
-
-    struct Package_Body;
-
-    struct Configuration_Declaration;
-
-    struct Context_Declaration;
-
+    struct Library_Clause;
+    struct Use_Clause;
+    struct Context_Reference;
+    struct Integer_Literal;
+    struct Floating_Point_Literal;
+    struct Null_Literal;
+    struct String;
+    struct Physical_Int_Literal;
+    struct Physical_Fp_Literal;
+    struct Simple_Aggregate;
+    struct Overflow_Literal;
+    struct Unaffected_Waveform;
     struct Waveform_Element;
-
     struct Conditional_Waveform;
+    struct Conditional_Expression;
+    struct Association_Element_By_Expression;
+    struct Association_Element_By_Individual;
+    struct Association_Element_Open;
+    struct Association_Element_Package;
+    struct Association_Element_Type;
+    struct Association_Element_Subprogram;
+    struct Choice_By_Range;
+    struct Choice_By_Expression;
+    struct Kind_Choice_By_Others;
+    struct Choice_By_None;
+    struct Choice_By_Name;
+    struct Entity_Aspect_Entity;
+    struct Entity_Aspect_Configuration;
+    struct Entity_Aspect_Open;
+    struct Block_Configuration;
+    struct Block_Header;
+    struct Component_Configuration;
+    struct Binding_Indication;
+    struct Entity_Class;
+    struct Attribute_Value;
+    struct Signature;
+    struct Aggregate_Info;
+    struct Procedure_Call;
+    struct Record_Element_Constraint;
+    struct Array_Element_Resolution;
+    struct Record_Element_Resolution;
+    struct Record_Resolution;
+    struct Attribute_Specification;
+    struct Disconnection_Specification;
+    struct Configuration_Specification;
+    struct Access_Type_Definition;
+    struct Incomplete_Type_Definition;
+    struct Interface_Type_Definition;
+    struct File_Type_Definition;
+    struct Protected_Type_Declaration;
+    struct Record_Type_Definition;
+    struct Array_Type_Definition;
+    struct Array_Subtype_Definition;
+    struct Record_Subtype_Definition;
+    struct Access_Subtype_Definition;
+    struct Physical_Subtype_Definition;
+    struct Floating_Type_Definition;
+    struct Floating_Subtype_Definition;
+    struct Integer_Type_Definition;
+    struct Integer_Subtype_Definition;
+    struct Enumeration_Subtype_Definition;
+    struct Enumeration_Type_Definition;
+    struct Physical_Type_Definition;
+    struct Range_Expression;
+    struct Protected_Type_Body;
+    struct Wildcard_Type_Definition;
+    struct Subtype_Definition;
+    struct Scalar_Nature_Definition;
+    struct Overload_List;
+    struct Type_Declaration;
+    struct Anonymous_Type_Declaration;
+    struct Subtype_Declaration;
+    struct Nature_Declaration;
+    struct Subnature_Declaration;
+    struct Package_Declaration;
+    struct Package_Instantiation_Declaration;
+    struct Package_Body;
+    struct Configuration_Declaration;
+    struct Entity_Declaration;
+    struct Architecture_Body;
+    struct Context_Declaration;
+    struct Package_Header;
+    struct Unit_Declaration;
+    struct Library_Declaration;
+    struct Component_Declaration;
+    struct Attribute_Declaration;
+    struct Group_Template_Declaration;
+    struct Group_Declaration;
+    struct Element_Declaration;
+    struct Non_Object_Alias_Declaration;
+    struct Psl_Declaration;
+    struct Psl_Endpoint_Declaration;
+    struct Terminal_Declaration;
+    struct Free_Quantity_Declaration;
+    struct Across_Quantity_Declaration;
+    struct Through_Quantity_Declaration;
+    struct Enumeration_Literal;
+    struct Function_Declaration;
+    struct Procedure_Declaration;
+    struct Function_Body;
+    struct Procedure_Body;
+    struct Object_Alias_Declaration;
+    struct File_Declaration;
+    struct Guard_Signal_Declaration;
+    struct Signal_Declaration;
+    struct Variable_Declaration;
+    struct Constant_Declaration;
+    struct Iterator_Declaration;
+    struct Interface_Signal_Declaration_Extras;
+    struct Interface_Object_Declaration;
+    struct Interface_Type_Declaration;
+    struct Interface_Package_Declaration;
+    struct Interface_Function_Declaration;
+    struct Interface_Procedure_Declaration;
+    struct Signal_Attribute_Declaration;
+    struct Unary_Operator;
+    struct Binary_Operator;
+    struct Function_Call;
+    struct Aggregate;
+    struct Parenthesis_Expression;
+    struct Qualified_Expression;
+    struct Type_Conversion;
+    struct Allocator_By_Expression;
+    struct Allocator_By_Subtype;
+    struct Selected_Element;
+    struct Dereference;
+    struct Implicit_Dereference;
+    struct Slice_Name;
+    struct Indexed_Name;
+    struct Psl_Expression;
+    struct Sensitized_Process_Statement;
+    struct Process_Statement;
+    struct Simple_Signal_Assignment_Statement;
+    struct Conditional_Signal_Assignment_Statement;
+    struct Selected_Waveform_Assignment_Statement;
+    struct Concurrent_Simple_Signal_Assignment;
+    struct Concurrent_Conditional_Signal_Assignment;
+    struct Concurrent_Selected_Signal_Assignment;
+    struct Concurrent_Assertion_Statement;
+    struct Concurrent_Procedure_Call_Statement;
+    struct Psl_Assert_Statement;
+    struct Psl_Cover_Statement;
+    struct Block_Statement;
+    struct If_Generate_Statement;
+    struct Case_Generate_Statement;
+    struct For_Generate_Statement;
+    struct Component_Instantiation_Statement;
+    struct Psl_Default_Clock;
+    struct Simple_Simultaneous_Statement;
+    struct Generate_Statement_Body;
+    struct If_Generate_Else_Clause;
+    struct Null_Statement;
+    struct Assertion_Statement;
+    struct Report_Statement;
+    struct Wait_Statement;
+    struct Variable_Assignment_Statement;
+    struct Conditional_Variable_Assignment_Statement;
+    struct Return_Statement;
+    struct For_Loop_Statement;
+    struct While_Loop_Statement;
+    struct Next_Statement;
+    struct Exit_Statement;
+    struct Case_Statement;
+    struct Procedure_Call_Statement;
+    struct If_Statement;
+    struct Elsif;
+    struct Character_Literal;
+    struct Simple_Name;
+    struct Selected_Name;
+    struct Operator_Symbol;
+    struct Reference_Name;
+    struct Selected_By_All_Name;
+    struct Parenthesis_Name;
+    struct External_Name;
+    struct Package_Pathname;
+    struct Absolute_Pathname;
+    struct Relative_Pathname;
+    struct Pathname_Element;
+    struct Base_Attribute;
+    struct Subtype_Attribute;
+    struct Element_Attribute;
+    struct Left_Type_Attribute;
+    struct Right_Type_Attribute;
+    struct High_Type_Attribute;
+    struct Low_Type_Attribute;
+    struct Ascending_Type_Attribute;
+    struct Image_Attribute;
+    struct Value_Attribute;
+    struct Pos_Attribute;
+    struct Val_Attribute;
+    struct Succ_Attribute;
+    struct Pred_Attribute;
+    struct Leftof_Attribute;
+    struct Rightof_Attribute;
+    struct Delayed_Attribute;
+    struct Stable_Attribute;
+    struct Quiet_Attribute;
+    struct Transaction_Attribute;
+    struct Attribute;
+    struct Behavior_Attribute;
+    struct Structure_Attribute;
+    struct Simple_Name_Attribute;
+    struct Instance_Name_Attribute;
+    struct Path_Name_Attribute;
+    struct Array_Attribute;
+    struct Attribute_Name;
 
-    using Design_Unit_Collection = std::variant<Entity_Declaration*,Architecture_Body*,Package_Declaration*,Package_Instantiation_Declaration*,Package_Body*,Configuration_Declaration*,Context_Declaration*>;
+    using Design_Unit_Collection = std::variant<Entity_Declaration*, Architecture_Body*, Package_Declaration*, Package_Instantiation_Declaration*, Package_Body*, Configuration_Declaration*, Context_Declaration*>;
+
+    using Arch_Name = std::variant<Simple_Name*, Architecture_Body*>;
+
+    using Type_Definitions = std::variant<Error, Access_Type_Definition*, Incomplete_Type_Definition*, Interface_Type_Definition*, File_Type_Definition*, Protected_Type_Declaration*, Record_Type_Definition*, Array_Type_Definition*, Array_Subtype_Definition*, Record_Subtype_Definition*, Access_Subtype_Definition*, Physical_Subtype_Definition*, Floating_Type_Definition*, Floating_Subtype_Definition*, Integer_Type_Definition*, Integer_Subtype_Definition*, Enumeration_Subtype_Definition*, Enumeration_Type_Definition*, Physical_Type_Definition*, Wildcard_Type_Definition*>;
 
     using Waveform = std::vector<Waveform_Element*>;
 
@@ -1229,7 +1403,7 @@ namespace IIR {
             : public Base {
         Base* Default_Configuration_Declaration;
         Base* Attribute_Value_Chain;
-        Base* Entity_Name;
+        Arch_Name Entity_Name;
         Base* Concurrent_Statement_Chain;
         std::vector<Base*> Declaration_Chain;
         std::string Identifier;

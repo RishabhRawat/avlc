@@ -10,7 +10,8 @@
     "optional"
   ],
   "macros": [
-    "#define smartVisit(var, sub) std::visit([](auto val) {return val->sub;}, var)"
+    "#define getVariantValue(var, member) std::visit([](auto bareElement) {return bareElement->member;}, var)",
+    "#define setVariantValue(var, member, value) std::visit([value](auto bareElement) {return bareElement->member = value;}, var)"
   ],
   "namespaces": [
     {
@@ -108,90 +109,6 @@
           ]
         },
         {
-          "name": "Design_Unit",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Library_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Entity_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Architecture_Body",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Package_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Package_Instantiation_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Package_Body",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Design_Unit",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Library_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Unit_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Binding_Indication",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Enumeration_Literal",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Entity_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Architecture_Body",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Package_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Package_Instantiation_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Package_Body",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Configuration_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Context_Declaration",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Waveform_Element",
-          "type": "forward_decl"
-        },
-        {
-          "name": "Conditional_Waveform",
-          "type": "forward_decl"
-        },
-        {
           "name": "Design_Unit_Collection",
           "type": "variant",
           "contents": [
@@ -202,6 +119,40 @@
             "Package_Body*",
             "Configuration_Declaration*",
             "Context_Declaration*"
+          ]
+        },
+        {
+          "name": "Arch_Name",
+          "type": "variant",
+          "contents": [
+            "Simple_Name*",
+            "Architecture_Body*"
+          ]
+        },
+        {
+          "name": "Type_Definitions",
+          "type": "variant",
+          "contents": [
+            "Error*",
+            "Access_Type_Definition*",
+            "Incomplete_Type_Definition*",
+            "Interface_Type_Definition*",
+            "File_Type_Definition*",
+            "Protected_Type_Declaration*",
+            "Record_Type_Definition*",
+            "Array_Type_Definition*",
+            "Array_Subtype_Definition*",
+            "Record_Subtype_Definition*",
+            "Access_Subtype_Definition*",
+            "Physical_Subtype_Definition*",
+            "Floating_Type_Definition*",
+            "Floating_Subtype_Definition*",
+            "Integer_Type_Definition*",
+            "Integer_Subtype_Definition*",
+            "Enumeration_Subtype_Definition*",
+            "Enumeration_Type_Definition*",
+            "Physical_Type_Definition*",
+            "Wildcard_Type_Definition*"
           ]
         },
         {
@@ -1318,7 +1269,7 @@
           "members": {
             "Chain": "Base*",
             "Incomplete_Type_Declaration": "Base*",
-            "Type_Definition": "Base*",
+            "Type_Definition": "Type_Definitions",
             "Identifier": "std::string",
             "Visible_Flag": "bool",
             "Parent": "Base*",
@@ -1496,7 +1447,7 @@
           "members": {
             "Default_Configuration_Declaration": "Base*",
             "Attribute_Value_Chain": "Base*",
-            "Entity_Name": "Base*",
+            "Entity_Name": "Arch_Name",
             "Concurrent_Statement_Chain": "Base*",
             "Declaration_Chain": "std::vector<Base*>",
             "Identifier": "std::string",

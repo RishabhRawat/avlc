@@ -42,11 +42,14 @@ def generatecpp(filename):
                     cppSource.write('    %s %s {\n' % (element["type"], element["name"]))
                     cppSource.write('        ' + ',\n        '.join(element["members"]))
                     cppSource.write('\n    };\n\n')
-                if element["type"] == "forward_decl":
-                    cppSource.write('    struct %s;\n\n' % (element["name"]))
+            cppSource.write('    struct ' + ';\n    struct '.join(
+                [cls["name"] for cls in namespace['elements'] if cls["type"] == "class"]))
+            cppSource.write(';\n\n')
+
+            for element in namespace['elements']:
                 if element["type"] == "variant" or element["type"] == "vector":
                     cppSource.write('    using %s = std::%s<' % (element["name"], element["type"]))
-                    cppSource.write(','.join(element["contents"]))
+                    cppSource.write(', '.join(element["contents"]))
                     cppSource.write('>;\n\n')
                 if element["type"] == "class":
                     cppSource.write('    %s %s' % ("struct", element["name"]))
@@ -67,11 +70,13 @@ def generatecpp(filename):
         cppSource.write('}\n')
         cppSource.write('#endif // ' + jsonData["guard"] + '\n')
 
+
 def findClass(jsonData, className):
     for _class in jsonData["namespaces"][0]['elements']:
         if _class["name"] == className:
             return _class
     raise LookupError('class not found')
+
 
 def simplifyClass(jsonData, classjson):
     if len(classjson["inheritance"]) == 1 and "Iir" in classjson["inheritance"]:
@@ -90,8 +95,6 @@ def simplifyClass(jsonData, classjson):
                     continue
                 else:
                     raise NameError("Invalid value already inserted")
-
-
 
 
 def simplifyInheritance(filename):
@@ -117,7 +120,16 @@ def simplifyInheritance(filename):
     elems = [elem for elem in jsonData["namespaces"][0]['elements'] if elem["name"][-4:] != "_Abs"]
     jsonData["namespaces"][0]['elements'] = elems
     with open(filename + '2.json', 'w') as jsonSource:
-        json.dump(jsonData,jsonSource)
+        json.dump(jsonData, jsonSource)
+
+
+def containingClasses(member, filename):
+    jsonData = {}
+    with open(filename + '.json') as data_file:
+        jsonData = json.load(data_file, object_pairs_hook=OrderedDict)
+    mylist = [_class["name"] for _class in jsonData["namespaces"][0]['elements'] if
+              _class["type"] == "class" and member in _class["members"]]
+    print(', '.join(mylist))
 
 
 def main():
