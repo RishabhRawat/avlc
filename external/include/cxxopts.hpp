@@ -156,6 +156,13 @@ namespace cxxopts
 
     return result;
   }
+
+  inline
+  bool
+  empty(const String& s)
+  {
+    return s.isEmpty();
+  }
 }
 
 namespace std
@@ -222,6 +229,12 @@ namespace cxxopts
         return std::forward<T>(t);
     }
 
+    inline
+    bool
+    empty(const std::string& s)
+    {
+        return s.empty();
+    }
 }
 
 //ifdef CXXOPTS_USE_UNICODE
@@ -469,14 +482,7 @@ namespace cxxopts
             void
             parse(const std::string& text) const
             {
-                if (m_implicit && text.empty())
-                {
-                    parse_value(m_implicit_value, *m_store);
-                }
-                else
-                {
-                    parse_value(text, *m_store);
-                }
+                parse_value(text, *m_store);
             }
 
             bool
@@ -668,8 +674,17 @@ namespace cxxopts
         Options(std::string program, std::string help_string = "")
                 : m_program(std::move(program))
                 , m_help_string(toLocalString(std::move(help_string)))
+                , m_positional_help("positional parameters")
                 , m_next_positional(m_positional.end())
         {
+        }
+
+        inline
+        Options&
+        positional_help(const std::string& help_text)
+        {
+            m_positional_help = std::move(help_text);
+            return *this;
         }
 
         inline
@@ -780,8 +795,17 @@ namespace cxxopts
         String
         help_one_group(const std::string& group) const;
 
+        inline
+        void
+        generate_group_help(String& result, const std::vector<std::string>& groups) const;
+
+        inline
+        void
+        generate_all_groups_help(String& result) const;
+
         std::string m_program;
         String m_help_string;
+        std::string m_positional_help;
 
         std::map<std::string, std::shared_ptr<OptionDetails>> m_options;
         std::vector<std::string> m_positional;
@@ -829,10 +853,10 @@ namespace cxxopts
         constexpr int OPTION_DESC_GAP = 2;
 
         std::basic_regex<char> option_matcher
-                ("--([[:alnum:]][-_[:alnum:]]+)(=(.*))?|-([a-zA-Z]+)");
+                ("--([[:alnum:]][-_[:alnum:]]+)(=(.*))?|-([[:alnum:]]+)");
 
         std::basic_regex<char> option_specifier
-                ("(([a-zA-Z]),)?([a-zA-Z0-9][-_a-zA-Z0-9]+)");
+                ("(([[:alnum:]]),)?([[:alnum:]][-_[:alnum:]]+)");
 
         String
         format_option
@@ -997,7 +1021,7 @@ namespace cxxopts
         {
             if (value->value().has_implicit())
             {
-                parse_option(value, name, "");
+                parse_option(value, name, value->value().get_implicit_value());
             }
             else
             {
@@ -1008,7 +1032,7 @@ namespace cxxopts
         {
             if (argv[current + 1][0] == '-' && value->value().has_implicit())
             {
-                parse_option(value, name, "");
+                parse_option(value, name, value->value().get_implicit_value());
             }
             else
             {
@@ -1150,7 +1174,7 @@ namespace cxxopts
                             }
                             else if (value->value().has_implicit())
                             {
-                                parse_option(value, name, "");
+                                parse_option(value, name, value->value().get_implicit_value());
                             }
                             else
                             {
@@ -1220,7 +1244,16 @@ namespace cxxopts
         {
             while (current < argc)
             {
-                consume_positional(argv[current]);
+                if (!consume_positional(argv[current])) {
+                    break;
+                }
+                ++current;
+            }
+
+            //adjust argv for any that couldn't be swallowed
+            while (current != argc) {
+                argv[nextKeep] = argv[current];
+                ++nextKeep;
                 ++current;
             }
         }
@@ -1349,6 +1382,35 @@ namespace cxxopts
         return result;
     }
 
+    void
+    Options::generate_group_help(String& result, const std::vector<std::string>& groups) const
+    {
+        for (std::size_t i = 0; i < groups.size(); ++i)
+        {
+            String const& group_help = help_one_group(groups[i]);
+            if (empty(group_help)) continue;
+            result += group_help;
+            if (i < groups.size() - 1)
+            {
+                result += '\n';
+            }
+        }
+    }
+
+    void
+    Options::generate_all_groups_help(String& result) const
+    {
+        std::vector<std::string> groups;
+        groups.reserve(m_help.size());
+
+        for (auto& group : m_help)
+        {
+            groups.push_back(group.first);
+        }
+
+        generate_group_help(result, groups);
+    }
+
     std::string
     Options::help(const std::vector<std::string>& groups) const
     {
@@ -1356,20 +1418,18 @@ namespace cxxopts
                         toLocalString(m_program) + " [OPTION...]";
 
         if (m_positional.size() > 0) {
-            result += " positional parameters";
+            result += " " + toLocalString(m_positional_help);
         }
 
         result += "\n\n";
 
-        for (std::size_t i = 0; i < groups.size(); ++i)
+        if (groups.size() == 0)
         {
-            String const& group_help = help_one_group(groups[i]);
-            if (group_help.empty()) continue;
-            result += group_help;
-            if (i < groups.size() - 1)
-            {
-                result += '\n';
-            }
+            generate_all_groups_help(result);
+        }
+        else
+        {
+            generate_group_help(result, groups);
         }
 
         return toUTF8String(result);
