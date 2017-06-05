@@ -3,16 +3,16 @@
  * Copyright (C) 2016 Rishabh Rawat
  *
  * avlc is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef AVLC_STATE_H
@@ -192,12 +192,6 @@ struct Options {
 	// min => 'M'
 	// hr => 'h'
 	char Time_Resolution = 'f';
-
-	// Integer and time types can be either 32 bits or 64 bits values. The default is 32 bits for Integer and 64
-	// bits for Time.  Be very careful: if you don't use the default sizes, you may have to change other parts of
-	// your systems (such as GRT).
-	bool Flag_Integer_64 = false;
-	bool Flag_Time_64 = true;
 
 	// If set, generate cross-references during sem.
 	bool Flag_Xref = false;

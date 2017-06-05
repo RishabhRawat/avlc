@@ -3,16 +3,16 @@
  * Copyright (C) 2016 Rishabh Rawat
  *
  * avlc is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -29,14 +29,24 @@ class LibraryOptions {
 public:
     LibraryOptions() : optionHandler{"avlc", "Another VHDL language compiler"} {
         auto addMainOption = optionHandler.add_options("Main Options");
-        addMainOption("work", "use as work library", cxxopts::value<std::string>());
-        addMainOption("workdir", "use for the file library", cxxopts::value<std::string>());
-        addMainOption("P,PATH", "add in the library path list", cxxopts::value<std::string>());
-        addMainOption("std", "select vhdl 87/93/93c/00/02/08 standard",
-                      cxxopts::value<std::string>()->default_value("93c"));
-        addMainOption("vital-checks", "check VITAL restrictions");
-        addMainOption("no-vital-checks", "do not check VITAL restrictions");
+        addMainOption("a,analysis", "Analyze one or several files");
+        addMainOption("e,elaborate", "Elaborate a design");
+        addMainOption("r,run", "Run/Simulate a design");
+        addMainOption("elab-run", "Elaborate and then Run/Simulate a design");
+        addMainOption("bind", "Bind a design unit and prepare the link step");
+        addMainOption("link", "Link an already bound design unit");
+        addMainOption("list-link", "Display files which will be linked");
+        addMainOption("s,syntax-check", "Analyze files but do not generate code:");
         addMainOption("h,help", "display this help");
+
+        auto addConfigurationOption = optionHandler.add_options("Main Options");
+        addConfigurationOption("work", "use as work library", cxxopts::value<std::string>());
+        addConfigurationOption("workdir", "use for the file library", cxxopts::value<std::string>());
+        addConfigurationOption("P,PATH", "add in the library path list", cxxopts::value<std::string>());
+        addConfigurationOption("std", "select vhdl 87/93/93c/00/02/08 standard",
+                      cxxopts::value<std::string>()->default_value("93c"));
+        addConfigurationOption("vital-checks", "check VITAL restrictions");
+        addConfigurationOption("no-vital-checks", "do not check VITAL restrictions");
 
         auto addWarnings = optionHandler.add_options("Warnings");
         addWarnings("warn-binding", "warns for component not bound");

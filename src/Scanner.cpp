@@ -3,16 +3,16 @@
  * Copyright (C) 2016 Rishabh Rawat
  *
  * avlc is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Scanner.h"
@@ -104,8 +104,8 @@ CharacterKindType getCharacterKind(unsigned char c) {
 	else
 		throw std::runtime_error("Invalid character");
 }
-//Iir_Int64 currentIirInt64() ;
-//Iir_Fp64 currentIirFp64() ;
+//IIR::Int64 currentIirInt64() ;
+//IIR::Fp64 currentIirFp64() ;
 //void scan();
 /*
 
@@ -226,8 +226,8 @@ void Scanner::Detect_Encoding_Errors() {
 }
 
 
-Iir_Simple_Name *Scanner::Current_Identifier_Iir() {
-    auto result = new Iir_Simple_Name;
+IIR::Simple_Name *Scanner::Current_Identifier_Iir() {
+    auto result = new IIR::Simple_Name;
     result->Identifier = currentContext.Identifier;
     result->Location = currentContext.getTokenLocation();
     currentContext.invalidateCurrentIdentifier();
@@ -235,8 +235,8 @@ Iir_Simple_Name *Scanner::Current_Identifier_Iir() {
     return result;
 }
 
-Iir_Character_Literal *Scanner::Current_Character_Iir() {
-    auto result = new Iir_Character_Literal;
+IIR::Character_Literal *Scanner::Current_Character_Iir() {
+    auto result = new IIR::Character_Literal;
     result->Identifier = currentContext.Identifier;
     result->Location = currentContext.getTokenLocation();
     currentContext.invalidateCurrentIdentifier();
