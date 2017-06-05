@@ -28,338 +28,222 @@
 #include <optional>
 
 
+#define getVariantValue(var, member) std::visit([](auto bareElement) {return bareElement->member;}, var)
+#define setVariantValue(var, member, value) std::visit([value](auto bareElement) {return bareElement->member = value;}, var)
+
 namespace IIR {
 
 
-    const int Base_id = 17;
-    const int Iir_Type_Abs_id = 18;
-    const int Iir_Parent_Design_Unit_Abs_id = 19;
-    const int Iir_Type_Declarator_Abs_id = 20;
-    const int Iir_Has_Signal_Flag_Abs_id = 21;
-    const int Iir_Expr_Staticness_Abs_id = 22;
-    const int Iir_Error_id = 23;
-    const int Iir_Chain_Abs_id = 24;
-    const int Iir_Elab_Flag_Abs_id = 25;
-    const int Iir_Design_File_id = 26;
-    const int Iir_Date_Abs_id = 27;
-    const int Iir_Context_Items_Abs_id = 28;
-    const int Iir_Identifier_Abs_id = 29;
-    const int Iir_Design_Unit_id = 30;
-    const int Iir_Parent_Abs_id = 31;
-    const int Iir_Has_Identifier_List_Abs_id = 32;
-    const int Iir_Library_Clause_id = 33;
-    const int Iir_Selected_Name_Abs_id = 34;
-    const int Iir_Use_Clause_id = 35;
-    const int Iir_Context_Reference_id = 36;
-    const int Iir_Value_Abs_id = 37;
-    const int Iir_Literal_Origin_Abs_id = 38;
-    const int Iir_Integer_Literal_id = 39;
-    const int Iir_Fp_Value_Abs_id = 40;
-    const int Iir_Floating_Point_Literal_id = 41;
-    const int Iir_Null_Literal_id = 42;
-    const int Iir_Literal_Subtype_Abs_id = 43;
-    const int Iir_String_id = 44;
-    const int Iir_Physical_Unit_Abs_id = 45;
-    const int Iir_Physical_Int_Literal_id = 46;
-    const int Iir_Physical_Fp_Literal_id = 47;
-    const int Iir_Simple_Aggregate_id = 48;
-    const int Iir_Overflow_Literal_id = 49;
-    const int Iir_Unaffected_Waveform_id = 50;
-    const int Iir_Waveform_Element_id = 51;
-    const int Iir_Condition_Abs_id = 52;
-    const int Iir_Conditional_Waveform_id = 53;
-    const int Iir_Expression_Abs_id = 54;
-    const int Iir_Conditional_Expression_id = 55;
-    const int Iir_Formal_Abs_id = 56;
-    const int Iir_Actual_Abs_id = 57;
-    const int Iir_Association_Element_By_Expression_id = 58;
-    const int Iir_Actual_Type_Abs_id = 59;
-    const int Iir_Choice_Staticness_Abs_id = 60;
-    const int Iir_Association_Element_By_Individual_id = 61;
-    const int Iir_Association_Element_Open_id = 62;
-    const int Iir_Association_Element_Package_id = 63;
-    const int Iir_Association_Element_Type_id = 64;
-    const int Iir_Association_Element_Subprogram_id = 65;
-    const int Iir_Choice_Abs_id = 66;
-    const int Iir_Choice_By_Range_id = 67;
-    const int Iir_Choice_By_Expression_id = 68;
-    const int Iir_Kind_Choice_By_Others_id = 69;
-    const int Iir_Choice_By_None_id = 70;
-    const int Iir_Choice_By_Name_id = 71;
-    const int Iir_Entity_Name_Abs_id = 72;
-    const int Iir_Entity_Aspect_Entity_id = 73;
-    const int Iir_Entity_Aspect_Configuration_id = 74;
-    const int Iir_Entity_Aspect_Open_id = 75;
-    const int Iir_Declaration_Chain_Abs_id = 76;
-    const int Iir_Block_Configuration_id = 77;
-    const int Iir_Port_Chain_Abs_id = 78;
-    const int Iir_Generic_Chain_Abs_id = 79;
-    const int Iir_Generic_Map_Aspect_Chain_Abs_id = 80;
-    const int Iir_Port_Map_Aspect_Chain_Abs_id = 81;
-    const int Iir_Block_Header_id = 82;
-    const int Iir_Block_Configuration_Abs_id = 83;
-    const int Iir_Component_Name_Abs_id = 84;
-    const int Iir_Is_Ref_Abs_id = 85;
-    const int Iir_Component_Configuration_id = 86;
-    const int Iir_Binding_Indication_id = 87;
-    const int Iir_Entity_Class_Abs_id = 88;
-    const int Iir_Entity_Class_id = 89;
-    const int Iir_Base_Name_Abs_id = 90;
-    const int Iir_Name_Staticness_Abs_id = 91;
-    const int Iir_Attribute_Value_id = 92;
-    const int Iir_Return_Type_Mark_Abs_id = 93;
-    const int Iir_Signature_id = 94;
-    const int Iir_Aggregate_Info_id = 95;
-    const int Iir_Prefix_Abs_id = 96;
-    const int Iir_Implementation_Abs_id = 97;
-    const int Iir_Parameter_Association_Chain_Abs_id = 98;
-    const int Iir_Procedure_Call_id = 99;
-    const int Iir_Visible_Flag_Abs_id = 100;
-    const int Iir_Record_Element_Constraint_id = 101;
-    const int Iir_Resolution_Indication_Abs_id = 102;
-    const int Iir_Element_Subtype_Indication_Abs_id = 103;
-    const int Iir_Array_Element_Resolution_id = 104;
-    const int Iir_Record_Element_Resolution_id = 105;
-    const int Iir_Record_Resolution_id = 106;
-    const int Iir_Attribute_Specification_id = 107;
-    const int Iir_Type_Mark_Abs_id = 108;
-    const int Iir_Disconnection_Specification_id = 109;
-    const int Iir_Configuration_Specification_id = 110;
-    const int Iir_Incomplete_Type_Ref_Chain_Abs_id = 111;
-    const int Iir_Type_Staticness_Abs_id = 112;
-    const int Iir_Designated_Type_Abs_id = 113;
-    const int Iir_Access_Type_Definition_id = 114;
-    const int Iir_Incomplete_Type_Definition_id = 115;
-    const int Iir_Interface_Type_Definition_id = 116;
-    const int Iir_File_Type_Definition_id = 117;
-    const int Iir_End_Has_Reserved_Id_Abs_id = 118;
-    const int Iir_End_Has_Identifier_Abs_id = 119;
-    const int Iir_Protected_Type_Declaration_id = 120;
-    const int Iir_Constraint_State_Abs_id = 121;
-    const int Iir_Elements_Declaration_List_Abs_id = 122;
-    const int Iir_Record_Type_Definition_id = 123;
-    const int Iir_Index_Subtype_List_Abs_id = 124;
-    const int Iir_Array_Type_Definition_id = 125;
-    const int Iir_Tolerance_Abs_id = 126;
-    const int Iir_Subtype_Type_Mark_Abs_id = 127;
-    const int Iir_Array_Subtype_Definition_id = 128;
-    const int Iir_Record_Subtype_Definition_id = 129;
-    const int Iir_Access_Subtype_Definition_id = 130;
-    const int Iir_Range_Constraint_Abs_id = 131;
-    const int Iir_Physical_Subtype_Definition_id = 132;
-    const int Iir_Floating_Type_Definition_id = 133;
-    const int Iir_Floating_Subtype_Definition_id = 134;
-    const int Iir_Integer_Type_Definition_id = 135;
-    const int Iir_Integer_Subtype_Definition_id = 136;
-    const int Iir_Enumeration_Subtype_Definition_id = 137;
-    const int Iir_Enumeration_Type_Definition_id = 138;
-    const int Iir_Physical_Type_Definition_id = 139;
-    const int Iir_Range_Expression_id = 140;
-    const int Iir_Protected_Type_Body_id = 141;
-    const int Iir_Wildcard_Type_Definition_id = 142;
-    const int Iir_Subtype_Definition_id = 143;
-    const int Iir_Scalar_Nature_Definition_id = 144;
-    const int Iir_Overload_List_id = 145;
-    const int Iir_Type_Definition_Abs_id = 146;
-    const int Iir_Use_Flag_Abs_id = 147;
-    const int Iir_Type_Declaration_id = 148;
-    const int Iir_Anonymous_Type_Declaration_id = 149;
-    const int Iir_Subtype_Indication_Abs_id = 150;
-    const int Iir_Subtype_Declaration_id = 151;
-    const int Iir_Nature_Abs_id = 152;
-    const int Iir_Nature_Declaration_id = 153;
-    const int Iir_Subnature_Declaration_id = 154;
-    const int Iir_Attribute_Value_Chain_Abs_id = 155;
-    const int Iir_Package_Body_Abs_id = 156;
-    const int Iir_Package_Declaration_id = 157;
-    const int Iir_Uninstantiated_Package_Name_Abs_id = 158;
-    const int Iir_Package_Instantiation_Declaration_id = 159;
-    const int Iir_Package_Body_id = 160;
-    const int Iir_Configuration_Declaration_id = 161;
-    const int Iir_Concurrent_Statement_Chain_Abs_id = 162;
-    const int Iir_Is_Within_Flag_Abs_id = 163;
-    const int Iir_Has_Begin_Abs_id = 164;
-    const int Iir_Entity_Declaration_id = 165;
-    const int Iir_Foreign_Flag_Abs_id = 166;
-    const int Iir_Architecture_Body_id = 167;
-    const int Iir_Context_Declaration_id = 168;
-    const int Iir_Package_Header_id = 169;
-    const int Iir_Unit_Declaration_id = 170;
-    const int Iir_Library_Declaration_id = 171;
-    const int Iir_Has_Is_Abs_id = 172;
-    const int Iir_Component_Declaration_id = 173;
-    const int Iir_Attribute_Declaration_id = 174;
-    const int Iir_Group_Template_Declaration_id = 175;
-    const int Iir_Group_Declaration_id = 176;
-    const int Iir_Element_Declaration_id = 177;
-    const int Iir_Name_Abs_id = 178;
-    const int Iir_Non_Object_Alias_Declaration_id = 179;
-    const int Iir_Psl_Declaration_Abs_id = 180;
-    const int Iir_PSL_Clock_Abs_id = 181;
-    const int Iir_Psl_Declaration_id = 182;
-    const int Iir_PSL_Nbr_States_Abs_id = 183;
-    const int Iir_Psl_Endpoint_Declaration_id = 184;
-    const int Iir_Terminal_Declaration_id = 185;
-    const int Iir_Default_Value_Abs_id = 186;
-    const int Iir_Free_Quantity_Declaration_id = 187;
-    const int Iir_Plus_Terminal_Abs_id = 188;
-    const int Iir_Across_Quantity_Declaration_id = 189;
-    const int Iir_Through_Quantity_Declaration_id = 190;
-    const int Iir_Subprogram_Hash_Abs_id = 191;
-    const int Iir_Seen_Flag_Abs_id = 192;
-    const int Iir_Enumeration_Literal_id = 193;
-    const int Iir_Interface_Declaration_Chain_Abs_id = 194;
-    const int Iir_Subprogram_Body_Abs_id = 195;
-    const int Iir_Return_Type_Abs_id = 196;
-    const int Iir_Wait_State_Abs_id = 197;
-    const int Iir_Function_Declaration_id = 198;
-    const int Iir_Passive_Flag_Abs_id = 199;
-    const int Iir_Suspend_Flag_Abs_id = 200;
-    const int Iir_Procedure_Declaration_id = 201;
-    const int Iir_Subprogram_Specification_Abs_id = 202;
-    const int Iir_Sequential_Statement_Chain_Abs_id = 203;
-    const int Iir_Callees_List_Abs_id = 204;
-    const int Iir_Function_Body_id = 205;
-    const int Iir_Procedure_Body_id = 206;
-    const int Iir_After_Drivers_Flag_Abs_id = 207;
-    const int Iir_Object_Alias_Declaration_id = 208;
-    const int Iir_Mode_Abs_id = 209;
-    const int Iir_File_Declaration_id = 210;
-    const int Iir_Guarded_Signal_Flag_Abs_id = 211;
-    const int Iir_Has_Active_Flag_Abs_id = 212;
-    const int Iir_Guard_Signal_Declaration_id = 213;
-    const int Iir_Has_Disconnect_Flag_Abs_id = 214;
-    const int Iir_Signal_Declaration_id = 215;
-    const int Iir_Shared_Flag_Abs_id = 216;
-    const int Iir_Variable_Declaration_id = 217;
-    const int Iir_Constant_Declaration_id = 218;
-    const int Iir_Iterator_Declaration_id = 219;
-    const int Iir_Has_Class_Abs_id = 220;
-    const int Iir_Interface_Signal_Declaration_Extras_id = 221;
-    const int Iir_Interface_Object_Declaration_id = 222;
-    const int Iir_Interface_Type_Declaration_id = 223;
-    const int Iir_Interface_Package_Declaration_id = 224;
-    const int Iir_Interface_Function_Declaration_id = 225;
-    const int Iir_Interface_Procedure_Declaration_id = 226;
-    const int Iir_Signal_Attribute_Declaration_id = 227;
-    const int Iir_Operand_Abs_id = 228;
-    const int Iir_Unary_Operator_id = 229;
-    const int Iir_Binary_Operator_id = 230;
-    const int Iir_Function_Call_id = 231;
-    const int Iir_Aggregate_id = 232;
-    const int Iir_Parenthesis_Expression_id = 233;
-    const int Iir_Qualified_Expression_id = 234;
-    const int Iir_Type_Conversion_id = 235;
-    const int Iir_Allocator_Designated_Type_Abs_id = 236;
-    const int Iir_Allocator_By_Expression_id = 237;
-    const int Iir_Allocator_By_Subtype_id = 238;
-    const int Iir_Selected_Element_id = 239;
-    const int Iir_Dereference_id = 240;
-    const int Iir_Implicit_Dereference_id = 241;
-    const int Iir_Slice_Name_id = 242;
-    const int Iir_Indexed_Name_id = 243;
-    const int Iir_Psl_Expression_id = 244;
-    const int Iir_Label_Abs_id = 245;
-    const int Iir_Sensitivity_List_Abs_id = 246;
-    const int Iir_Process_Origin_Abs_id = 247;
-    const int Iir_Postponed_Flag_Abs_id = 248;
-    const int Iir_Has_Label_Abs_id = 249;
-    const int Iir_Sensitized_Process_Statement_id = 250;
-    const int Iir_Process_Statement_id = 251;
-    const int Iir_Guarded_Target_State_Abs_id = 252;
-    const int Iir_Target_Abs_id = 253;
-    const int Iir_Guard_Abs_id = 254;
-    const int Iir_Simple_Signal_Assignment_Statement_id = 255;
-    const int Iir_Conditional_Signal_Assignment_Statement_id = 256;
-    const int Iir_Selected_Waveform_Assignment_Statement_id = 257;
-    const int Iir_Concurrent_Simple_Signal_Assignment_id = 258;
-    const int Iir_Concurrent_Conditional_Signal_Assignment_id = 259;
-    const int Iir_Selected_Waveform_Chain_Abs_id = 260;
-    const int Iir_Concurrent_Selected_Signal_Assignment_id = 261;
-    const int Iir_Assertion_Condition_Abs_id = 262;
-    const int Iir_Report_Expression_Abs_id = 263;
-    const int Iir_Concurrent_Assertion_Statement_id = 264;
-    const int Iir_Procedure_Call_Abs_id = 265;
-    const int Iir_Concurrent_Procedure_Call_Statement_id = 266;
-    const int Iir_Psl_Assert_Statement_id = 267;
-    const int Iir_Psl_Cover_Statement_id = 268;
-    const int Iir_Block_Statement_id = 269;
-    const int Iir_Generate_Statement_Body_Abs_id = 270;
-    const int Iir_Generate_Else_Clause_Abs_id = 271;
-    const int Iir_If_Generate_Statement_id = 272;
-    const int Iir_Case_Statement_Alternative_Chain_Abs_id = 273;
-    const int Iir_Case_Generate_Statement_id = 274;
-    const int Iir_Parameter_Specification_Abs_id = 275;
-    const int Iir_For_Generate_Statement_id = 276;
-    const int Iir_Component_Instantiation_Statement_id = 277;
-    const int Iir_Psl_Default_Clock_id = 278;
-    const int Iir_Simple_Simultaneous_Statement_id = 279;
-    const int Iir_Generate_Statement_Body_id = 280;
-    const int Iir_If_Generate_Else_Clause_id = 281;
-    const int Iir_Null_Statement_id = 282;
-    const int Iir_Assertion_Statement_id = 283;
-    const int Iir_Report_Statement_id = 284;
-    const int Iir_Wait_Statement_id = 285;
-    const int Iir_Variable_Assignment_Statement_id = 286;
-    const int Iir_Conditional_Variable_Assignment_Statement_id = 287;
-    const int Iir_Return_Statement_id = 288;
-    const int Iir_For_Loop_Statement_id = 289;
-    const int Iir_While_Loop_Statement_id = 290;
-    const int Iir_Loop_Label_Abs_id = 291;
-    const int Iir_Next_Statement_id = 292;
-    const int Iir_Exit_Statement_id = 293;
-    const int Iir_Case_Statement_id = 294;
-    const int Iir_Procedure_Call_Statement_id = 295;
-    const int Iir_Else_Clause_Abs_id = 296;
-    const int Iir_If_Statement_id = 297;
-    const int Iir_Elsif_id = 298;
-    const int Iir_Named_Entity_Abs_id = 299;
-    const int Iir_Alias_Declaration_Abs_id = 300;
-    const int Iir_Character_Literal_id = 301;
-    const int Iir_Simple_Name_id = 302;
-    const int Iir_Selected_Name_id = 303;
-    const int Iir_Operator_Symbol_id = 304;
-    const int Iir_Reference_Name_id = 305;
-    const int Iir_Selected_By_All_Name_id = 306;
-    const int Iir_Parenthesis_Name_id = 307;
-    const int Iir_External_Pathname_Abs_id = 308;
-    const int Iir_External_Name_id = 309;
-    const int Iir_Pathname_Suffix_Abs_id = 310;
-    const int Iir_Package_Pathname_id = 311;
-    const int Iir_Absolute_Pathname_id = 312;
-    const int Iir_Relative_Pathname_id = 313;
-    const int Iir_Pathname_Element_id = 314;
-    const int Iir_Base_Attribute_id = 315;
-    const int Iir_Subtype_Attribute_id = 316;
-    const int Iir_Element_Attribute_id = 317;
-    const int Iir_Left_Type_Attribute_id = 318;
-    const int Iir_Right_Type_Attribute_id = 319;
-    const int Iir_High_Type_Attribute_id = 320;
-    const int Iir_Low_Type_Attribute_id = 321;
-    const int Iir_Ascending_Type_Attribute_id = 322;
-    const int Iir_Parameter_Abs_id = 323;
-    const int Iir_Image_Attribute_id = 324;
-    const int Iir_Value_Attribute_id = 325;
-    const int Iir_Pos_Attribute_id = 326;
-    const int Iir_Val_Attribute_id = 327;
-    const int Iir_Succ_Attribute_id = 328;
-    const int Iir_Pred_Attribute_id = 329;
-    const int Iir_Leftof_Attribute_id = 330;
-    const int Iir_Rightof_Attribute_id = 331;
-    const int Iir_Attr_Chain_Abs_id = 332;
-    const int Iir_Delayed_Attribute_id = 333;
-    const int Iir_Stable_Attribute_id = 334;
-    const int Iir_Quiet_Attribute_id = 335;
-    const int Iir_Transaction_Attribute_id = 336;
-    const int Iir_Attribute_id = 337;
-    const int Iir_Behavior_Attribute_id = 338;
-    const int Iir_Structure_Attribute_id = 339;
-    const int Iir_Simple_Name_Attribute_id = 340;
-    const int Iir_Instance_Name_Attribute_id = 341;
-    const int Iir_Path_Name_Attribute_id = 342;
-    const int Iir_Index_Subtype_Abs_id = 343;
-    const int Iir_Array_Attribute_id = 344;
-    const int Iir_Attribute_Name_id = 345;
+    const int Base_id = 0;
+    const int Error_id = 1;
+    const int Design_File_id = 2;
+    const int Design_Unit_id = 3;
+    const int Library_Clause_id = 4;
+    const int Use_Clause_id = 5;
+    const int Context_Reference_id = 6;
+    const int Integer_Literal_id = 7;
+    const int Floating_Point_Literal_id = 8;
+    const int Null_Literal_id = 9;
+    const int String_id = 10;
+    const int Physical_Int_Literal_id = 11;
+    const int Physical_Fp_Literal_id = 12;
+    const int Simple_Aggregate_id = 13;
+    const int Overflow_Literal_id = 14;
+    const int Unaffected_Waveform_id = 15;
+    const int Waveform_Element_id = 16;
+    const int Conditional_Waveform_id = 17;
+    const int Conditional_Expression_id = 18;
+    const int Association_Element_By_Expression_id = 19;
+    const int Association_Element_By_Individual_id = 20;
+    const int Association_Element_Open_id = 21;
+    const int Association_Element_Package_id = 22;
+    const int Association_Element_Type_id = 23;
+    const int Association_Element_Subprogram_id = 24;
+    const int Choice_By_Range_id = 25;
+    const int Choice_By_Expression_id = 26;
+    const int Kind_Choice_By_Others_id = 27;
+    const int Choice_By_None_id = 28;
+    const int Choice_By_Name_id = 29;
+    const int Entity_Aspect_Entity_id = 30;
+    const int Entity_Aspect_Configuration_id = 31;
+    const int Entity_Aspect_Open_id = 32;
+    const int Block_Configuration_id = 33;
+    const int Block_Header_id = 34;
+    const int Component_Configuration_id = 35;
+    const int Binding_Indication_id = 36;
+    const int Entity_Class_id = 37;
+    const int Attribute_Value_id = 38;
+    const int Signature_id = 39;
+    const int Aggregate_Info_id = 40;
+    const int Procedure_Call_id = 41;
+    const int Record_Element_Constraint_id = 42;
+    const int Array_Element_Resolution_id = 43;
+    const int Record_Element_Resolution_id = 44;
+    const int Record_Resolution_id = 45;
+    const int Attribute_Specification_id = 46;
+    const int Disconnection_Specification_id = 47;
+    const int Configuration_Specification_id = 48;
+    const int Access_Type_Definition_id = 49;
+    const int Incomplete_Type_Definition_id = 50;
+    const int Interface_Type_Definition_id = 51;
+    const int File_Type_Definition_id = 52;
+    const int Protected_Type_Declaration_id = 53;
+    const int Record_Type_Definition_id = 54;
+    const int Array_Type_Definition_id = 55;
+    const int Array_Subtype_Definition_id = 56;
+    const int Record_Subtype_Definition_id = 57;
+    const int Access_Subtype_Definition_id = 58;
+    const int Physical_Subtype_Definition_id = 59;
+    const int Floating_Type_Definition_id = 60;
+    const int Floating_Subtype_Definition_id = 61;
+    const int Integer_Type_Definition_id = 62;
+    const int Integer_Subtype_Definition_id = 63;
+    const int Enumeration_Subtype_Definition_id = 64;
+    const int Enumeration_Type_Definition_id = 65;
+    const int Physical_Type_Definition_id = 66;
+    const int Range_Expression_id = 67;
+    const int Protected_Type_Body_id = 68;
+    const int Wildcard_Type_Definition_id = 69;
+    const int Subtype_Definition_id = 70;
+    const int Scalar_Nature_Definition_id = 71;
+    const int Overload_List_id = 72;
+    const int Type_Declaration_id = 73;
+    const int Anonymous_Type_Declaration_id = 74;
+    const int Subtype_Declaration_id = 75;
+    const int Nature_Declaration_id = 76;
+    const int Subnature_Declaration_id = 77;
+    const int Package_Declaration_id = 78;
+    const int Package_Instantiation_Declaration_id = 79;
+    const int Package_Body_id = 80;
+    const int Configuration_Declaration_id = 81;
+    const int Entity_Declaration_id = 82;
+    const int Architecture_Body_id = 83;
+    const int Context_Declaration_id = 84;
+    const int Package_Header_id = 85;
+    const int Unit_Declaration_id = 86;
+    const int Library_Declaration_id = 87;
+    const int Component_Declaration_id = 88;
+    const int Attribute_Declaration_id = 89;
+    const int Group_Template_Declaration_id = 90;
+    const int Group_Declaration_id = 91;
+    const int Element_Declaration_id = 92;
+    const int Non_Object_Alias_Declaration_id = 93;
+    const int Psl_Declaration_id = 94;
+    const int Psl_Endpoint_Declaration_id = 95;
+    const int Terminal_Declaration_id = 96;
+    const int Free_Quantity_Declaration_id = 97;
+    const int Across_Quantity_Declaration_id = 98;
+    const int Through_Quantity_Declaration_id = 99;
+    const int Enumeration_Literal_id = 100;
+    const int Function_Declaration_id = 101;
+    const int Procedure_Declaration_id = 102;
+    const int Function_Body_id = 103;
+    const int Procedure_Body_id = 104;
+    const int Object_Alias_Declaration_id = 105;
+    const int File_Declaration_id = 106;
+    const int Guard_Signal_Declaration_id = 107;
+    const int Signal_Declaration_id = 108;
+    const int Variable_Declaration_id = 109;
+    const int Constant_Declaration_id = 110;
+    const int Iterator_Declaration_id = 111;
+    const int Interface_Signal_Declaration_Extras_id = 112;
+    const int Interface_Object_Declaration_id = 113;
+    const int Interface_Type_Declaration_id = 114;
+    const int Interface_Package_Declaration_id = 115;
+    const int Interface_Function_Declaration_id = 116;
+    const int Interface_Procedure_Declaration_id = 117;
+    const int Signal_Attribute_Declaration_id = 118;
+    const int Unary_Operator_id = 119;
+    const int Binary_Operator_id = 120;
+    const int Function_Call_id = 121;
+    const int Aggregate_id = 122;
+    const int Parenthesis_Expression_id = 123;
+    const int Qualified_Expression_id = 124;
+    const int Type_Conversion_id = 125;
+    const int Allocator_By_Expression_id = 126;
+    const int Allocator_By_Subtype_id = 127;
+    const int Selected_Element_id = 128;
+    const int Dereference_id = 129;
+    const int Implicit_Dereference_id = 130;
+    const int Slice_Name_id = 131;
+    const int Indexed_Name_id = 132;
+    const int Psl_Expression_id = 133;
+    const int Sensitized_Process_Statement_id = 134;
+    const int Process_Statement_id = 135;
+    const int Simple_Signal_Assignment_Statement_id = 136;
+    const int Conditional_Signal_Assignment_Statement_id = 137;
+    const int Selected_Waveform_Assignment_Statement_id = 138;
+    const int Concurrent_Simple_Signal_Assignment_id = 139;
+    const int Concurrent_Conditional_Signal_Assignment_id = 140;
+    const int Concurrent_Selected_Signal_Assignment_id = 141;
+    const int Concurrent_Assertion_Statement_id = 142;
+    const int Concurrent_Procedure_Call_Statement_id = 143;
+    const int Psl_Assert_Statement_id = 144;
+    const int Psl_Cover_Statement_id = 145;
+    const int Block_Statement_id = 146;
+    const int If_Generate_Statement_id = 147;
+    const int Case_Generate_Statement_id = 148;
+    const int For_Generate_Statement_id = 149;
+    const int Component_Instantiation_Statement_id = 150;
+    const int Psl_Default_Clock_id = 151;
+    const int Simple_Simultaneous_Statement_id = 152;
+    const int Generate_Statement_Body_id = 153;
+    const int If_Generate_Else_Clause_id = 154;
+    const int Null_Statement_id = 155;
+    const int Assertion_Statement_id = 156;
+    const int Report_Statement_id = 157;
+    const int Wait_Statement_id = 158;
+    const int Variable_Assignment_Statement_id = 159;
+    const int Conditional_Variable_Assignment_Statement_id = 160;
+    const int Return_Statement_id = 161;
+    const int For_Loop_Statement_id = 162;
+    const int While_Loop_Statement_id = 163;
+    const int Next_Statement_id = 164;
+    const int Exit_Statement_id = 165;
+    const int Case_Statement_id = 166;
+    const int Procedure_Call_Statement_id = 167;
+    const int If_Statement_id = 168;
+    const int Elsif_id = 169;
+    const int Character_Literal_id = 170;
+    const int Simple_Name_id = 171;
+    const int Selected_Name_id = 172;
+    const int Operator_Symbol_id = 173;
+    const int Reference_Name_id = 174;
+    const int Selected_By_All_Name_id = 175;
+    const int Parenthesis_Name_id = 176;
+    const int External_Name_id = 177;
+    const int Package_Pathname_id = 178;
+    const int Absolute_Pathname_id = 179;
+    const int Relative_Pathname_id = 180;
+    const int Pathname_Element_id = 181;
+    const int Base_Attribute_id = 182;
+    const int Subtype_Attribute_id = 183;
+    const int Element_Attribute_id = 184;
+    const int Left_Type_Attribute_id = 185;
+    const int Right_Type_Attribute_id = 186;
+    const int High_Type_Attribute_id = 187;
+    const int Low_Type_Attribute_id = 188;
+    const int Ascending_Type_Attribute_id = 189;
+    const int Image_Attribute_id = 190;
+    const int Value_Attribute_id = 191;
+    const int Pos_Attribute_id = 192;
+    const int Val_Attribute_id = 193;
+    const int Succ_Attribute_id = 194;
+    const int Pred_Attribute_id = 195;
+    const int Leftof_Attribute_id = 196;
+    const int Rightof_Attribute_id = 197;
+    const int Delayed_Attribute_id = 198;
+    const int Stable_Attribute_id = 199;
+    const int Quiet_Attribute_id = 200;
+    const int Transaction_Attribute_id = 201;
+    const int Attribute_id = 202;
+    const int Behavior_Attribute_id = 203;
+    const int Structure_Attribute_id = 204;
+    const int Simple_Name_Attribute_id = 205;
+    const int Instance_Name_Attribute_id = 206;
+    const int Path_Name_Attribute_id = 207;
+    const int Array_Attribute_id = 208;
+    const int Attribute_Name_id = 209;
 
     enum class Array_Attribute_Type {
         Left,
@@ -437,2617 +321,2604 @@ namespace IIR {
         Driving_Value
     };
 
-    class Design_Unit;
+    struct Base;
+    struct Error;
+    struct Design_File;
+    struct Design_Unit;
+    struct Library_Clause;
+    struct Use_Clause;
+    struct Context_Reference;
+    struct Integer_Literal;
+    struct Floating_Point_Literal;
+    struct Null_Literal;
+    struct String;
+    struct Physical_Int_Literal;
+    struct Physical_Fp_Literal;
+    struct Simple_Aggregate;
+    struct Overflow_Literal;
+    struct Unaffected_Waveform;
+    struct Waveform_Element;
+    struct Conditional_Waveform;
+    struct Conditional_Expression;
+    struct Association_Element_By_Expression;
+    struct Association_Element_By_Individual;
+    struct Association_Element_Open;
+    struct Association_Element_Package;
+    struct Association_Element_Type;
+    struct Association_Element_Subprogram;
+    struct Choice_By_Range;
+    struct Choice_By_Expression;
+    struct Kind_Choice_By_Others;
+    struct Choice_By_None;
+    struct Choice_By_Name;
+    struct Entity_Aspect_Entity;
+    struct Entity_Aspect_Configuration;
+    struct Entity_Aspect_Open;
+    struct Block_Configuration;
+    struct Block_Header;
+    struct Component_Configuration;
+    struct Binding_Indication;
+    struct Entity_Class;
+    struct Attribute_Value;
+    struct Signature;
+    struct Aggregate_Info;
+    struct Procedure_Call;
+    struct Record_Element_Constraint;
+    struct Array_Element_Resolution;
+    struct Record_Element_Resolution;
+    struct Record_Resolution;
+    struct Attribute_Specification;
+    struct Disconnection_Specification;
+    struct Configuration_Specification;
+    struct Access_Type_Definition;
+    struct Incomplete_Type_Definition;
+    struct Interface_Type_Definition;
+    struct File_Type_Definition;
+    struct Protected_Type_Declaration;
+    struct Record_Type_Definition;
+    struct Array_Type_Definition;
+    struct Array_Subtype_Definition;
+    struct Record_Subtype_Definition;
+    struct Access_Subtype_Definition;
+    struct Physical_Subtype_Definition;
+    struct Floating_Type_Definition;
+    struct Floating_Subtype_Definition;
+    struct Integer_Type_Definition;
+    struct Integer_Subtype_Definition;
+    struct Enumeration_Subtype_Definition;
+    struct Enumeration_Type_Definition;
+    struct Physical_Type_Definition;
+    struct Range_Expression;
+    struct Protected_Type_Body;
+    struct Wildcard_Type_Definition;
+    struct Subtype_Definition;
+    struct Scalar_Nature_Definition;
+    struct Overload_List;
+    struct Type_Declaration;
+    struct Anonymous_Type_Declaration;
+    struct Subtype_Declaration;
+    struct Nature_Declaration;
+    struct Subnature_Declaration;
+    struct Package_Declaration;
+    struct Package_Instantiation_Declaration;
+    struct Package_Body;
+    struct Configuration_Declaration;
+    struct Entity_Declaration;
+    struct Architecture_Body;
+    struct Context_Declaration;
+    struct Package_Header;
+    struct Unit_Declaration;
+    struct Library_Declaration;
+    struct Component_Declaration;
+    struct Attribute_Declaration;
+    struct Group_Template_Declaration;
+    struct Group_Declaration;
+    struct Element_Declaration;
+    struct Non_Object_Alias_Declaration;
+    struct Psl_Declaration;
+    struct Psl_Endpoint_Declaration;
+    struct Terminal_Declaration;
+    struct Free_Quantity_Declaration;
+    struct Across_Quantity_Declaration;
+    struct Through_Quantity_Declaration;
+    struct Enumeration_Literal;
+    struct Function_Declaration;
+    struct Procedure_Declaration;
+    struct Function_Body;
+    struct Procedure_Body;
+    struct Object_Alias_Declaration;
+    struct File_Declaration;
+    struct Guard_Signal_Declaration;
+    struct Signal_Declaration;
+    struct Variable_Declaration;
+    struct Constant_Declaration;
+    struct Iterator_Declaration;
+    struct Interface_Signal_Declaration_Extras;
+    struct Interface_Object_Declaration;
+    struct Interface_Type_Declaration;
+    struct Interface_Package_Declaration;
+    struct Interface_Function_Declaration;
+    struct Interface_Procedure_Declaration;
+    struct Signal_Attribute_Declaration;
+    struct Unary_Operator;
+    struct Binary_Operator;
+    struct Function_Call;
+    struct Aggregate;
+    struct Parenthesis_Expression;
+    struct Qualified_Expression;
+    struct Type_Conversion;
+    struct Allocator_By_Expression;
+    struct Allocator_By_Subtype;
+    struct Selected_Element;
+    struct Dereference;
+    struct Implicit_Dereference;
+    struct Slice_Name;
+    struct Indexed_Name;
+    struct Psl_Expression;
+    struct Sensitized_Process_Statement;
+    struct Process_Statement;
+    struct Simple_Signal_Assignment_Statement;
+    struct Conditional_Signal_Assignment_Statement;
+    struct Selected_Waveform_Assignment_Statement;
+    struct Concurrent_Simple_Signal_Assignment;
+    struct Concurrent_Conditional_Signal_Assignment;
+    struct Concurrent_Selected_Signal_Assignment;
+    struct Concurrent_Assertion_Statement;
+    struct Concurrent_Procedure_Call_Statement;
+    struct Psl_Assert_Statement;
+    struct Psl_Cover_Statement;
+    struct Block_Statement;
+    struct If_Generate_Statement;
+    struct Case_Generate_Statement;
+    struct For_Generate_Statement;
+    struct Component_Instantiation_Statement;
+    struct Psl_Default_Clock;
+    struct Simple_Simultaneous_Statement;
+    struct Generate_Statement_Body;
+    struct If_Generate_Else_Clause;
+    struct Null_Statement;
+    struct Assertion_Statement;
+    struct Report_Statement;
+    struct Wait_Statement;
+    struct Variable_Assignment_Statement;
+    struct Conditional_Variable_Assignment_Statement;
+    struct Return_Statement;
+    struct For_Loop_Statement;
+    struct While_Loop_Statement;
+    struct Next_Statement;
+    struct Exit_Statement;
+    struct Case_Statement;
+    struct Procedure_Call_Statement;
+    struct If_Statement;
+    struct Elsif;
+    struct Character_Literal;
+    struct Simple_Name;
+    struct Selected_Name;
+    struct Operator_Symbol;
+    struct Reference_Name;
+    struct Selected_By_All_Name;
+    struct Parenthesis_Name;
+    struct External_Name;
+    struct Package_Pathname;
+    struct Absolute_Pathname;
+    struct Relative_Pathname;
+    struct Pathname_Element;
+    struct Base_Attribute;
+    struct Subtype_Attribute;
+    struct Element_Attribute;
+    struct Left_Type_Attribute;
+    struct Right_Type_Attribute;
+    struct High_Type_Attribute;
+    struct Low_Type_Attribute;
+    struct Ascending_Type_Attribute;
+    struct Image_Attribute;
+    struct Value_Attribute;
+    struct Pos_Attribute;
+    struct Val_Attribute;
+    struct Succ_Attribute;
+    struct Pred_Attribute;
+    struct Leftof_Attribute;
+    struct Rightof_Attribute;
+    struct Delayed_Attribute;
+    struct Stable_Attribute;
+    struct Quiet_Attribute;
+    struct Transaction_Attribute;
+    struct Attribute;
+    struct Behavior_Attribute;
+    struct Structure_Attribute;
+    struct Simple_Name_Attribute;
+    struct Instance_Name_Attribute;
+    struct Path_Name_Attribute;
+    struct Array_Attribute;
+    struct Attribute_Name;
 
-    class Library_Declaration;
+    using Design_Unit_Collection = std::variant<Entity_Declaration*, Architecture_Body*, Package_Declaration*, Package_Instantiation_Declaration*, Package_Body*, Configuration_Declaration*, Context_Declaration*>;
 
-    class Entity_Declaration;
+    using Arch_Name = std::variant<Simple_Name*, Architecture_Body*>;
 
-    class Architecture_Body;
+    using Type_Definitions = std::variant<Error*, Access_Type_Definition*, Incomplete_Type_Definition*, Interface_Type_Definition*, File_Type_Definition*, Record_Type_Definition*, Array_Type_Definition*, Array_Subtype_Definition*, Record_Subtype_Definition*, Access_Subtype_Definition*, Physical_Subtype_Definition*, Floating_Type_Definition*, Floating_Subtype_Definition*, Integer_Type_Definition*, Integer_Subtype_Definition*, Enumeration_Subtype_Definition*, Enumeration_Type_Definition*, Physical_Type_Definition*, Wildcard_Type_Definition*>;
 
-    class Package_Declaration;
+    using Type_Declarations = std::variant<Subtype_Declaration*, Interface_Object_Declaration*, Interface_Type_Declaration*>;
 
-    class Package_Instantiation_Declaration;
+    using Waveform = std::vector<Waveform_Element*>;
 
-    class Package_Body;
+    using Conditional_Waveforms = std::vector<Conditional_Waveform*>;
 
-    class Configuration_Declaration;
-
-    class Context_Declaration;
-
-    class Unit_Declaration;
-
-    class Binding_Indication;
-
-    class Enumeration_Literal;
-
-    class Base {
+    struct Base {
         Location_Type Location;
+        int structId;
     };
 
-    class Iir_Type_Abs
-            : public virtual Iir {
-        Iir* Type;
-    };
-
-    class Iir_Parent_Design_Unit_Abs
-            : public virtual Iir {
-        Iir_Design_Unit* Parent_Design_Unit;
-    };
-
-    class Iir_Type_Declarator_Abs
-            : public virtual Iir {
+    struct Error
+            : public Base {
+        Base* Error_Origin;
+        Base* Type;
         bool Resolved_Flag;
-        Iir* Base_Type;
+        Base* Base_Type;
         bool Signal_Type_Flag;
-        Iir* Type_Declarator;
-    };
-
-    class Iir_Has_Signal_Flag_Abs
-            : public virtual Iir {
+        Base* Type_Declarator;
         bool Has_Signal_Flag;
-    };
-
-    class Iir_Expr_Staticness_Abs
-            : public virtual Iir {
         Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Error
-            : public Iir_Type_Abs,
-              public Iir_Type_Declarator_Abs,
-              public Iir_Has_Signal_Flag_Abs,
-              public Iir_Expr_Staticness_Abs {
-        Iir* Error_Origin;
-    };
-
-    class Iir_Chain_Abs
-            : public virtual Iir {
-        Iir* Chain;
-    };
-
-    class Iir_Elab_Flag_Abs
-            : public virtual Iir {
+    struct Design_File
+            : public Base {
+        std::vector<Design_Unit*> Design_Units;
+        Time_Stamp_Id Analysis_Time_Stamp;
+        File_Checksum_Id File_Checksum;
+        Library_Declaration* Library;
+        std::vector<Base*> File_Dependence_List;
+        std::filesystem::path Design_File_Filename;
         bool Elab_Flag;
     };
 
-    class Iir_Design_File
-            : public Iir_Elab_Flag_Abs {
-        std::vector<Iir_Design_Unit*> Design_Units;
-        Time_Stamp_Id Analysis_Time_Stamp;
-        File_Checksum_Id File_Checksum;
-        Iir_Library_Declaration* Library;
-        std::vector<Iir*> File_Dependence_List;
-        std::filesystem::path Design_File_Filename;
-    };
-
-    class Iir_Date_Abs
-            : public virtual Iir {
-        Date_Type Date;
-    };
-
-    class Iir_Context_Items_Abs
-            : public virtual Iir {
-        std::vector<Iir*> Context_Items;
-    };
-
-    class Iir_Identifier_Abs
-            : public virtual Iir {
-        std::string Identifier;
-    };
-
-    class Iir_Design_Unit
-            : public Iir_Date_Abs,
-              public Iir_Context_Items_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Elab_Flag_Abs {
+    struct Design_Unit
+            : public Base {
         Location_Type Source_Pos;
         Location_Type End_Location;
         bool Configuration_Mark_Flag;
-        Iir_Design_File* Design_File;
-        Iir_Design_Unit_n Library_Unit;
+        Design_File* design_File;
+        Design_Unit_Collection Library_Unit;
         Date_State_Type Date_State;
-        std::vector<Iir*> Analysis_Checks_List;
-        std::vector<Iir*> Dependence_List;
+        std::vector<Base*> Analysis_Checks_List;
+        std::vector<Base*> Dependence_List;
         bool Configuration_Done_Flag;
+        Date_Type Date;
+        std::vector<Base*> Context_Items;
+        std::string Identifier;
+        bool Elab_Flag;
     };
 
-    class Iir_Parent_Abs
-            : public virtual Iir {
-        Iir* Parent;
-    };
-
-    class Iir_Has_Identifier_List_Abs
-            : public virtual Iir {
+    struct Library_Clause
+            : public Base {
+        Base* Library_Declaration;
+        Base* Chain;
+        std::string Identifier;
+        Base* Parent;
         bool Has_Identifier_List;
     };
 
-    class Iir_Library_Clause
-            : public Iir_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Has_Identifier_List_Abs {
-        Iir* Library_Declaration;
+    struct Use_Clause
+            : public Base {
+        Base* Use_Clause_Chain;
+        Base* Chain;
+        Base* Selected_Name;
+        Base* Parent;
     };
 
-    class Iir_Selected_Name_Abs
-            : public virtual Iir {
-        Iir* Selected_Name;
+    struct Context_Reference
+            : public Base {
+        Base* Context_Reference_Chain;
+        Base* Chain;
+        Base* Selected_Name;
+        Base* Parent;
     };
 
-    class Iir_Use_Clause
-            : public Iir_Chain_Abs,
-              public Iir_Selected_Name_Abs,
-              public Iir_Parent_Abs {
-        Iir* Use_Clause_Chain;
-    };
-
-    class Iir_Context_Reference
-            : public Iir_Chain_Abs,
-              public Iir_Selected_Name_Abs,
-              public Iir_Parent_Abs {
-        Iir* Context_Reference_Chain;
-    };
-
-    class Iir_Value_Abs
-            : public virtual Iir {
+    struct Integer_Literal
+            : public Base {
         int64_t Value;
+        Base* Literal_Origin;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Literal_Origin_Abs
-            : public virtual Iir {
-        Iir* Literal_Origin;
-    };
-
-    class Iir_Integer_Literal
-            : public Iir_Value_Abs,
-              public Iir_Literal_Origin_Abs,
-              public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs {
-    };
-
-    class Iir_Fp_Value_Abs
-            : public virtual Iir {
+    struct Floating_Point_Literal
+            : public Base {
         double Fp_Value;
+        Base* Literal_Origin;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Floating_Point_Literal
-            : public Iir_Fp_Value_Abs,
-              public Iir_Literal_Origin_Abs,
-              public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs {
+    struct Null_Literal
+            : public Base {
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Null_Literal
-            : public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs {
-    };
-
-    class Iir_Literal_Subtype_Abs
-            : public virtual Iir {
-        Iir* Literal_Subtype;
-    };
-
-    class Iir_String
-            : public Iir_Literal_Origin_Abs,
-              public Iir_Literal_Subtype_Abs,
-              public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs {
+    struct String
+            : public Base {
         std::string str;
         bool Has_Sign;
         Number_Base_Type Bit_String_Base;
         bool Has_Signed;
+        Base* Literal_Origin;
+        Base* Literal_Subtype;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Physical_Unit_Abs
-            : public virtual Iir {
-        Iir* Unit_Name;
-        Iir_Unit_Declaration* Physical_Unit;
+    struct Physical_Int_Literal
+            : public Base {
+        int64_t Value;
+        Base* Literal_Origin;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
+        Base* Unit_Name;
+        Unit_Declaration* Physical_Unit;
     };
 
-    class Iir_Physical_Int_Literal
-            : public Iir_Value_Abs,
-              public Iir_Literal_Origin_Abs,
-              public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Physical_Unit_Abs {
+    struct Physical_Fp_Literal
+            : public Base {
+        double Fp_Value;
+        Base* Literal_Origin;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
+        Base* Unit_Name;
+        Unit_Declaration* Physical_Unit;
     };
 
-    class Iir_Physical_Fp_Literal
-            : public Iir_Fp_Value_Abs,
-              public Iir_Literal_Origin_Abs,
-              public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Physical_Unit_Abs {
+    struct Simple_Aggregate
+            : public Base {
+        std::vector<Base*> Simple_Aggregate_List;
+        Base* Literal_Origin;
+        Base* Literal_Subtype;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Simple_Aggregate
-            : public Iir_Literal_Origin_Abs,
-              public Iir_Literal_Subtype_Abs,
-              public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs {
-        std::vector<Iir*> Simple_Aggregate_List;
+    struct Overflow_Literal
+            : public Base {
+        Base* Literal_Origin;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Overflow_Literal
-            : public Iir_Literal_Origin_Abs,
-              public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs {
+    struct Unaffected_Waveform
+            : public Base {
     };
 
-    class Iir_Unaffected_Waveform
-            : public virtual Iir {
+    struct Waveform_Element
+            : public Base {
+        Base* We_Value;
+        Base* Time;
     };
 
-    class Iir_Waveform_Element
-            : public virtual Iir {
-        Iir* We_Value;
-        Iir* Time;
+    struct Conditional_Waveform
+            : public Base {
+        Waveform waveform;
+        Base* Chain;
+        Base* Condition;
     };
 
-    class Iir_Condition_Abs
-            : public virtual Iir {
-        Iir* Condition;
+    struct Conditional_Expression
+            : public Base {
+        Base* Chain;
+        Base* Expression;
+        Base* Condition;
     };
 
-    class Iir_Conditional_Waveform
-            : public Iir_Chain_Abs,
-              public Iir_Condition_Abs {
-        Iir_Waveform waveform;
-    };
-
-    class Iir_Expression_Abs
-            : public virtual Iir {
-        Iir* Expression;
-    };
-
-    class Iir_Conditional_Expression
-            : public Iir_Chain_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Condition_Abs {
-    };
-
-    class Iir_Formal_Abs
-            : public virtual Iir {
+    struct Association_Element_By_Expression
+            : public Base {
+        Base* In_Conversion;
+        Base* Out_Conversion;
         bool Whole_Association_Flag;
         bool Collapse_Signal_Flag;
-        Iir* Formal;
+        Base* Formal;
+        Base* Actual;
+        Base* Chain;
     };
 
-    class Iir_Actual_Abs
-            : public virtual Iir {
-        Iir* Actual;
-    };
-
-    class Iir_Association_Element_By_Expression
-            : public Iir_Formal_Abs,
-              public Iir_Actual_Abs,
-              public Iir_Chain_Abs {
-        Iir* In_Conversion;
-        Iir* Out_Conversion;
-    };
-
-    class Iir_Actual_Type_Abs
-            : public virtual Iir {
-        Iir* Actual_Type;
-    };
-
-    class Iir_Choice_Staticness_Abs
-            : public virtual Iir {
+    struct Association_Element_By_Individual
+            : public Base {
+        Base* Individual_Association_Chain;
+        Base* Actual_Type_Definition;
+        bool Whole_Association_Flag;
+        bool Collapse_Signal_Flag;
+        Base* Formal;
+        Base* Chain;
+        Base* Actual_Type;
         Iir_Staticness Choice_Staticness;
     };
 
-    class Iir_Association_Element_By_Individual
-            : public Iir_Formal_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Actual_Type_Abs,
-              public Iir_Choice_Staticness_Abs {
-        Iir* Individual_Association_Chain;
-        Iir* Actual_Type_Definition;
-    };
-
-    class Iir_Association_Element_Open
-            : public Iir_Formal_Abs,
-              public Iir_Chain_Abs {
+    struct Association_Element_Open
+            : public Base {
         bool Artificial_Flag;
+        bool Whole_Association_Flag;
+        bool Collapse_Signal_Flag;
+        Base* Formal;
+        Base* Chain;
     };
 
-    class Iir_Association_Element_Package
-            : public Iir_Formal_Abs,
-              public Iir_Actual_Abs,
-              public Iir_Chain_Abs {
+    struct Association_Element_Package
+            : public Base {
+        bool Whole_Association_Flag;
+        bool Collapse_Signal_Flag;
+        Base* Formal;
+        Base* Actual;
+        Base* Chain;
     };
 
-    class Iir_Association_Element_Type
-            : public Iir_Formal_Abs,
-              public Iir_Actual_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Actual_Type_Abs {
-        Iir* Subprogram_Association_Chain;
+    struct Association_Element_Type
+            : public Base {
+        Base* Subprogram_Association_Chain;
+        bool Whole_Association_Flag;
+        bool Collapse_Signal_Flag;
+        Base* Formal;
+        Base* Actual;
+        Base* Chain;
+        Base* Actual_Type;
     };
 
-    class Iir_Association_Element_Subprogram
-            : public Iir_Formal_Abs,
-              public Iir_Actual_Abs,
-              public Iir_Chain_Abs {
+    struct Association_Element_Subprogram
+            : public Base {
+        bool Whole_Association_Flag;
+        bool Collapse_Signal_Flag;
+        Base* Formal;
+        Base* Actual;
+        Base* Chain;
     };
 
-    class Iir_Choice_Abs
-            : public Iir_Chain_Abs,
-              public Iir_Parent_Abs {
+    struct Choice_By_Range
+            : public Base {
+        Base* Choice_Range;
         bool Same_Alternative_Flag;
-        Iir* Associated_Expr;
-        Iir* Associated_Chain;
+        Base* Associated_Expr;
+        Base* Associated_Chain;
+        Base* Chain;
+        Base* Parent;
+        Iir_Staticness Choice_Staticness;
     };
 
-    class Iir_Choice_By_Range
-            : public Iir_Choice_Abs,
-              public Iir_Choice_Staticness_Abs {
-        Iir* Choice_Range;
+    struct Choice_By_Expression
+            : public Base {
+        Base* Choice_Expression;
+        bool Same_Alternative_Flag;
+        Base* Associated_Expr;
+        Base* Associated_Chain;
+        Base* Chain;
+        Base* Parent;
+        Iir_Staticness Choice_Staticness;
     };
 
-    class Iir_Choice_By_Expression
-            : public Iir_Choice_Abs,
-              public Iir_Choice_Staticness_Abs {
-        Iir* Choice_Expression;
+    struct Kind_Choice_By_Others
+            : public Base {
+        bool Same_Alternative_Flag;
+        Base* Associated_Expr;
+        Base* Associated_Chain;
+        Base* Chain;
+        Base* Parent;
     };
 
-    class Iir_Kind_Choice_By_Others
-            : public Iir_Choice_Abs {
+    struct Choice_By_None
+            : public Base {
+        bool Same_Alternative_Flag;
+        Base* Associated_Expr;
+        Base* Associated_Chain;
+        Base* Chain;
+        Base* Parent;
     };
 
-    class Iir_Choice_By_None
-            : public Iir_Choice_Abs {
+    struct Choice_By_Name
+            : public Base {
+        Base* Choice_Name;
+        bool Same_Alternative_Flag;
+        Base* Associated_Expr;
+        Base* Associated_Chain;
+        Base* Chain;
+        Base* Parent;
     };
 
-    class Iir_Choice_By_Name
-            : public Iir_Choice_Abs {
-        Iir* Choice_Name;
+    struct Entity_Aspect_Entity
+            : public Base {
+        Base* Architecture;
+        Base* Entity_Name;
     };
 
-    class Iir_Entity_Name_Abs
-            : public virtual Iir {
-        Iir* Entity_Name;
+    struct Entity_Aspect_Configuration
+            : public Base {
+        Base* Configuration_Name;
     };
 
-    class Iir_Entity_Aspect_Entity
-            : public Iir_Entity_Name_Abs {
-        Iir* Architecture;
+    struct Entity_Aspect_Open
+            : public Base {
     };
 
-    class Iir_Entity_Aspect_Configuration
-            : public virtual Iir {
-        Iir* Configuration_Name;
+    struct Block_Configuration
+            : public Base {
+        Base* Prev_Block_Configuration;
+        Base* Block_Specification;
+        Base* Configuration_Item_Chain;
+        Base* Chain;
+        std::vector<Base*> Declaration_Chain;
+        Base* Parent;
     };
 
-    class Iir_Entity_Aspect_Open
-            : public virtual Iir {
+    struct Block_Header
+            : public Base {
+        Base* Port_Chain;
+        Base* Generic_Chain;
+        Base* Generic_Map_Aspect_Chain;
+        Base* Port_Map_Aspect_Chain;
     };
 
-    class Iir_Declaration_Chain_Abs
-            : public virtual Iir {
-        std::vector<Iir*> Declaration_Chain;
-    };
-
-    class Iir_Block_Configuration
-            : public Iir_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Parent_Abs {
-        Iir* Prev_Block_Configuration;
-        Iir* Block_Specification;
-        Iir* Configuration_Item_Chain;
-    };
-
-    class Iir_Port_Chain_Abs
-            : public virtual Iir {
-        Iir* Port_Chain;
-    };
-
-    class Iir_Generic_Chain_Abs
-            : public virtual Iir {
-        Iir* Generic_Chain;
-    };
-
-    class Iir_Generic_Map_Aspect_Chain_Abs
-            : public virtual Iir {
-        Iir* Generic_Map_Aspect_Chain;
-    };
-
-    class Iir_Port_Map_Aspect_Chain_Abs
-            : public virtual Iir {
-        Iir* Port_Map_Aspect_Chain;
-    };
-
-    class Iir_Block_Header
-            : public Iir_Port_Chain_Abs,
-              public Iir_Generic_Chain_Abs,
-              public Iir_Generic_Map_Aspect_Chain_Abs,
-              public Iir_Port_Map_Aspect_Chain_Abs {
-    };
-
-    class Iir_Block_Configuration_Abs
-            : public virtual Iir {
-        Iir* Block_Configuration;
-    };
-
-    class Iir_Component_Name_Abs
-            : public virtual Iir {
-        std::vector<Iir*> Instantiation_List;
-        Iir_Binding_Indication* Binding_Indication;
-        Iir* Component_Name;
-    };
-
-    class Iir_Is_Ref_Abs
-            : public virtual Iir {
+    struct Component_Configuration
+            : public Base {
+        Base* Block_Configuration;
+        Base* Chain;
+        Base* Parent;
+        std::vector<Base*> Instantiation_List;
+        Binding_Indication* binding_Indication;
+        Base* Component_Name;
         bool Is_Ref;
     };
 
-    class Iir_Component_Configuration
-            : public Iir_Block_Configuration_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Component_Name_Abs,
-              public Iir_Is_Ref_Abs {
+    struct Binding_Indication
+            : public Base {
+        Base* Entity_Aspect;
+        Base* Default_Entity_Aspect;
+        Base* Generic_Map_Aspect_Chain;
+        Base* Port_Map_Aspect_Chain;
     };
 
-    class Iir_Binding_Indication
-            : public Iir_Generic_Map_Aspect_Chain_Abs,
-              public Iir_Port_Map_Aspect_Chain_Abs {
-        Iir* Entity_Aspect;
-        Iir* Default_Entity_Aspect;
-    };
-
-    class Iir_Entity_Class_Abs
-            : public virtual Iir {
+    struct Entity_Class
+            : public Base {
         Token_Type Entity_Class;
+        Base* Chain;
     };
 
-    class Iir_Entity_Class
-            : public Iir_Entity_Class_Abs,
-              public Iir_Chain_Abs {
-    };
-
-    class Iir_Base_Name_Abs
-            : public virtual Iir {
-        Iir* Base_Name;
-    };
-
-    class Iir_Name_Staticness_Abs
-            : public virtual Iir {
+    struct Attribute_Value
+            : public Base {
+        Base* Designated_Entity;
+        Base* Value_Chain;
+        Base* Attribute_Specification;
+        Base* Spec_Chain;
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
         Iir_Staticness Name_Staticness;
     };
 
-    class Iir_Attribute_Value
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs {
-        Iir* Designated_Entity;
-        Iir* Value_Chain;
-        Iir* Attribute_Specification;
-        Iir* Spec_Chain;
+    struct Signature
+            : public Base {
+        Base* Signature_Prefix;
+        std::vector<Base*> Type_Marks_List;
+        Base* Return_Type_Mark;
     };
 
-    class Iir_Return_Type_Mark_Abs
-            : public virtual Iir {
-        Iir* Return_Type_Mark;
-    };
-
-    class Iir_Signature
-            : public Iir_Return_Type_Mark_Abs {
-        Iir* Signature_Prefix;
-        std::vector<Iir*> Type_Marks_List;
-    };
-
-    class Iir_Aggregate_Info
-            : public virtual Iir {
+    struct Aggregate_Info
+            : public Base {
         bool Aggr_Named_Flag;
-        Iir* Aggr_Low_Limit;
+        Base* Aggr_Low_Limit;
         bool Aggr_Others_Flag;
-        Iir* Sub_Aggregate_Info;
-        Iir* Aggr_High_Limit;
+        Base* Sub_Aggregate_Info;
+        Base* Aggr_High_Limit;
         bool Aggr_Dynamic_Flag;
         int Aggr_Min_Length;
     };
 
-    class Iir_Prefix_Abs
-            : public virtual Iir {
-        Iir* Prefix;
+    struct Procedure_Call
+            : public Base {
+        Base* Prefix;
+        Base* Implementation;
+        Base* Parameter_Association_Chain;
+        Base* Method_Object;
     };
 
-    class Iir_Implementation_Abs
-            : public virtual Iir {
-        Iir* Implementation;
-    };
-
-    class Iir_Parameter_Association_Chain_Abs
-            : public virtual Iir {
-        Iir* Parameter_Association_Chain;
-        Iir* Method_Object;
-    };
-
-    class Iir_Procedure_Call
-            : public Iir_Prefix_Abs,
-              public Iir_Implementation_Abs,
-              public Iir_Parameter_Association_Chain_Abs {
-    };
-
-    class Iir_Visible_Flag_Abs
-            : public virtual Iir {
+    struct Record_Element_Constraint
+            : public Base {
+        Base* Element_Declaration;
+        Base* Type;
+        std::string Identifier;
         bool Visible_Flag;
+        Base* Parent;
     };
 
-    class Iir_Record_Element_Constraint
-            : public Iir_Type_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs {
-        Iir* Element_Declaration;
+    struct Array_Element_Resolution
+            : public Base {
+        Base* Resolution_Indication;
+        Base* Element_Subtype_Indication;
     };
 
-    class Iir_Resolution_Indication_Abs
-            : public virtual Iir {
-        Iir* Resolution_Indication;
+    struct Record_Element_Resolution
+            : public Base {
+        Base* Chain;
+        std::string Identifier;
+        Base* Resolution_Indication;
     };
 
-    class Iir_Element_Subtype_Indication_Abs
-            : public virtual Iir {
-        Iir* Element_Subtype_Indication;
+    struct Record_Resolution
+            : public Base {
+        std::vector<Record_Element_Resolution*> chain;
     };
 
-    class Iir_Array_Element_Resolution
-            : public Iir_Resolution_Indication_Abs,
-              public Iir_Element_Subtype_Indication_Abs {
+    struct Attribute_Specification
+            : public Base {
+        Base* Attribute_Value_Spec_Chain;
+        Base* Attribute_Specification_Chain;
+        std::vector<Base*> Entity_Name_List;
+        Base* Attribute_Designator;
+        Token_Type Entity_Class;
+        Base* Chain;
+        Base* Expression;
+        Base* Parent;
     };
 
-    class Iir_Record_Element_Resolution
-            : public Iir_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Resolution_Indication_Abs {
+    struct Disconnection_Specification
+            : public Base {
+        std::vector<Base*> Signal_List;
+        Base* Chain;
+        Base* Expression;
+        Base* Parent;
+        Base* Type_Mark;
+        bool Is_Ref;
     };
 
-    class Iir_Record_Resolution
-            : public virtual Iir {
-        std::vector<Iir_Record_Element_Resolution*> chain;
+    struct Configuration_Specification
+            : public Base {
+        Base* Chain;
+        Base* Parent;
+        std::vector<Base*> Instantiation_List;
+        Binding_Indication* binding_Indication;
+        Base* Component_Name;
+        bool Is_Ref;
     };
 
-    class Iir_Attribute_Specification
-            : public Iir_Entity_Class_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Parent_Abs {
-        Iir* Attribute_Value_Spec_Chain;
-        Iir* Attribute_Specification_Chain;
-        std::vector<Iir*> Entity_Name_List;
-        Iir* Attribute_Designator;
+    struct Access_Type_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Incomplete_Type_Ref_Chain;
+        Iir_Staticness Type_Staticness;
+        Base* Designated_Type;
+        Base* Designated_Subtype_Indication;
     };
 
-    class Iir_Type_Mark_Abs
-            : public virtual Iir {
-        Iir* Type_Mark;
+    struct Incomplete_Type_Definition
+            : public Base {
+        Base* Complete_Type_Definition;
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Incomplete_Type_Ref_Chain;
+        Iir_Staticness Type_Staticness;
+        bool Has_Signal_Flag;
     };
 
-    class Iir_Disconnection_Specification
-            : public Iir_Chain_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Type_Mark_Abs,
-              public Iir_Is_Ref_Abs {
-        std::vector<Iir*> Signal_List;
+    struct Interface_Type_Definition
+            : public Base {
+        Base* Associated_Type;
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Iir_Staticness Type_Staticness;
+        bool Has_Signal_Flag;
     };
 
-    class Iir_Configuration_Specification
-            : public Iir_Chain_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Component_Name_Abs,
-              public Iir_Is_Ref_Abs {
-    };
-
-    class Iir_Incomplete_Type_Ref_Chain_Abs
-            : public virtual Iir {
-        Iir* Incomplete_Type_Ref_Chain;
-    };
-
-    class Iir_Type_Staticness_Abs
-            : public virtual Iir {
+    struct File_Type_Definition
+            : public Base {
+        Base* File_Type_Mark;
+        bool Text_File_Flag;
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
         Iir_Staticness Type_Staticness;
     };
 
-    class Iir_Designated_Type_Abs
-            : public virtual Iir {
-        Iir* Designated_Type;
-        Iir* Designated_Subtype_Indication;
-    };
-
-    class Iir_Access_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Incomplete_Type_Ref_Chain_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Designated_Type_Abs {
-    };
-
-    class Iir_Incomplete_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Incomplete_Type_Ref_Chain_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Has_Signal_Flag_Abs {
-        Iir* Complete_Type_Definition;
-    };
-
-    class Iir_Interface_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Has_Signal_Flag_Abs {
-        Iir* Associated_Type;
-    };
-
-    class Iir_File_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Type_Staticness_Abs {
-        Iir* File_Type_Mark;
-        bool Text_File_Flag;
-    };
-
-    class Iir_End_Has_Reserved_Id_Abs
-            : public virtual Iir {
+    struct Protected_Type_Declaration
+            : public Base {
+        Base* Protected_Type_Body;
+        std::vector<Base*> Declaration_Chain;
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Iir_Staticness Type_Staticness;
         bool End_Has_Reserved_Id;
-    };
-
-    class Iir_End_Has_Identifier_Abs
-            : public virtual Iir {
         bool End_Has_Identifier;
     };
 
-    class Iir_Protected_Type_Declaration
-            : public Iir_Declaration_Chain_Abs,
-              public Iir_Type_Declarator_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
-        Iir* Protected_Type_Body;
-    };
-
-    class Iir_Constraint_State_Abs
-            : public virtual Iir {
+    struct Record_Type_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Iir_Staticness Type_Staticness;
         Iir_Constraint Constraint_State;
+        std::vector<Base*> Elements_Declaration_List;
+        bool Has_Signal_Flag;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Elements_Declaration_List_Abs
-            : public virtual Iir {
-        std::vector<Iir*> Elements_Declaration_List;
-    };
-
-    class Iir_Record_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Constraint_State_Abs,
-              public Iir_Elements_Declaration_List_Abs,
-              public Iir_Has_Signal_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
-    };
-
-    class Iir_Index_Subtype_List_Abs
-            : public virtual Iir {
-        std::vector<Iir*> Index_Subtype_List;
-        Iir* Element_Subtype;
+    struct Array_Type_Definition
+            : public Base {
+        std::vector<Base*> Index_Subtype_Definition_List;
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Iir_Staticness Type_Staticness;
+        Iir_Constraint Constraint_State;
+        std::vector<Base*> Index_Subtype_List;
+        Type_Definitions Element_Subtype;
         bool Index_Constraint_Flag;
+        Base* Element_Subtype_Indication;
+        bool Has_Signal_Flag;
     };
 
-    class Iir_Array_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Constraint_State_Abs,
-              public Iir_Index_Subtype_List_Abs,
-              public Iir_Element_Subtype_Indication_Abs,
-              public Iir_Has_Signal_Flag_Abs {
-        std::vector<Iir*> Index_Subtype_Definition_List;
+    struct Array_Subtype_Definition
+            : public Base {
+        std::vector<Base*> Index_Constraint_List;
+        Base* Array_Element_Constraint;
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Resolution_Indication;
+        Base* Tolerance;
+        Iir_Staticness Type_Staticness;
+        Iir_Constraint Constraint_State;
+        std::vector<Base*> Index_Subtype_List;
+        Base* Element_Subtype;
+        bool Index_Constraint_Flag;
+        bool Has_Signal_Flag;
+        Base* Subtype_Type_Mark;
     };
 
-    class Iir_Tolerance_Abs
-            : public virtual Iir {
-        Iir* Tolerance;
+    struct Record_Subtype_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Resolution_Indication;
+        Base* Tolerance;
+        Iir_Staticness Type_Staticness;
+        Iir_Constraint Constraint_State;
+        std::vector<Base*> Elements_Declaration_List;
+        bool Has_Signal_Flag;
+        Base* Subtype_Type_Mark;
     };
 
-    class Iir_Subtype_Type_Mark_Abs
-            : public virtual Iir {
-        Iir* Subtype_Type_Mark;
+    struct Access_Subtype_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Iir_Staticness Type_Staticness;
+        Base* Designated_Type;
+        Base* Designated_Subtype_Indication;
+        Base* Subtype_Type_Mark;
     };
 
-    class Iir_Array_Subtype_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Resolution_Indication_Abs,
-              public Iir_Tolerance_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Constraint_State_Abs,
-              public Iir_Index_Subtype_List_Abs,
-              public Iir_Has_Signal_Flag_Abs,
-              public Iir_Subtype_Type_Mark_Abs {
-        std::vector<Iir*> Index_Constraint_List;
-        Iir* Array_Element_Constraint;
+    struct Physical_Subtype_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Range_Constraint;
+        Base* Resolution_Indication;
+        Iir_Staticness Type_Staticness;
+        bool Has_Signal_Flag;
+        Base* Subtype_Type_Mark;
+        bool Is_Ref;
     };
 
-    class Iir_Record_Subtype_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Resolution_Indication_Abs,
-              public Iir_Tolerance_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Constraint_State_Abs,
-              public Iir_Elements_Declaration_List_Abs,
-              public Iir_Has_Signal_Flag_Abs,
-              public Iir_Subtype_Type_Mark_Abs {
+    struct Floating_Type_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Range_Constraint;
+        Iir_Staticness Type_Staticness;
+        bool Has_Signal_Flag;
+        bool Is_Ref;
     };
 
-    class Iir_Access_Subtype_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Designated_Type_Abs,
-              public Iir_Subtype_Type_Mark_Abs {
+    struct Floating_Subtype_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Range_Constraint;
+        Iir_Staticness Type_Staticness;
+        bool Has_Signal_Flag;
+        bool Is_Ref;
+        Base* Resolution_Indication;
+        Base* Tolerance;
+        Base* Subtype_Type_Mark;
     };
 
-    class Iir_Range_Constraint_Abs
-            : public virtual Iir {
-        Iir* Range_Constraint;
+    struct Integer_Type_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Range_Constraint;
+        Iir_Staticness Type_Staticness;
+        bool Has_Signal_Flag;
+        bool Is_Ref;
     };
 
-    class Iir_Physical_Subtype_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Range_Constraint_Abs,
-              public Iir_Resolution_Indication_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Has_Signal_Flag_Abs,
-              public Iir_Subtype_Type_Mark_Abs,
-              public Iir_Is_Ref_Abs {
+    struct Integer_Subtype_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Range_Constraint;
+        Iir_Staticness Type_Staticness;
+        bool Has_Signal_Flag;
+        bool Is_Ref;
+        Base* Resolution_Indication;
+        Base* Subtype_Type_Mark;
     };
 
-    class Iir_Floating_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Range_Constraint_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Has_Signal_Flag_Abs,
-              public Iir_Is_Ref_Abs {
+    struct Enumeration_Subtype_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Range_Constraint;
+        Base* Resolution_Indication;
+        Iir_Staticness Type_Staticness;
+        bool Has_Signal_Flag;
+        Base* Subtype_Type_Mark;
+        bool Is_Ref;
     };
 
-    class Iir_Floating_Subtype_Definition
-            : public Iir_Floating_Type_Definition,
-              public Iir_Resolution_Indication_Abs,
-              public Iir_Tolerance_Abs,
-              public Iir_Subtype_Type_Mark_Abs {
-    };
-
-    class Iir_Integer_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Range_Constraint_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Has_Signal_Flag_Abs,
-              public Iir_Is_Ref_Abs {
-    };
-
-    class Iir_Integer_Subtype_Definition
-            : public Iir_Integer_Type_Definition,
-              public Iir_Resolution_Indication_Abs,
-              public Iir_Subtype_Type_Mark_Abs {
-    };
-
-    class Iir_Enumeration_Subtype_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Range_Constraint_Abs,
-              public Iir_Resolution_Indication_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Has_Signal_Flag_Abs,
-              public Iir_Subtype_Type_Mark_Abs,
-              public Iir_Is_Ref_Abs {
-    };
-
-    class Iir_Enumeration_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Range_Constraint_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Has_Signal_Flag_Abs,
-              public Iir_Is_Ref_Abs {
-        std::vector<Iir_Enumeration_Literal*> Enumeration_Literal_List;
+    struct Enumeration_Type_Definition
+            : public Base {
+        std::vector<Enumeration_Literal*> Enumeration_Literal_List;
         bool Only_Characters_Flag;
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Range_Constraint;
+        Iir_Staticness Type_Staticness;
+        bool Has_Signal_Flag;
+        bool Is_Ref;
     };
 
-    class Iir_Physical_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Range_Constraint_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Has_Signal_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Is_Ref_Abs {
-        std::vector<Iir*> Unit_Chain;
+    struct Physical_Type_Definition
+            : public Base {
+        std::vector<Base*> Unit_Chain;
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Base* Range_Constraint;
+        Iir_Staticness Type_Staticness;
+        bool Has_Signal_Flag;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
+        bool Is_Ref;
     };
 
-    class Iir_Range_Expression
-            : public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs {
+    struct Range_Expression
+            : public Base {
         Iir_Direction Direction;
-        Iir* Left_Limit;
-        Iir* Right_Limit_Expr;
-        Iir* Range_Origin;
-        Iir* Left_Limit_Expr;
-        Iir* Right_Limit;
+        Base* Left_Limit;
+        Base* Right_Limit_Expr;
+        Base* Range_Origin;
+        Base* Left_Limit_Expr;
+        Base* Right_Limit;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Protected_Type_Body
-            : public Iir_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Parent_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
-        Iir* Protected_Type_Declaration;
+    struct Protected_Type_Body
+            : public Base {
+        Base* Protected_Type_Declaration;
+        Base* Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::string Identifier;
+        Base* Parent;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Wildcard_Type_Definition
-            : public Iir_Type_Declarator_Abs,
-              public Iir_Type_Staticness_Abs {
+    struct Wildcard_Type_Definition
+            : public Base {
+        bool Resolved_Flag;
+        Base* Base_Type;
+        bool Signal_Type_Flag;
+        Base* Type_Declarator;
+        Iir_Staticness Type_Staticness;
     };
 
-    class Iir_Subtype_Definition
-            : public Iir_Range_Constraint_Abs,
-              public Iir_Resolution_Indication_Abs,
-              public Iir_Tolerance_Abs,
-              public Iir_Subtype_Type_Mark_Abs,
-              public Iir_Is_Ref_Abs {
+    struct Subtype_Definition
+            : public Base {
+        Base* Range_Constraint;
+        Base* Resolution_Indication;
+        Base* Tolerance;
+        Base* Subtype_Type_Mark;
+        bool Is_Ref;
     };
 
-    class Iir_Scalar_Nature_Definition
-            : public virtual Iir {
-        Iir* Nature_Declarator;
-        Iir* Through_Type;
-        Iir* Across_Type;
-        Iir* Reference;
+    struct Scalar_Nature_Definition
+            : public Base {
+        Base* Nature_Declarator;
+        Base* Through_Type;
+        Base* Across_Type;
+        Base* Reference;
     };
 
-    class Iir_Overload_List
-            : public virtual Iir {
-        std::vector<Iir*> Overload_List;
+    struct Overload_List
+            : public Base {
+        std::vector<Base*> Overload_List;
     };
 
-    class Iir_Type_Definition_Abs
-            : public virtual Iir {
-        Iir* Incomplete_Type_Declaration;
-        Iir* Type_Definition;
-    };
-
-    class Iir_Use_Flag_Abs
-            : public virtual Iir {
+    struct Type_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Incomplete_Type_Declaration;
+        Type_Definitions Type;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
         bool Use_Flag;
     };
 
-    class Iir_Type_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Definition_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Use_Flag_Abs {
+    struct Anonymous_Type_Declaration
+            : public Base {
+        Base* Subtype_Definition;
+        Base* Chain;
+        Base* Incomplete_Type_Declaration;
+        Base* Type_Definition;
+        std::string Identifier;
+        Base* Parent;
     };
 
-    class Iir_Anonymous_Type_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Definition_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Parent_Abs {
-        Iir* Subtype_Definition;
+    struct Subtype_Declaration
+            : public Base {
+        Base* Chain;
+        Type_Definitions Type;
+        Base* Subtype_Indication;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        bool Use_Flag;
     };
 
-    class Iir_Subtype_Indication_Abs
-            : public virtual Iir {
-        Iir* Subtype_Indication;
+    struct Nature_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Nature;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        bool Use_Flag;
     };
 
-    class Iir_Subtype_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Use_Flag_Abs {
+    struct Subnature_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Nature;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        bool Use_Flag;
     };
 
-    class Iir_Nature_Abs
-            : public virtual Iir {
-        Iir* Nature;
-    };
-
-    class Iir_Nature_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Nature_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Use_Flag_Abs {
-    };
-
-    class Iir_Subnature_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Nature_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Use_Flag_Abs {
-    };
-
-    class Iir_Attribute_Value_Chain_Abs
-            : public virtual Iir {
-        Iir* Attribute_Value_Chain;
-    };
-
-    class Iir_Package_Body_Abs
-            : public virtual Iir {
-        Iir* Package_Body;
-    };
-
-    class Iir_Package_Declaration
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Package_Body_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Design_Unit_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
+    struct Package_Declaration
+            : public Base {
         bool Macro_Expanded_Flag;
-        Iir* Package_Header;
+        Base* Package_Header;
         bool Need_Instance_Bodies;
         bool Need_Body;
-        Iir* Package_Origin;
+        Base* Package_Origin;
+        Base* Attribute_Value_Chain;
+        Base* Package_Body;
+        Base* Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        Design_Unit* Parent_Design_Unit;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Uninstantiated_Package_Name_Abs
-            : public virtual Iir {
-        Iir* Uninstantiated_Package_Name;
-        Iir* Uninstantiated_Package_Decl;
+    struct Package_Instantiation_Declaration
+            : public Base {
+        Base* Attribute_Value_Chain;
+        Base* Package_Body;
+        Base* Chain;
+        Base* Generic_Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Generic_Map_Aspect_Chain;
+        Base* Uninstantiated_Package_Name;
+        Base* Uninstantiated_Package_Decl;
+        Design_Unit* Parent_Design_Unit;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Package_Instantiation_Declaration
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Package_Body_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Generic_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Generic_Map_Aspect_Chain_Abs,
-              public Iir_Uninstantiated_Package_Name_Abs,
-              public Iir_Parent_Design_Unit_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
+    struct Package_Body
+            : public Base {
+        Base* Package;
+        Base* Attribute_Value_Chain;
+        Base* Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::string Identifier;
+        Design_Unit* Parent_Design_Unit;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Package_Body
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Parent_Design_Unit_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
-        Iir* Package;
+    struct Configuration_Declaration
+            : public Base {
+        Base* Attribute_Value_Chain;
+        Base* Entity_Name;
+        Base* Block_Configuration;
+        std::vector<Base*> Declaration_Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        Design_Unit* Parent_Design_Unit;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Configuration_Declaration
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Entity_Name_Abs,
-              public Iir_Block_Configuration_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Design_Unit_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
-    };
-
-    class Iir_Concurrent_Statement_Chain_Abs
-            : public virtual Iir {
-        Iir* Concurrent_Statement_Chain;
-    };
-
-    class Iir_Is_Within_Flag_Abs
-            : public virtual Iir {
+    struct Entity_Declaration
+            : public Base {
+        Base* Attribute_Value_Chain;
+        Base* Concurrent_Statement_Chain;
+        Base* Port_Chain;
+        Base* Generic_Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        Design_Unit* Parent_Design_Unit;
         bool Is_Within_Flag;
-    };
-
-    class Iir_Has_Begin_Abs
-            : public virtual Iir {
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
         bool Has_Begin;
     };
 
-    class Iir_Entity_Declaration
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Concurrent_Statement_Chain_Abs,
-              public Iir_Port_Chain_Abs,
-              public Iir_Generic_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Design_Unit_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Has_Begin_Abs {
-    };
-
-    class Iir_Foreign_Flag_Abs
-            : public virtual Iir {
+    struct Architecture_Body
+            : public Base {
+        Base* Default_Configuration_Declaration;
+        Base* Attribute_Value_Chain;
+        Arch_Name Entity_Name;
+        Base* Concurrent_Statement_Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::string Identifier;
+        bool Visible_Flag;
         bool Foreign_Flag;
+        Design_Unit* Parent_Design_Unit;
+        bool Is_Within_Flag;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Architecture_Body
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Entity_Name_Abs,
-              public Iir_Concurrent_Statement_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Foreign_Flag_Abs,
-              public Iir_Parent_Design_Unit_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
-        Iir* Default_Configuration_Declaration;
+    struct Context_Declaration
+            : public Base {
+        std::vector<Base*> Context_Items;
+        std::string Identifier;
+        bool Visible_Flag;
+        Design_Unit* Parent_Design_Unit;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Context_Declaration
-            : public Iir_Context_Items_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Design_Unit_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
+    struct Package_Header
+            : public Base {
+        Base* Generic_Chain;
+        Base* Generic_Map_Aspect_Chain;
     };
 
-    class Iir_Package_Header
-            : public Iir_Generic_Chain_Abs,
-              public Iir_Generic_Map_Aspect_Chain_Abs {
+    struct Unit_Declaration
+            : public Base {
+        Physical_Int_Literal* physical_Literal;
+        Base* Chain;
+        Base* Type;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
     };
 
-    class Iir_Unit_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs {
-        Iir* Physical_Literal;
-    };
-
-    class Iir_Library_Declaration
-            : public Iir_Date_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Elab_Flag_Abs {
-        std::vector<Iir_Design_File*> Design_Files;
+    struct Library_Declaration
+            : public Base {
+        std::vector<Design_File*> Design_Files;
         std::filesystem::path Library_Directory;
+        Date_Type Date;
+        Base* Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        bool Elab_Flag;
     };
 
-    class Iir_Has_Is_Abs
-            : public virtual Iir {
+    struct Component_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Port_Chain;
+        Base* Generic_Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        bool Use_Flag;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
         bool Has_Is;
     };
 
-    class Iir_Component_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Port_Chain_Abs,
-              public Iir_Generic_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Has_Is_Abs {
+    struct Attribute_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Type;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Base* Type_Mark;
+        bool Use_Flag;
     };
 
-    class Iir_Attribute_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Type_Mark_Abs,
-              public Iir_Use_Flag_Abs {
+    struct Group_Template_Declaration
+            : public Base {
+        Base* Entity_Class_Entry_Chain;
+        Base* Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        bool Use_Flag;
     };
 
-    class Iir_Group_Template_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Use_Flag_Abs {
-        Iir* Entity_Class_Entry_Chain;
+    struct Group_Declaration
+            : public Base {
+        std::vector<Base*> Group_Constituent_List;
+        Base* Group_Template_Name;
+        Base* Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        bool Use_Flag;
     };
 
-    class Iir_Group_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Use_Flag_Abs {
-        std::vector<Iir*> Group_Constituent_List;
-        Iir* Group_Template_Name;
+    struct Element_Declaration
+            : public Base {
+        Base* Type;
+        Base* Subtype_Indication;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        bool Has_Identifier_List;
     };
 
-    class Iir_Element_Declaration
-            : public Iir_Type_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Has_Identifier_List_Abs {
-    };
-
-    class Iir_Name_Abs
-            : public virtual Iir {
-        Iir* Name;
-    };
-
-    class Iir_Non_Object_Alias_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Name_Abs,
-              public Iir_Use_Flag_Abs {
-        Iir* Alias_Signature;
+    struct Non_Object_Alias_Declaration
+            : public Base {
+        Base* Alias_Signature;
         bool Implicit_Alias_Flag;
+        Base* Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Base* Name;
+        bool Use_Flag;
     };
 
-    class Iir_Psl_Declaration_Abs
-            : public virtual Iir {
+    struct Psl_Declaration
+            : public Base {
+        Base* Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        bool Use_Flag;
         PSL_Node Psl_Declaration;
-    };
-
-    class Iir_PSL_Clock_Abs
-            : public virtual Iir {
         PSL_NFA PSL_Nfa;
         PSL_Node PSL_Clock;
     };
 
-    class Iir_Psl_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_Psl_Declaration_Abs,
-              public Iir_PSL_Clock_Abs {
-    };
-
-    class Iir_PSL_Nbr_States_Abs
-            : public virtual Iir {
+    struct Psl_Endpoint_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Type;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
+        PSL_Node Psl_Declaration;
+        PSL_NFA PSL_Nfa;
+        PSL_Node PSL_Clock;
         bool PSL_EOS_Flag;
         int PSL_Nbr_States;
-        std::vector<Iir*> PSL_Clock_Sensitivity;
+        std::vector<Base*> PSL_Clock_Sensitivity;
     };
 
-    class Iir_Psl_Endpoint_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_Psl_Declaration_Abs,
-              public Iir_PSL_Clock_Abs,
-              public Iir_PSL_Nbr_States_Abs {
+    struct Terminal_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Nature;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        bool Use_Flag;
     };
 
-    class Iir_Terminal_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Nature_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Use_Flag_Abs {
+    struct Free_Quantity_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Type;
+        Base* Default_Value;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
     };
 
-    class Iir_Default_Value_Abs
-            : public virtual Iir {
-        Iir* Default_Value;
+    struct Across_Quantity_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Type;
+        Base* Default_Value;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Tolerance;
+        Base* Minus_Terminal;
+        Base* Plus_Terminal;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
     };
 
-    class Iir_Free_Quantity_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Default_Value_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs {
+    struct Through_Quantity_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Type;
+        Base* Default_Value;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Tolerance;
+        Base* Minus_Terminal;
+        Base* Plus_Terminal;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
     };
 
-    class Iir_Plus_Terminal_Abs
-            : public virtual Iir {
-        Iir* Minus_Terminal;
-        Iir* Plus_Terminal;
-    };
-
-    class Iir_Across_Quantity_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Default_Value_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Tolerance_Abs,
-              public Iir_Plus_Terminal_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs {
-    };
-
-    class Iir_Through_Quantity_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Default_Value_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Tolerance_Abs,
-              public Iir_Plus_Terminal_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs {
-    };
-
-    class Iir_Subprogram_Hash_Abs
-            : public virtual Iir {
-        int Subprogram_Hash;
-    };
-
-    class Iir_Seen_Flag_Abs
-            : public virtual Iir {
-        bool Seen_Flag;
-    };
-
-    class Iir_Enumeration_Literal
-            : public Iir_Literal_Origin_Abs,
-              public Iir_Type_Abs,
-              public Iir_Subprogram_Hash_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Seen_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Is_Within_Flag_Abs {
+    struct Enumeration_Literal
+            : public Base {
         int Enum_Pos;
+        Base* Literal_Origin;
+        Base* Type;
+        int Subprogram_Hash;
+        std::string Identifier;
+        bool Visible_Flag;
+        bool Seen_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Is_Within_Flag;
     };
 
-    class Iir_Interface_Declaration_Chain_Abs
-            : public virtual Iir {
+    struct Function_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Generic_Chain;
         int Subprogram_Depth;
-        Iir* Interface_Declaration_Chain;
+        Base* Interface_Declaration_Chain;
         Iir_All_Sensitized All_Sensitized_State;
         bool Has_Parameter;
-    };
-
-    class Iir_Subprogram_Body_Abs
-            : public virtual Iir {
         Iir_Predefined_Functions Implicit_Definition;
-        Iir* Subprogram_Body;
+        Base* Subprogram_Body;
         bool Has_Body;
         int Overload_Number;
         bool Hide_Implicit_Flag;
-    };
-
-    class Iir_Return_Type_Abs
-            : public virtual Iir {
+        int Subprogram_Hash;
         bool Has_Pure;
-        Iir* Return_Type;
+        Base* Return_Type;
         bool Pure_Flag;
         bool Resolution_Function_Flag;
-    };
-
-    class Iir_Wait_State_Abs
-            : public virtual Iir {
+        std::string Identifier;
+        bool Visible_Flag;
         Tri_State_Type Wait_State;
+        bool Seen_Flag;
+        bool Foreign_Flag;
+        Base* Parent;
+        Base* Return_Type_Mark;
+        bool Is_Within_Flag;
+        bool Use_Flag;
     };
 
-    class Iir_Function_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Generic_Chain_Abs,
-              public Iir_Interface_Declaration_Chain_Abs,
-              public Iir_Subprogram_Body_Abs,
-              public Iir_Subprogram_Hash_Abs,
-              public Iir_Return_Type_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Wait_State_Abs,
-              public Iir_Seen_Flag_Abs,
-              public Iir_Foreign_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Return_Type_Mark_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_Use_Flag_Abs {
-    };
-
-    class Iir_Passive_Flag_Abs
-            : public virtual Iir {
+    struct Procedure_Declaration
+            : public Base {
+        Iir_Pure_State Purity_State;
+        Base* Generic_Chain;
+        int Subprogram_Depth;
+        Base* Interface_Declaration_Chain;
+        Iir_All_Sensitized All_Sensitized_State;
+        bool Has_Parameter;
+        Iir_Predefined_Functions Implicit_Definition;
+        Base* Subprogram_Body;
+        bool Has_Body;
+        int Overload_Number;
+        bool Hide_Implicit_Flag;
+        int Subprogram_Hash;
+        std::string Identifier;
+        bool Visible_Flag;
         bool Passive_Flag;
-    };
-
-    class Iir_Suspend_Flag_Abs
-            : public virtual Iir {
+        Tri_State_Type Wait_State;
+        bool Seen_Flag;
+        bool Foreign_Flag;
+        Base* Parent;
+        Base* Return_Type_Mark;
+        bool Is_Within_Flag;
+        bool Use_Flag;
         bool Suspend_Flag;
     };
 
-    class Iir_Procedure_Declaration
-            : public Iir_Generic_Chain_Abs,
-              public Iir_Interface_Declaration_Chain_Abs,
-              public Iir_Subprogram_Body_Abs,
-              public Iir_Subprogram_Hash_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Passive_Flag_Abs,
-              public Iir_Wait_State_Abs,
-              public Iir_Seen_Flag_Abs,
-              public Iir_Foreign_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Return_Type_Mark_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_Suspend_Flag_Abs {
-        Iir_Pure_State Purity_State;
-    };
-
-    class Iir_Subprogram_Specification_Abs
-            : public virtual Iir {
-        Iir* Subprogram_Specification;
+    struct Function_Body
+            : public Base {
+        Base* Attribute_Value_Chain;
+        Base* Chain;
+        Base* Subprogram_Specification;
         int Impure_Depth;
+        Base* Sequential_Statement_Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::vector<Base*> Callees_List;
+        Base* Parent;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Sequential_Statement_Chain_Abs
-            : public virtual Iir {
-        Iir* Sequential_Statement_Chain;
+    struct Procedure_Body
+            : public Base {
+        Base* Attribute_Value_Chain;
+        Base* Chain;
+        Base* Subprogram_Specification;
+        int Impure_Depth;
+        Base* Sequential_Statement_Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::vector<Base*> Callees_List;
+        Base* Parent;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
+        bool Suspend_Flag;
     };
 
-    class Iir_Callees_List_Abs
-            : public virtual Iir {
-        std::vector<Iir*> Callees_List;
-    };
-
-    class Iir_Function_Body
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Subprogram_Specification_Abs,
-              public Iir_Sequential_Statement_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Callees_List_Abs,
-              public Iir_Parent_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
-    };
-
-    class Iir_Procedure_Body
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Subprogram_Specification_Abs,
-              public Iir_Sequential_Statement_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Callees_List_Abs,
-              public Iir_Parent_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Suspend_Flag_Abs {
-    };
-
-    class Iir_After_Drivers_Flag_Abs
-            : public virtual Iir {
+    struct Object_Alias_Declaration
+            : public Base {
         bool After_Drivers_Flag;
+        Base* Chain;
+        Base* Type;
+        Base* Subtype_Indication;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Base* Name;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
     };
 
-    class Iir_Object_Alias_Declaration
-            : public Iir_After_Drivers_Flag_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs {
-    };
-
-    class Iir_Mode_Abs
-            : public virtual Iir {
+    struct File_Declaration
+            : public Base {
+        Base* File_Open_Kind;
+        Base* File_Logical_Name;
+        Base* Chain;
+        Base* Type;
+        Base* Subtype_Indication;
         std::optional<Iir_Mode> Mode;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
+        bool Has_Identifier_List;
     };
 
-    class Iir_File_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Mode_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_Has_Identifier_List_Abs {
-        Iir* File_Open_Kind;
-        Iir* File_Logical_Name;
-    };
-
-    class Iir_Guarded_Signal_Flag_Abs
-            : public virtual Iir {
+    struct Guard_Signal_Declaration
+            : public Base {
+        Base* Block_Statement;
+        std::vector<Base*> Guard_Sensitivity_List;
+        Base* Guard_Expression;
+        Base* Type;
         bool Guarded_Signal_Flag;
         Iir_Signal_Kind Signal_Kind;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Has_Active_Flag;
+        bool Use_Flag;
     };
 
-    class Iir_Has_Active_Flag_Abs
-            : public virtual Iir {
+    struct Signal_Declaration
+            : public Base {
+        bool After_Drivers_Flag;
+        Base* Chain;
+        Base* Type;
+        Base* Subtype_Indication;
+        bool Guarded_Signal_Flag;
+        Iir_Signal_Kind Signal_Kind;
+        Base* Default_Value;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Has_Disconnect_Flag;
+        bool Has_Active_Flag;
+        bool Use_Flag;
+        bool Has_Identifier_List;
+        bool Is_Ref;
+    };
+
+    struct Variable_Declaration
+            : public Base {
+        Base* Chain;
+        Base* Type;
+        Base* Subtype_Indication;
+        Base* Default_Value;
+        bool Shared_Flag;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
+        bool Has_Identifier_List;
+        bool Is_Ref;
+    };
+
+    struct Constant_Declaration
+            : public Base {
+        bool Deferred_Declaration_Flag;
+        Base* Deferred_Declaration;
+        Base* Chain;
+        Base* Type;
+        Base* Subtype_Indication;
+        Base* Default_Value;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
+        bool Has_Identifier_List;
+        bool Is_Ref;
+    };
+
+    struct Iterator_Declaration
+            : public Base {
+        Base* Discrete_Range;
+        Base* Chain;
+        Base* Type;
+        Base* Subtype_Indication;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
+        bool Has_Identifier_List;
+    };
+
+    struct Interface_Signal_Declaration_Extras
+            : public Base {
+        bool Open_Flag;
+        bool Guarded_Signal_Flag;
+        Iir_Signal_Kind Signal_Kind;
+        bool Has_Disconnect_Flag;
         bool Has_Active_Flag;
     };
 
-    class Iir_Guard_Signal_Declaration
-            : public Iir_Type_Abs,
-              public Iir_Guarded_Signal_Flag_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Has_Active_Flag_Abs,
-              public Iir_Use_Flag_Abs {
-        Iir* Block_Statement;
-        std::vector<Iir*> Guard_Sensitivity_List;
-        Iir* Guard_Expression;
-    };
-
-    class Iir_Has_Disconnect_Flag_Abs
-            : public virtual Iir {
-        bool Has_Disconnect_Flag;
-    };
-
-    class Iir_Signal_Declaration
-            : public Iir_After_Drivers_Flag_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Guarded_Signal_Flag_Abs,
-              public Iir_Default_Value_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Has_Disconnect_Flag_Abs,
-              public Iir_Has_Active_Flag_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_Has_Identifier_List_Abs,
-              public Iir_Is_Ref_Abs {
-    };
-
-    class Iir_Shared_Flag_Abs
-            : public virtual Iir {
-        bool Shared_Flag;
-    };
-
-    class Iir_Variable_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Default_Value_Abs,
-              public Iir_Shared_Flag_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_Has_Identifier_List_Abs,
-              public Iir_Is_Ref_Abs {
-    };
-
-    class Iir_Constant_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Default_Value_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_Has_Identifier_List_Abs,
-              public Iir_Is_Ref_Abs {
-        bool Deferred_Declaration_Flag;
-        Iir* Deferred_Declaration;
-    };
-
-    class Iir_Iterator_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_Has_Identifier_List_Abs {
-        Iir* Discrete_Range;
-    };
-
-    class Iir_Has_Class_Abs
-            : public virtual Iir {
-        bool Has_Class;
-    };
-
-    class Iir_Interface_Signal_Declaration_Extras
-            : public Iir_Guarded_Signal_Flag_Abs,
-              public Iir_Has_Disconnect_Flag_Abs,
-              public Iir_Has_Active_Flag_Abs {
-        bool Open_Flag;
-    };
-
-    class Iir_Interface_Object_Declaration
-            : public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_After_Drivers_Flag_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Mode_Abs,
-              public Iir_Default_Value_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Has_Identifier_List_Abs,
-              public Iir_Has_Class_Abs,
-              public Iir_Is_Ref_Abs {
+    struct Interface_Object_Declaration
+            : public Base {
         enum class type {constant, variable, signal, file} Interface_Object_Type;
-        std::optional<Iir_Interface_Signal_Declaration_Extras> extras;
+        std::optional<Interface_Signal_Declaration_Extras> extras;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        bool After_Drivers_Flag;
+        Base* Chain;
+        Base* Type;
+        std::optional<Iir_Mode> Mode;
+        Base* Default_Value;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
+        Base* Subtype_Indication;
+        bool Has_Identifier_List;
+        bool Has_Class;
+        bool Is_Ref;
     };
 
-    class Iir_Interface_Type_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Use_Flag_Abs,
-              public Iir_Has_Identifier_List_Abs,
-              public Iir_Is_Ref_Abs {
-        Iir* Interface_Type_Subprograms;
+    struct Interface_Type_Declaration
+            : public Base {
+        Base* Interface_Type_Subprograms;
+        Base* Chain;
+        Base* Type;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Parent;
+        Iir_Staticness Name_Staticness;
+        bool Use_Flag;
+        bool Has_Identifier_List;
+        bool Is_Ref;
     };
 
-    class Iir_Interface_Package_Declaration
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Generic_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Generic_Map_Aspect_Chain_Abs,
-              public Iir_Uninstantiated_Package_Name_Abs,
-              public Iir_Parent_Design_Unit_Abs,
-              public Iir_Is_Within_Flag_Abs {
+    struct Interface_Package_Declaration
+            : public Base {
+        Base* Attribute_Value_Chain;
+        Base* Chain;
+        Base* Generic_Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::string Identifier;
+        bool Visible_Flag;
+        Base* Generic_Map_Aspect_Chain;
+        Base* Uninstantiated_Package_Name;
+        Base* Uninstantiated_Package_Decl;
+        Design_Unit* Parent_Design_Unit;
+        bool Is_Within_Flag;
     };
 
-    class Iir_Interface_Function_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Interface_Declaration_Chain_Abs,
-              public Iir_Subprogram_Hash_Abs,
-              public Iir_Return_Type_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Seen_Flag_Abs,
-              public Iir_Foreign_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Return_Type_Mark_Abs,
-              public Iir_Use_Flag_Abs {
+    struct Interface_Function_Declaration
+            : public Base {
+        Base* Chain;
+        int Subprogram_Depth;
+        Base* Interface_Declaration_Chain;
+        Iir_All_Sensitized All_Sensitized_State;
+        bool Has_Parameter;
+        int Subprogram_Hash;
+        bool Has_Pure;
+        Base* Return_Type;
+        bool Pure_Flag;
+        bool Resolution_Function_Flag;
+        std::string Identifier;
+        bool Visible_Flag;
+        bool Seen_Flag;
+        bool Foreign_Flag;
+        Base* Parent;
+        Base* Return_Type_Mark;
+        bool Use_Flag;
     };
 
-    class Iir_Interface_Procedure_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Interface_Declaration_Chain_Abs,
-              public Iir_Subprogram_Hash_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Seen_Flag_Abs,
-              public Iir_Foreign_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Return_Type_Mark_Abs,
-              public Iir_Use_Flag_Abs {
+    struct Interface_Procedure_Declaration
+            : public Base {
+        Base* Chain;
+        int Subprogram_Depth;
+        Base* Interface_Declaration_Chain;
+        Iir_All_Sensitized All_Sensitized_State;
+        bool Has_Parameter;
+        int Subprogram_Hash;
+        std::string Identifier;
+        bool Visible_Flag;
+        bool Seen_Flag;
+        bool Foreign_Flag;
+        Base* Parent;
+        Base* Return_Type_Mark;
+        bool Use_Flag;
     };
 
-    class Iir_Signal_Attribute_Declaration
-            : public Iir_Chain_Abs,
-              public Iir_Parent_Abs {
-        Iir* Signal_Attribute_Chain;
+    struct Signal_Attribute_Declaration
+            : public Base {
+        Base* Signal_Attribute_Chain;
+        Base* Chain;
+        Base* Parent;
     };
 
-    class Iir_Operand_Abs
-            : public virtual Iir {
-        Iir* Operand;
+    struct Unary_Operator
+            : public Base {
+        Unary_Operator_Type Operator_Type;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
+        Base* Operand;
+        Base* Implementation;
     };
 
-    class Iir_Unary_Operator
-            : public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Operand_Abs,
-              public Iir_Implementation_Abs {
-        Iir_Unary_Operator_Type Operator_Type;
+    struct Binary_Operator
+            : public Base {
+        Base* Left;
+        Base* Right;
+        Binary_Operator_Type Operator_Type;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
+        Base* Implementation;
     };
 
-    class Iir_Binary_Operator
-            : public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Implementation_Abs {
-        Iir* Left;
-        Iir* Right;
-        Iir_Binary_Operator_Type Operator_Type;
+    struct Function_Call
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Implementation;
+        Base* Parameter_Association_Chain;
+        Base* Method_Object;
     };
 
-    class Iir_Function_Call
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Implementation_Abs,
-              public Iir_Parameter_Association_Chain_Abs {
-    };
-
-    class Iir_Aggregate
-            : public Iir_Literal_Origin_Abs,
-              public Iir_Literal_Subtype_Abs,
-              public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs {
-        Iir* Association_Choices_Chain;
+    struct Aggregate
+            : public Base {
+        Base* Association_Choices_Chain;
         bool Aggregate_Expand_Flag;
-        Iir* Aggregate_Info;
+        Base* Aggregate_Info;
+        Base* Literal_Origin;
+        Base* Literal_Subtype;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Parenthesis_Expression
-            : public Iir_Type_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Expr_Staticness_Abs {
+    struct Parenthesis_Expression
+            : public Base {
+        Base* Type;
+        Base* Expression;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Qualified_Expression
-            : public Iir_Type_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Type_Mark_Abs {
+    struct Qualified_Expression
+            : public Base {
+        Base* Type;
+        Base* Expression;
+        Iir_Staticness Expr_Staticness;
+        Base* Type_Mark;
     };
 
-    class Iir_Type_Conversion
-            : public Iir_Type_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Type_Mark_Abs {
-        Iir* Type_Conversion_Subtype;
+    struct Type_Conversion
+            : public Base {
+        Base* Type_Conversion_Subtype;
+        Base* Type;
+        Base* Expression;
+        Iir_Staticness Expr_Staticness;
+        Base* Type_Mark;
     };
 
-    class Iir_Allocator_Designated_Type_Abs
-            : public virtual Iir {
-        Iir* Allocator_Designated_Type;
+    struct Allocator_By_Expression
+            : public Base {
+        Base* Type;
+        Base* Expression;
+        Base* Allocator_Designated_Type;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Allocator_By_Expression
-            : public Iir_Type_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Allocator_Designated_Type_Abs,
-              public Iir_Expr_Staticness_Abs {
+    struct Allocator_By_Subtype
+            : public Base {
+        Base* Allocator_Subtype;
+        Base* Type;
+        Base* Subtype_Indication;
+        Base* Allocator_Designated_Type;
+        Iir_Staticness Expr_Staticness;
     };
 
-    class Iir_Allocator_By_Subtype
-            : public Iir_Type_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Allocator_Designated_Type_Abs,
-              public Iir_Expr_Staticness_Abs {
-        Iir* Allocator_Subtype;
+    struct Selected_Element
+            : public Base {
+        Base* Selected_Element;
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Selected_Element
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
-        Iir* Selected_Element;
+    struct Dereference
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Dereference
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Implicit_Dereference
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Implicit_Dereference
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Slice_Name
+            : public Base {
+        Base* Suffix;
+        Base* Slice_Subtype;
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Slice_Name
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
-        Iir* Suffix;
-        Iir* Slice_Subtype;
+    struct Indexed_Name
+            : public Base {
+        std::vector<Base*> Index_List;
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Indexed_Name
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
-        std::vector<Iir*> Index_List;
-    };
-
-    class Iir_Psl_Expression
-            : public Iir_Type_Abs {
+    struct Psl_Expression
+            : public Base {
         PSL_Node Psl_Expression;
+        Base* Type;
     };
 
-    class Iir_Label_Abs
-            : public virtual Iir {
+    struct Sensitized_Process_Statement
+            : public Base {
+        Base* Attribute_Value_Chain;
+        Base* Chain;
+        Base* Sequential_Statement_Chain;
+        std::vector<Base*> Declaration_Chain;
         std::string Label;
-    };
-
-    class Iir_Sensitivity_List_Abs
-            : public virtual Iir {
-        std::vector<Iir*> Sensitivity_List;
-    };
-
-    class Iir_Process_Origin_Abs
-            : public virtual Iir {
+        bool Visible_Flag;
+        std::vector<Base*> Sensitivity_List;
         bool End_Has_Postponed;
-        Iir* Process_Origin;
+        Base* Process_Origin;
+        bool Postponed_Flag;
+        std::vector<Base*> Callees_List;
+        bool Passive_Flag;
+        Tri_State_Type Wait_State;
+        bool Seen_Flag;
+        Base* Parent;
+        bool Is_Within_Flag;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
+        bool Has_Label;
+        bool Has_Is;
+        bool Is_Ref;
     };
 
-    class Iir_Postponed_Flag_Abs
-            : public virtual Iir {
+    struct Process_Statement
+            : public Base {
+        Base* Attribute_Value_Chain;
+        Base* Chain;
+        Base* Sequential_Statement_Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::string Label;
+        bool Visible_Flag;
+        bool End_Has_Postponed;
+        Base* Process_Origin;
+        bool Postponed_Flag;
+        std::vector<Base*> Callees_List;
+        bool Passive_Flag;
+        Tri_State_Type Wait_State;
+        bool Seen_Flag;
+        Base* Parent;
+        bool Is_Within_Flag;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
+        bool Has_Label;
+        bool Has_Is;
+        bool Suspend_Flag;
+    };
+
+    struct Simple_Signal_Assignment_Statement
+            : public Base {
+        Waveform waveform;
+        Iir_Delay_Mechanism Delay_Mechanism;
+        Tri_State_Type Guarded_Target_State;
+        Base* Reject_Time_Expression;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Target;
+        Base* Parent;
+    };
+
+    struct Conditional_Signal_Assignment_Statement
+            : public Base {
+        Conditional_Waveforms conditional_waveforms;
+        Iir_Delay_Mechanism Delay_Mechanism;
+        Tri_State_Type Guarded_Target_State;
+        Base* Reject_Time_Expression;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Target;
+        Base* Parent;
+    };
+
+    struct Selected_Waveform_Assignment_Statement
+            : public Base {
+        Iir_Delay_Mechanism Delay_Mechanism;
+        Tri_State_Type Guarded_Target_State;
+        Base* Reject_Time_Expression;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Target;
+        Base* Expression;
+        Base* Selected_Waveform_Chain;
+        Base* Parent;
+    };
+
+    struct Concurrent_Simple_Signal_Assignment
+            : public Base {
+        Waveform waveform;
+        Iir_Delay_Mechanism Delay_Mechanism;
+        Tri_State_Type Guarded_Target_State;
+        Base* Reject_Time_Expression;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Target;
+        Base* Parent;
+        Base* Guard;
         bool Postponed_Flag;
     };
 
-    class Iir_Has_Label_Abs
-            : public virtual Iir {
-        bool Has_Label;
-    };
-
-    class Iir_Sensitized_Process_Statement
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Sequential_Statement_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Sensitivity_List_Abs,
-              public Iir_Process_Origin_Abs,
-              public Iir_Postponed_Flag_Abs,
-              public Iir_Callees_List_Abs,
-              public Iir_Passive_Flag_Abs,
-              public Iir_Wait_State_Abs,
-              public Iir_Seen_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Has_Label_Abs,
-              public Iir_Has_Is_Abs,
-              public Iir_Is_Ref_Abs {
-    };
-
-    class Iir_Process_Statement
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Sequential_Statement_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Process_Origin_Abs,
-              public Iir_Postponed_Flag_Abs,
-              public Iir_Callees_List_Abs,
-              public Iir_Passive_Flag_Abs,
-              public Iir_Wait_State_Abs,
-              public Iir_Seen_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Has_Label_Abs,
-              public Iir_Has_Is_Abs,
-              public Iir_Suspend_Flag_Abs {
-    };
-
-    class Iir_Guarded_Target_State_Abs
-            : public virtual Iir {
+    struct Concurrent_Conditional_Signal_Assignment
+            : public Base {
+        Conditional_Waveforms conditional_waveforms;
         Iir_Delay_Mechanism Delay_Mechanism;
         Tri_State_Type Guarded_Target_State;
-        Iir* Reject_Time_Expression;
+        Base* Reject_Time_Expression;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Target;
+        Base* Parent;
+        Base* Guard;
+        bool Postponed_Flag;
     };
 
-    class Iir_Target_Abs
-            : public virtual Iir {
-        Iir* Target;
+    struct Concurrent_Selected_Signal_Assignment
+            : public Base {
+        Iir_Delay_Mechanism Delay_Mechanism;
+        Tri_State_Type Guarded_Target_State;
+        Base* Reject_Time_Expression;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Target;
+        Base* Expression;
+        Base* Selected_Waveform_Chain;
+        Base* Parent;
+        Base* Guard;
+        bool Postponed_Flag;
     };
 
-    class Iir_Guard_Abs
-            : public virtual Iir {
-        Iir* Guard;
+    struct Concurrent_Assertion_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Assertion_Condition;
+        Base* Report_Expression;
+        Base* Severity_Expression;
+        Base* Parent;
+        bool Postponed_Flag;
     };
 
-    class Iir_Simple_Signal_Assignment_Statement
-            : public Iir_Guarded_Target_State_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Target_Abs,
-              public Iir_Parent_Abs {
-        Iir_Waveform waveform;
+    struct Concurrent_Procedure_Call_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Parent;
+        Base* Procedure_Call;
+        bool Suspend_Flag;
+        bool Postponed_Flag;
     };
 
-    class Iir_Conditional_Signal_Assignment_Statement
-            : public Iir_Guarded_Target_State_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Target_Abs,
-              public Iir_Parent_Abs {
-        Iir_Conditional_Waveforms conditional_waveforms;
-    };
-
-    class Iir_Selected_Waveform_Assignment_Statement
-            : public Iir_Guarded_Target_State_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Target_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Selected_Waveform_Chain_Abs,
-              public Iir_Parent_Abs {
-    };
-
-    class Iir_Concurrent_Simple_Signal_Assignment
-            : public Iir_Simple_Signal_Assignment_Statement,
-              public Iir_Guard_Abs,
-              public Iir_Postponed_Flag_Abs {
-    };
-
-    class Iir_Concurrent_Conditional_Signal_Assignment
-            : public Iir_Conditional_Signal_Assignment_Statement,
-              public Iir_Guard_Abs,
-              public Iir_Postponed_Flag_Abs {
-        Iir_Conditional_Waveforms conditional_waveforms;
-    };
-
-    class Iir_Selected_Waveform_Chain_Abs
-            : public virtual Iir {
-        Iir* Selected_Waveform_Chain;
-    };
-
-    class Iir_Concurrent_Selected_Signal_Assignment
-            : public Iir_Selected_Waveform_Assignment_Statement,
-              public Iir_Guard_Abs,
-              public Iir_Postponed_Flag_Abs {
-    };
-
-    class Iir_Assertion_Condition_Abs
-            : public virtual Iir {
-        Iir* Assertion_Condition;
-    };
-
-    class Iir_Report_Expression_Abs
-            : public virtual Iir {
-        Iir* Report_Expression;
-        Iir* Severity_Expression;
-    };
-
-    class Iir_Concurrent_Assertion_Statement
-            : public Iir_Assertion_Statement,
-              public Iir_Postponed_Flag_Abs {
-    };
-
-    class Iir_Procedure_Call_Abs
-            : public virtual Iir {
-        Iir* Procedure_Call;
-    };
-
-    class Iir_Concurrent_Procedure_Call_Statement
-            : public Iir_Procedure_Call_Statement,
-              public Iir_Postponed_Flag_Abs {
-    };
-
-    class Iir_Psl_Assert_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Postponed_Flag_Abs,
-              public Iir_Report_Expression_Abs,
-              public Iir_Parent_Abs,
-              public Iir_PSL_Clock_Abs,
-              public Iir_PSL_Nbr_States_Abs {
+    struct Psl_Assert_Statement
+            : public Base {
         PSL_Node Psl_Property;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        bool Postponed_Flag;
+        Base* Report_Expression;
+        Base* Severity_Expression;
+        Base* Parent;
+        PSL_NFA PSL_Nfa;
+        PSL_Node PSL_Clock;
+        bool PSL_EOS_Flag;
+        int PSL_Nbr_States;
+        std::vector<Base*> PSL_Clock_Sensitivity;
     };
 
-    class Iir_Psl_Cover_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Postponed_Flag_Abs,
-              public Iir_Report_Expression_Abs,
-              public Iir_Parent_Abs,
-              public Iir_PSL_Clock_Abs,
-              public Iir_PSL_Nbr_States_Abs {
+    struct Psl_Cover_Statement
+            : public Base {
         PSL_Node Psl_Sequence;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        bool Postponed_Flag;
+        Base* Report_Expression;
+        Base* Severity_Expression;
+        Base* Parent;
+        PSL_NFA PSL_Nfa;
+        PSL_Node PSL_Clock;
+        bool PSL_EOS_Flag;
+        int PSL_Nbr_States;
+        std::vector<Base*> PSL_Clock_Sensitivity;
     };
 
-    class Iir_Block_Statement
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Concurrent_Statement_Chain_Abs,
-              public Iir_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
-        Iir* Guard_Decl;
-        Iir* Block_Block_Configuration;
-        Iir* Block_Header;
+    struct Block_Statement
+            : public Base {
+        Base* Guard_Decl;
+        Base* Block_Block_Configuration;
+        Base* Block_Header;
+        Base* Attribute_Value_Chain;
+        Base* Concurrent_Statement_Chain;
+        Base* Chain;
+        std::vector<Base*> Declaration_Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Parent;
+        bool Is_Within_Flag;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Generate_Statement_Body_Abs
-            : public virtual Iir {
-        Iir* Generate_Statement_Body;
+    struct If_Generate_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Generate_Statement_Body;
+        Base* Generate_Else_Clause;
+        Base* Condition;
+        Base* Parent;
+        bool Is_Within_Flag;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Generate_Else_Clause_Abs
-            : public virtual Iir {
-        Iir* Generate_Else_Clause;
+    struct Case_Generate_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Expression;
+        Base* Parent;
+        std::vector<Base*> Case_Statement_Alternative;
+        bool Is_Within_Flag;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_If_Generate_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Generate_Statement_Body_Abs,
-              public Iir_Generate_Else_Clause_Abs,
-              public Iir_Condition_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
+    struct For_Generate_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Generate_Statement_Body;
+        Base* Parameter_Specification;
+        Base* Parent;
+        bool Is_Within_Flag;
+        bool End_Has_Reserved_Id;
+        bool End_Has_Identifier;
     };
 
-    class Iir_Case_Statement_Alternative_Chain_Abs
-            : public virtual Iir {
-        std::vector<Iir*> Case_Statement_Alternative;
+    struct Component_Instantiation_Statement
+            : public Base {
+        Base* Instantiated_Unit;
+        Base* Default_Binding_Indication;
+        Base* Component_Configuration;
+        Base* Configuration_Specification;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Generic_Map_Aspect_Chain;
+        Base* Port_Map_Aspect_Chain;
+        Base* Parent;
     };
 
-    class Iir_Case_Generate_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Case_Statement_Alternative_Chain_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
-    };
-
-    class Iir_Parameter_Specification_Abs
-            : public virtual Iir {
-        Iir* Parameter_Specification;
-    };
-
-    class Iir_For_Generate_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Generate_Statement_Body_Abs,
-              public Iir_Parameter_Specification_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_End_Has_Reserved_Id_Abs,
-              public Iir_End_Has_Identifier_Abs {
-    };
-
-    class Iir_Component_Instantiation_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Generic_Map_Aspect_Chain_Abs,
-              public Iir_Port_Map_Aspect_Chain_Abs,
-              public Iir_Parent_Abs {
-        Iir* Instantiated_Unit;
-        Iir* Default_Binding_Indication;
-        Iir* Component_Configuration;
-        Iir* Configuration_Specification;
-    };
-
-    class Iir_Psl_Default_Clock
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Parent_Abs {
+    struct Psl_Default_Clock
+            : public Base {
         PSL_Node Psl_Boolean;
+        Base* Chain;
+        std::string Label;
+        Base* Parent;
     };
 
-    class Iir_Simple_Simultaneous_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Tolerance_Abs,
-              public Iir_Parent_Abs {
-        Iir* Simultaneous_Left;
-        Iir* Simultaneous_Right;
+    struct Simple_Simultaneous_Statement
+            : public Base {
+        Base* Simultaneous_Left;
+        Base* Simultaneous_Right;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Tolerance;
+        Base* Parent;
     };
 
-    class Iir_Generate_Statement_Body
-            : public Iir_Attribute_Value_Chain_Abs,
-              public Iir_Concurrent_Statement_Chain_Abs,
-              public Iir_Declaration_Chain_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Has_Label_Abs,
-              public Iir_Has_Begin_Abs {
-        Iir* Generate_Block_Configuration;
+    struct Generate_Statement_Body
+            : public Base {
+        Base* Generate_Block_Configuration;
         std::string Alternative_Label;
         bool Has_End;
+        Base* Attribute_Value_Chain;
+        Base* Concurrent_Statement_Chain;
+        std::vector<Base*> Declaration_Chain;
+        Base* Parent;
+        bool Is_Within_Flag;
+        bool End_Has_Identifier;
+        bool Has_Label;
+        bool Has_Begin;
     };
 
-    class Iir_If_Generate_Else_Clause
-            : public Iir_Visible_Flag_Abs,
-              public Iir_Generate_Statement_Body_Abs,
-              public Iir_Generate_Else_Clause_Abs,
-              public Iir_Condition_Abs,
-              public Iir_Parent_Abs {
+    struct If_Generate_Else_Clause
+            : public Base {
+        bool Visible_Flag;
+        Base* Generate_Statement_Body;
+        Base* Generate_Else_Clause;
+        Base* Condition;
+        Base* Parent;
     };
 
-    class Iir_Null_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs {
+    struct Null_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Parent;
     };
 
-    class Iir_Assertion_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Assertion_Condition_Abs,
-              public Iir_Report_Expression_Abs,
-              public Iir_Parent_Abs {
+    struct Assertion_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Assertion_Condition;
+        Base* Report_Expression;
+        Base* Severity_Expression;
+        Base* Parent;
     };
 
-    class Iir_Report_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Report_Expression_Abs,
-              public Iir_Parent_Abs {
+    struct Report_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Report_Expression;
+        Base* Severity_Expression;
+        Base* Parent;
     };
 
-    class Iir_Wait_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Sensitivity_List_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Is_Ref_Abs {
-        Iir* Condition_Clause;
-        Iir* Timeout_Clause;
+    struct Wait_Statement
+            : public Base {
+        Base* Condition_Clause;
+        Base* Timeout_Clause;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        std::vector<Base*> Sensitivity_List;
+        Base* Parent;
+        bool Is_Ref;
     };
 
-    class Iir_Variable_Assignment_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Target_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Parent_Abs {
+    struct Variable_Assignment_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Target;
+        Base* Expression;
+        Base* Parent;
     };
 
-    class Iir_Conditional_Variable_Assignment_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Target_Abs,
-              public Iir_Parent_Abs {
-        Iir* Conditional_Expression;
+    struct Conditional_Variable_Assignment_Statement
+            : public Base {
+        Base* Conditional_Expression;
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Target;
+        Base* Parent;
     };
 
-    class Iir_Return_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Parent_Abs {
+    struct Return_Statement
+            : public Base {
+        Base* Chain;
+        Base* Type;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Expression;
+        Base* Parent;
     };
 
-    class Iir_For_Loop_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Sequential_Statement_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parameter_Specification_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Is_Within_Flag_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Suspend_Flag_Abs {
+    struct For_Loop_Statement
+            : public Base {
+        Base* Chain;
+        Base* Sequential_Statement_Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Parameter_Specification;
+        Base* Parent;
+        bool Is_Within_Flag;
+        bool End_Has_Identifier;
+        bool Suspend_Flag;
     };
 
-    class Iir_While_Loop_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Sequential_Statement_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Condition_Abs,
-              public Iir_Parent_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Suspend_Flag_Abs {
+    struct While_Loop_Statement
+            : public Base {
+        Base* Chain;
+        Base* Sequential_Statement_Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Condition;
+        Base* Parent;
+        bool End_Has_Identifier;
+        bool Suspend_Flag;
     };
 
-    class Iir_Loop_Label_Abs
-            : public virtual Iir {
-        Iir* Loop_Label;
+    struct Next_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Condition;
+        Base* Parent;
+        Base* Loop_Label;
     };
 
-    class Iir_Next_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Condition_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Loop_Label_Abs {
+    struct Exit_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Condition;
+        Base* Parent;
+        Base* Loop_Label;
     };
 
-    class Iir_Exit_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Condition_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Loop_Label_Abs {
+    struct Case_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Expression;
+        Base* Parent;
+        std::vector<Base*> Case_Statement_Alternative;
+        bool End_Has_Identifier;
+        bool Suspend_Flag;
     };
 
-    class Iir_Case_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Expression_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Case_Statement_Alternative_Chain_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Suspend_Flag_Abs {
+    struct Procedure_Call_Statement
+            : public Base {
+        Base* Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Parent;
+        Base* Procedure_Call;
+        bool Suspend_Flag;
     };
 
-    class Iir_Procedure_Call_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Procedure_Call_Abs,
-              public Iir_Suspend_Flag_Abs {
+    struct If_Statement
+            : public Base {
+        Base* Chain;
+        Base* Sequential_Statement_Chain;
+        std::string Label;
+        bool Visible_Flag;
+        Base* Condition;
+        Base* Else_Clause;
+        Base* Parent;
+        bool End_Has_Identifier;
+        bool Suspend_Flag;
     };
 
-    class Iir_Else_Clause_Abs
-            : public virtual Iir {
-        Iir* Else_Clause;
+    struct Elsif
+            : public Base {
+        Base* Sequential_Statement_Chain;
+        Base* Condition;
+        Base* Else_Clause;
+        Base* Parent;
+        bool End_Has_Identifier;
     };
 
-    class Iir_If_Statement
-            : public Iir_Chain_Abs,
-              public Iir_Sequential_Statement_Chain_Abs,
-              public Iir_Label_Abs,
-              public Iir_Visible_Flag_Abs,
-              public Iir_Condition_Abs,
-              public Iir_Else_Clause_Abs,
-              public Iir_Parent_Abs,
-              public Iir_End_Has_Identifier_Abs,
-              public Iir_Suspend_Flag_Abs {
+    struct Character_Literal
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        std::string Identifier;
+        Base* Named_Entity;
+        bool Is_Forward_Ref;
+        Base* Alias_Declaration;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
     };
 
-    class Iir_Elsif
-            : public Iir_Sequential_Statement_Chain_Abs,
-              public Iir_Condition_Abs,
-              public Iir_Else_Clause_Abs,
-              public Iir_Parent_Abs,
-              public Iir_End_Has_Identifier_Abs {
+    struct Simple_Name
+            : public Base {
+        Type_Definitions Type;
+        Base* Base_Name;
+        std::string Identifier;
+        Base* Named_Entity;
+        bool Is_Forward_Ref;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
     };
 
-    class Iir_Named_Entity_Abs
-            : public virtual Iir {
-        Iir* Named_Entity;
+    struct Selected_Name
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        std::string Identifier;
+        Base* Named_Entity;
+        bool Is_Forward_Ref;
+        Base* Alias_Declaration;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+    };
+
+    struct Operator_Symbol
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        std::string Identifier;
+        Base* Named_Entity;
+        bool Is_Forward_Ref;
+        Base* Alias_Declaration;
+    };
+
+    struct Reference_Name
+            : public Base {
+        Base* Referenced_Name;
+        Base* Named_Entity;
         bool Is_Forward_Ref;
     };
 
-    class Iir_Alias_Declaration_Abs
-            : public virtual Iir {
-        Iir* Alias_Declaration;
+    struct Selected_By_All_Name
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Base* Named_Entity;
+        bool Is_Forward_Ref;
+        Iir_Staticness Expr_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Character_Literal
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Named_Entity_Abs,
-              public Iir_Alias_Declaration_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs {
+    struct Parenthesis_Name
+            : public Base {
+        Base* Association_Chain;
+        Base* Type;
+        Base* Named_Entity;
+        bool Is_Forward_Ref;
+        Base* Prefix;
     };
 
-    class Iir_Simple_Name
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Named_Entity_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs {
-    };
-
-    class Iir_Selected_Name
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Named_Entity_Abs,
-              public Iir_Alias_Declaration_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
-    };
-
-    class Iir_Operator_Symbol
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Named_Entity_Abs,
-              public Iir_Alias_Declaration_Abs {
-    };
-
-    class Iir_Reference_Name
-            : public Iir_Named_Entity_Abs {
-        Iir* Referenced_Name;
-    };
-
-    class Iir_Selected_By_All_Name
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Named_Entity_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Prefix_Abs {
-    };
-
-    class Iir_Parenthesis_Name
-            : public Iir_Type_Abs,
-              public Iir_Named_Entity_Abs,
-              public Iir_Prefix_Abs {
-        Iir* Association_Chain;
-    };
-
-    class Iir_External_Pathname_Abs
-            : public virtual Iir {
-        Iir* External_Pathname;
-    };
-
-    class Iir_External_Name
-            : public Iir_Chain_Abs,
-              public Iir_Type_Abs,
-              public Iir_Subtype_Indication_Abs,
-              public Iir_Shared_Flag_Abs,
-              public Iir_Parent_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_External_Pathname_Abs {
+    struct External_Name
+            : public Base {
         External_Name_Type Name_Type;
+        Base* Chain;
+        Base* Type;
+        Base* Subtype_Indication;
+        bool Shared_Flag;
+        Base* Parent;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* External_Pathname;
     };
 
-    class Iir_Pathname_Suffix_Abs
-            : public virtual Iir {
-        Iir* Pathname_Suffix;
+    struct Package_Pathname
+            : public Base {
+        std::string Identifier;
+        Base* Named_Entity;
+        bool Is_Forward_Ref;
+        Base* Pathname_Suffix;
     };
 
-    class Iir_Package_Pathname
-            : public Iir_Identifier_Abs,
-              public Iir_Named_Entity_Abs,
-              public Iir_Pathname_Suffix_Abs {
+    struct Absolute_Pathname
+            : public Base {
+        Base* Pathname_Suffix;
     };
 
-    class Iir_Absolute_Pathname
-            : public Iir_Pathname_Suffix_Abs {
+    struct Relative_Pathname
+            : public Base {
+        Base* Pathname_Suffix;
     };
 
-    class Iir_Relative_Pathname
-            : public Iir_Pathname_Suffix_Abs {
+    struct Pathname_Element
+            : public Base {
+        Base* Pathname_Expression;
+        std::string Identifier;
+        Base* Named_Entity;
+        bool Is_Forward_Ref;
+        Base* Pathname_Suffix;
     };
 
-    class Iir_Pathname_Element
-            : public Iir_Identifier_Abs,
-              public Iir_Named_Entity_Abs,
-              public Iir_Pathname_Suffix_Abs {
-        Iir* Pathname_Expression;
+    struct Base_Attribute
+            : public Base {
+        Base* Type;
+        Base* Prefix;
     };
 
-    class Iir_Base_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Prefix_Abs {
+    struct Subtype_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Type_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Subtype_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Element_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Type_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Element_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Type_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Left_Type_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Left_Type_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Right_Type_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Right_Type_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct High_Type_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_High_Type_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Low_Type_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Low_Type_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Ascending_Type_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Ascending_Type_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Image_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
     };
 
-    class Iir_Parameter_Abs
-            : public virtual Iir {
-        Iir* Parameter;
+    struct Value_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
     };
 
-    class Iir_Image_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs {
+    struct Pos_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
     };
 
-    class Iir_Value_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs {
+    struct Val_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
     };
 
-    class Iir_Pos_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs {
+    struct Succ_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
     };
 
-    class Iir_Val_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs {
+    struct Pred_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
     };
 
-    class Iir_Succ_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs {
+    struct Leftof_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
     };
 
-    class Iir_Pred_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs {
+    struct Rightof_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
     };
 
-    class Iir_Leftof_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs {
+    struct Delayed_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
+        Base* Signal_Attribute_Declaration;
+        Base* Attr_Chain;
+        bool Has_Active_Flag;
     };
 
-    class Iir_Rightof_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs {
+    struct Stable_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
+        Base* Signal_Attribute_Declaration;
+        Base* Attr_Chain;
+        bool Has_Active_Flag;
     };
 
-    class Iir_Attr_Chain_Abs
-            : public virtual Iir {
-        Iir* Signal_Attribute_Declaration;
-        Iir* Attr_Chain;
+    struct Quiet_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
+        Base* Signal_Attribute_Declaration;
+        Base* Attr_Chain;
+        bool Has_Active_Flag;
     };
 
-    class Iir_Delayed_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs,
-              public Iir_Attr_Chain_Abs,
-              public Iir_Has_Active_Flag_Abs {
+    struct Transaction_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Parameter;
+        Base* Signal_Attribute_Declaration;
+        Base* Attr_Chain;
+        bool Has_Active_Flag;
     };
 
-    class Iir_Stable_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs,
-              public Iir_Attr_Chain_Abs,
-              public Iir_Has_Active_Flag_Abs {
+    struct Attribute
+            : public Base {
+        Attribute_Type attribute_Type;
+        Base* Type;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Quiet_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs,
-              public Iir_Attr_Chain_Abs,
-              public Iir_Has_Active_Flag_Abs {
+    struct Behavior_Attribute
+            : public Base {
     };
 
-    class Iir_Transaction_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Parameter_Abs,
-              public Iir_Attr_Chain_Abs,
-              public Iir_Has_Active_Flag_Abs {
+    struct Structure_Attribute
+            : public Base {
     };
 
-    class Iir_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
-        Iir_Attribute_Type Attribute_Type;
-    };
-
-    class Iir_Behavior_Attribute
-            : public virtual Iir {
-    };
-
-    class Iir_Structure_Attribute
-            : public virtual Iir {
-    };
-
-    class Iir_Simple_Name_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Simple_Name_Attribute
+            : public Base {
         std::string Simple_Name_Identifier;
-        Iir* Simple_Name_Subtype;
+        Base* Simple_Name_Subtype;
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Instance_Name_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Instance_Name_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Path_Name_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
+    struct Path_Name_Attribute
+            : public Base {
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
-    class Iir_Index_Subtype_Abs
-            : public virtual Iir {
-        Iir* Index_Subtype;
-    };
-
-    class Iir_Array_Attribute
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs,
-              public Iir_Index_Subtype_Abs,
-              public Iir_Parameter_Abs {
+    struct Array_Attribute
+            : public Base {
         Array_Attribute_Type Attribute_Type;
+        Base* Type;
+        Base* Base_Name;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
+        Base* Index_Subtype;
+        Base* Parameter;
     };
 
-    class Iir_Attribute_Name
-            : public Iir_Type_Abs,
-              public Iir_Base_Name_Abs,
-              public Iir_Identifier_Abs,
-              public Iir_Named_Entity_Abs,
-              public Iir_Expr_Staticness_Abs,
-              public Iir_Name_Staticness_Abs,
-              public Iir_Prefix_Abs {
-        Iir* Attribute_Signature;
+    struct Attribute_Name
+            : public Base {
+        Base* Attribute_Signature;
+        Base* Type;
+        Base* Base_Name;
+        std::string Identifier;
+        Base* Named_Entity;
+        bool Is_Forward_Ref;
+        Iir_Staticness Expr_Staticness;
+        Iir_Staticness Name_Staticness;
+        Base* Prefix;
     };
 
 }

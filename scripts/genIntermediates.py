@@ -154,7 +154,7 @@ def main():
 
     for file in args:
         # simplifyInheritance(file)
-        generatecpp(file + '2')
+        generatecpp(file)
 
 
 if __name__ == '__main__':
