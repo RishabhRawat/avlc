@@ -3,7 +3,6 @@
 
 #include "iir.h"
 
-//function Current_Text return Iir;
 /*
 //  Get identifier of NODE as a string.
 function Image_Identifier (Node : Iir) return String;
@@ -119,7 +118,7 @@ return String;
 procedure Mark_Subprogram_Used (Subprg : Iir);
 */
 //  Create the range_constraint node for an enumeration type.
-void Create_Range_Constraint_For_Enumeration_Type (Iir_Enumeration_Type_Definition& Def );
+void Create_Range_Constraint_For_Enumeration_Type (IIR::Enumeration_Type_Definition& Def );
 /*
 //  Return the node containing the Callees_List (ie the subprogram body if
 //  SUBPRG is a subprogram spec, SUBPRG if SUBPRG is a process).
@@ -166,9 +165,17 @@ pragma Inline (Is_Procedure_Declaration);
 function Strip_Denoting_Name (Name : Iir) return Iir;
 */
 //  Build a simple name node whose named entity is REF and location LOC.
-Iir_Simple_Name* Build_Simple_Name(Iir* Ref, Location_Type Loc);
+template <typename T>
+IIR::Simple_Name* Build_Simple_Name(const T& Ref, Location_Type Loc) {
+    auto Res = new IIR::Simple_Name;
+    Res->Location = Loc;
+    Res->Identifier = Ref->Identifier;
+    Res->Named_Entity = Ref;
+    Res->Base_Name = Res;
+//  FIXME: set type and expr staticness ?
+    return Res;
+};
 
-Iir_Simple_Name* Build_Simple_Name(Iir* Ref, Iir* Loc);
 /*
 //  Create a name that referenced the same named entity as NAME.
 function Build_Reference_Name (Name : Iir) return Iir;
@@ -197,7 +204,7 @@ function Get_Index_Type (Index_Type : Iir) return Iir
 //  index_constraint INDEXES.  Return Null_Iir if IDX is out of dimension
 //  bounds, so that this function can be used to iterator over indexes of
 //  a type (or subtype).  Note that IDX starts at 0.
-function Get_Index_Type (Indexes : Iir_List; Idx : Natural) return Iir;
+function Get_Index_Type (Indexes : IIR::List; Idx : Natural) return Iir;
 
 //  Likewise but for array type or subtype ARRAY_TYPE.
 function Get_Index_Type (Array_Type : Iir; Idx : Natural) return Iir;
@@ -242,18 +249,18 @@ function Get_Entity (Decl : Iir) return Iir;
 function Get_Configuration (Aspect : Iir) return Iir;
 */
 //  Return the identifier of the entity for architecture ARCH.
-inline std::string Get_Entity_Identifier_Of_Architecture (Iir_Architecture_Body* Arch);
+inline std::string Get_Entity_Identifier_Of_Architecture (IIR::Architecture_Body* Arch);
 /*
 //  Return True is component instantiation statement INST instantiate a
 //  component.
 function Is_Component_Instantiation
-        (Inst : Iir_Component_Instantiation_Statement)
+        (Inst : IIR::Component_Instantiation_Statement)
 return Boolean;
 
 //  Return True is component instantiation statement INST instantiate a
 //  design entity.
 function Is_Entity_Instantiation
-        (Inst : Iir_Component_Instantiation_Statement)
+        (Inst : IIR::Component_Instantiation_Statement)
 return Boolean;
 
 //  Get the expression of the attribute specification corresponding to the
@@ -265,10 +272,10 @@ function Get_Attribute_Name_Expression (Name : Iir) return Iir;
 function Get_String_Type_Bound_Type (Sub_Type : Iir) return Iir;
 
 //  Return left or right limit according to the direction.
-procedure Get_Low_High_Limit (Arange : Iir_Range_Expression;
+procedure Get_Low_High_Limit (Arange : IIR::Range_Expression;
 Low, High : out Iir);
-function Get_Low_Limit (Arange : Iir_Range_Expression) return Iir;
-function Get_High_Limit (Arange : Iir_Range_Expression) return Iir;
+function Get_Low_Limit (Arange : IIR::Range_Expression) return Iir;
+function Get_High_Limit (Arange : IIR::Range_Expression) return Iir;
 
 //  Return TRUE iff type/subtype definition A_TYPE is an undim array.
 function Is_One_Dimensional_Array_Type (A_Type : Iir) return Boolean;
@@ -282,7 +289,7 @@ function Is_Range_Attribute_Name (Expr : Iir) return Boolean;
 //  subtype and therefore must be updated.
 //  The type_declarator field is set to null_iir.
 function Create_Array_Subtype (Arr_Type : Iir; Loc : Location_Type)
-return Iir_Array_Subtype_Definition;
+return IIR::Array_Subtype_Definition;
 
 //  Return TRUE iff SPEC is declared inside a protected type or a protected
 //  body.
@@ -297,14 +304,14 @@ function Get_Method_Type (Spec : Iir) return Iir;
 function Get_Actual_Or_Default (Assoc : Iir; Inter : Iir) return Iir;
 */
 //  Create an error node for node ORIG.
-inline Iir_Error* Create_Error (Iir* Orig);
+inline IIR::Error* Create_Error (IIR::Base* Orig);
 /*
 //  Create an error node for node ORIG, and set its type to ATYPE.
 //  Set its staticness to locally.
 function Create_Error_Expr (Orig : Iir; Atype : Iir) return Iir;
 */
 //  Create an error node for node ORIG, which is supposed to be a type.
-Iir_Error* Create_Error_Type (Iir* Orig);
+IIR::Error* Create_Error_Type (IIR::Base* Orig);
 /*
 //  Extract the entity from ASPECT.
 //  Note: if ASPECT is a component declaration, returns ASPECT.
@@ -326,7 +333,7 @@ function Is_Generic_Mapped_Package (Pkg : Iir) return Boolean;
 function Is_Signal_Object (Name: Iir) return Boolean;
 
 //  Return True IFF kind of N is K1 or K2.
-function Kind_In (N : Iir; K1, K2 : Iir_Kind) return Boolean;
+function Kind_In (N : Iir; K1, K2 : IIR::Kind) return Boolean;
 pragma Inline (Kind_In);
 
 //  IIR wrapper around Get_HDL_Node/Set_HDL_Node.

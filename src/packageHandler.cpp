@@ -3,24 +3,26 @@
 //
 
 #include <CompilerExceptions.h>
+#include <iir.h>
 #include "Parser.h"
 #include "packageHandler.h"
 #include "json.hpp"
 #include "sha256.h"
+#include "standardPackage.h"
 
 namespace fs = std::filesystem;
 
-std::string calculateChecksum(fs::path file) {
+std::string calculateChecksum(const fs::path &file) {
     assert(fs::exists(file));
     std::ifstream ifs(file);
-    std::istream* input = NULL;
+    std::istream* input = nullptr;
     input = &ifs;
     const size_t BufferSize = 1024;
-    char *buffer = new char[BufferSize];
+    auto* buffer = new char[BufferSize];
     SHA256 digestSha2;
     while (*input) {
         input->read(buffer, BufferSize);
-        std::size_t numBytesRead = size_t(input->gcount());
+        auto numBytesRead = size_t(input->gcount());
         digestSha2.add(buffer, numBytesRead);
     }
     delete buffer;
@@ -29,6 +31,7 @@ std::string calculateChecksum(fs::path file) {
 
 //  A location for any implicit declarations (such as library WORK).
 Location_Type Implicit_Location;
+
 /*
 //  Report an error message.
 procedure Error_Lib_Msg (Msg : String) is
@@ -48,39 +51,39 @@ void packageHandler::Add_Library_Path(fs::path Path) {
 // Transform a library identifier into a file name. Very simple mechanism: just add '-objVV.cf' extension,
 // where VV is the version.
 
-std::string packageHandler::Library_To_File_Name(Iir_Library_Declaration* Library) {
+std::string packageHandler::Library_To_File_Name(IIR::Library_Declaration* Library) {
     switch (state.options.standard) {
-    case Vhdl_Std::Vhdl_87:
-        return Library->Identifier + "-obj87.cf";
-    case Vhdl_Std::Vhdl_93c:
-    case Vhdl_Std::Vhdl_93:
-    case Vhdl_Std::Vhdl_00:
-    case Vhdl_Std::Vhdl_02:
-        return Library->Identifier + "-obj93.cf";
-    case Vhdl_Std::Vhdl_08:
-        return Library->Identifier + "-obj08.cf";
+        case Vhdl_Std::Vhdl_87:
+            return Library->Identifier + "-obj87.cf";
+        case Vhdl_Std::Vhdl_93c:
+        case Vhdl_Std::Vhdl_93:
+        case Vhdl_Std::Vhdl_00:
+        case Vhdl_Std::Vhdl_02:
+            return Library->Identifier + "-obj93.cf";
+        case Vhdl_Std::Vhdl_08:
+            return Library->Identifier + "-obj08.cf";
     }
     throw std::logic_error("");
 }
 
 //  Search LIBRARY in the library path.
-bool packageHandler::Search_Library_In_Path(Iir_Library_Declaration* Library) {
+bool packageHandler::Search_Library_In_Path(IIR::Library_Declaration* Library) {
     auto libraryName = Library_To_File_Name(Library);
 
     std::string str;
     switch (state.options.standard) {
-    case Vhdl_Std::Vhdl_87:
-        str = "v87";
-        break;
-    case Vhdl_Std::Vhdl_93c:
-    case Vhdl_Std::Vhdl_93:
-    case Vhdl_Std::Vhdl_00:
-    case Vhdl_Std::Vhdl_02:
-        str = "v93";
-        break;
-    case Vhdl_Std::Vhdl_08:
-        str = "v08";
-        break;
+        case Vhdl_Std::Vhdl_87:
+            str = "v87";
+            break;
+        case Vhdl_Std::Vhdl_93c:
+        case Vhdl_Std::Vhdl_93:
+        case Vhdl_Std::Vhdl_00:
+        case Vhdl_Std::Vhdl_02:
+            str = "v93";
+            break;
+        case Vhdl_Std::Vhdl_08:
+            str = "v08";
+            break;
     }
 
     for (auto &&path: paths) {
@@ -88,7 +91,7 @@ bool packageHandler::Search_Library_In_Path(Iir_Library_Declaration* Library) {
         if (fs::is_regular_file(path / fs::path(libraryName)))
             Library->Library_Directory = p;
         else if (fs::is_regular_file(path / fs::path(str) / fs::path(libraryName)))
-                Library->Library_Directory = path / fs::path(str);
+            Library->Library_Directory = path / fs::path(str);
         else
             continue;
         return true;
@@ -105,12 +108,32 @@ void packageHandler::Set_Work_Library_Path(fs::path Path) {
 
 // Every design unit is put in this hash table to be quickly found by its (primary) identifier.
 // The units are indexed by libname#identifier
-std::unordered_map<std::string, Iir_Design_Unit*> Primary_Units;
-std::unordered_map<std::string, Iir_Design_Unit*> Secondary_Units;
+/*
+ * if Get_Identifier (Unit) = Name
+           and then Get_Library (Get_Design_File (Unit)) = Library
+         then
+            case Get_Kind (Get_Library_Unit (Unit)) is
+               when Iir_Kind_Package_Declaration
+                 | Iir_Kind_Package_Instantiation_Declaration
+                 | Iir_Kind_Entity_Declaration
+                 | Iir_Kind_Configuration_Declaration
+                 | Iir_Kind_Context_Declaration =>
+                  --  Only return a primary unit.
+                  return Unit;
+               when Iir_Kind_Package_Body
+                 | Iir_Kind_Architecture_Body =>
+                  null;
+               when others =>
+                  raise Internal_Error;
+            end case;
+         end if;
+ */
+std::unordered_map<std::string, IIR::Design_Unit*> Primary_Units;
+std::unordered_map<std::string, IIR::Design_Unit*> Secondary_Units;
 
 // NOTE: Architectures are put with the entity identifier. (How to handle both??)
 
-void packageHandler::Purge_Design_File(Iir_Design_File* Design_File) {
+void packageHandler::Purge_Design_File(IIR::Design_File* Design_File) {
     auto it = std::find(Work_Library->Design_Files.begin(), Work_Library->Design_Files.end(), Design_File);
     if (it == Work_Library->Design_Files.end())
         Warning("Look this up bro, your design file aint in work library");
@@ -159,7 +182,7 @@ void packageHandler::Purge_Design_File(Iir_Design_File* Design_File) {
 // Return TRUE if the library was found.
 /*struct Save_Design_Unit {
 
-    nlohmann::json operator()(Iir_Entity_Declaration* unit) {
+    nlohmann::json operator()(IIR::Entity_Declaration* unit) {
         nlohmann::json result;
         result["type"] = "entity";
         result["name"] = unit->Identifier;
@@ -170,7 +193,7 @@ void packageHandler::Purge_Design_File(Iir_Design_File* Design_File) {
 
     }
 
-    nlohmann::json operator()(Iir_Architecture_Body* unit) {
+    nlohmann::json operator()(IIR::Architecture_Body* unit) {
         nlohmann::json result;
         result["type"] = "architecture";
         result["name"] = unit->Identifier;
@@ -182,7 +205,7 @@ void packageHandler::Purge_Design_File(Iir_Design_File* Design_File) {
 
     }
 
-    nlohmann::json operator()(Iir_Package_Declaration* unit) {
+    nlohmann::json operator()(IIR::Package_Declaration* unit) {
         nlohmann::json result;
         result["type"] = "package";
         result["name"] = unit->Identifier;
@@ -194,7 +217,7 @@ void packageHandler::Purge_Design_File(Iir_Design_File* Design_File) {
 
     }
 
-    nlohmann::json operator()(Iir_Package_Instantiation_Declaration* unit) {
+    nlohmann::json operator()(IIR::Package_Instantiation_Declaration* unit) {
         nlohmann::json result;
         result["type"] = "package_body";
         result["name"] = unit->Identifier;
@@ -205,7 +228,7 @@ void packageHandler::Purge_Design_File(Iir_Design_File* Design_File) {
 
     }
 
-    nlohmann::json operator()(Iir_Package_Body* unit) {
+    nlohmann::json operator()(IIR::Package_Body* unit) {
         nlohmann::json result;
         result["type"] = "package_body";
         result["name"] = unit->Identifier;
@@ -216,7 +239,7 @@ void packageHandler::Purge_Design_File(Iir_Design_File* Design_File) {
 
     }
 
-    nlohmann::json operator()(Iir_Configuration_Declaration* unit) {
+    nlohmann::json operator()(IIR::Configuration_Declaration* unit) {
         nlohmann::json result;
         result["type"] = "configuration";
         result["name"] = unit->Identifier;
@@ -227,7 +250,7 @@ void packageHandler::Purge_Design_File(Iir_Design_File* Design_File) {
 
     }
 
-    nlohmann::json operator()(Iir_Context_Declaration* unit) {
+    nlohmann::json operator()(IIR::Context_Declaration* unit) {
         nlohmann::json result;
         result["type"] = "context";
         result["name"] = unit->Identifier;
@@ -239,8 +262,8 @@ void packageHandler::Purge_Design_File(Iir_Design_File* Design_File) {
     }
 };*/
 
-// Save the file map of library LIBRARY.
-bool packageHandler::Load_Library(Iir_Library_Declaration* Library) {
+// Read the file map of library LIBRARY.
+bool packageHandler::Load_Library(IIR::Library_Declaration* Library) {
     //TODO: Assert Library is not already loaded
     assert(Library->Design_Files.empty());;
     if (Library->Library_Directory.empty() && Search_Library_In_Path(Library))
@@ -257,49 +280,49 @@ bool packageHandler::Load_Library(Iir_Library_Declaration* Library) {
     if (data["version"] != 1)
         throw std::runtime_error("wrong library format");
 
-    for (auto file_item : nlohmann::json::iterator_wrapper(data["files"])) {
-        Iir_Design_File *f = new Iir_Design_File;
+    for (auto&& file_item : nlohmann::json::iterator_wrapper(data["files"])) {
+        auto f = new IIR::Design_File;
         f->Design_File_Filename = file_item.key();
-        f->File_Checksum = file_item.value()["crc32"];
+//        f->File_Checksum = file_item.value()["sha256"];
         for (auto &&unit_item  : file_item.value()["design_units"]) {
-            Iir_Design_Unit_n var;
+            IIR::Base* var;
             if (unit_item["type"] == "entity") {
-                auto unit = new Iir_Entity_Declaration;
+                auto unit = new IIR::Entity_Declaration;
                 unit->Location.Pos = unit_item["Location"]["Pos"];
                 unit->Location.Line = unit_item["Location"]["Line"];
                 unit->Location.Line_Pos = unit_item["Location"]["Line_Pos"];
                 unit->Identifier = unit_item["name"];
                 var = unit;
             } else if (unit_item["type"] == "architecture") {
-                auto unit = new Iir_Architecture_Body;
+                auto unit = new IIR::Architecture_Body;
                 unit->Location.Pos = unit_item["Location"]["Pos"];
                 unit->Location.Line = unit_item["Location"]["Line"];
                 unit->Location.Line_Pos = unit_item["Location"]["Line_Pos"];
                 unit->Identifier = unit_item["name"];
                 var = unit;
             } else if (unit_item["type"] == "package") {
-                auto unit = new Iir_Package_Declaration;
+                auto unit = new IIR::Package_Declaration;
                 unit->Location.Pos = unit_item["Location"]["Pos"];
                 unit->Location.Line = unit_item["Location"]["Line"];
                 unit->Location.Line_Pos = unit_item["Location"]["Line_Pos"];
                 unit->Identifier = unit_item["name"];
                 var = unit;
             } else if (unit_item["type"] == "package_body") {
-                auto unit = new Iir_Package_Body;
+                auto unit = new IIR::Package_Body;
                 unit->Location.Pos = unit_item["Location"]["Pos"];
                 unit->Location.Line = unit_item["Location"]["Line"];
                 unit->Location.Line_Pos = unit_item["Location"]["Line_Pos"];
                 unit->Identifier = unit_item["name"];
                 var = unit;
             } else if (unit_item["type"] == "configuration") {
-                auto unit = new Iir_Configuration_Declaration;
+                auto unit = new IIR::Configuration_Declaration;
                 unit->Location.Pos = unit_item["Location"]["Pos"];
                 unit->Location.Line = unit_item["Location"]["Line"];
                 unit->Location.Line_Pos = unit_item["Location"]["Line_Pos"];
                 unit->Identifier = unit_item["name"];
                 var = unit;
             } else if (unit_item["type"] == "context") {
-                auto unit = new Iir_Context_Declaration;
+                auto unit = new IIR::Context_Declaration;
                 unit->Location.Pos = unit_item["Location"]["Pos"];
                 unit->Location.Line = unit_item["Location"]["Line"];
                 unit->Location.Line_Pos = unit_item["Location"]["Line_Pos"];
@@ -320,7 +343,7 @@ bool packageHandler::Load_Library(Iir_Library_Declaration* Library) {
             nlohmann::json dFile;
             dFile["directory"] = designFile->Design_File_Directory;
             //TODO: dFile["crc32"] =
-            //TODO: dFile["timestamp"] =
+            //TODO: dFile["timestamp"] = std::get_time(&designFile->Analysis_Time_Stamp, "%c");
             dFile["design_units"] = nlohmann::json::array();
             for (auto &&designUnit  : designFile->Design_Units) {
                 dFile["design_units"].push_back(std::visit(Save_Design_Unit{}, designUnit));
@@ -342,58 +365,50 @@ Command_Line_Location = Source_File_To_Location (Command_Source_File);
 Implicit_Location = Source_File_To_Location (Implicit_Source_File);
 end Create_Virtual_Locations;
 */
-/*
+
 // Note: the scanner shouldn't be in use, since this procedure uses it.
-void packageHandler::Load_Std_Library (bool Build_Standard = true) {
+void packageHandler::Load_Std_Library(bool Build_Standard /*= true*/) {
 // NOTES:        use Std_Package;
 
     if (!Libraries_List.empty())
 //  This procedure must not be called twice.
-throw std::logic_error("cannot call twice");
+        throw std::logic_error("cannot call twice");
 
 //TODO: state.options.Create_Flag_String;
 //Create_Virtual_Locations;
-
-Std_Package.Create_First_Nodes;
+    standardPackage::Create_First_Nodes();
 
 //  Create the library.
-Std_Library = Create_Iir (Iir_Kind_Library_Declaration);
-Set_Identifier (Std_Library, Std_Names.Name_Std);
-Set_Location (Std_Library, Implicit_Location);
-Libraries_List = Std_Library;
-Libraries_List_Last = Std_Library;
+    Std_Library = new IIR::Library_Declaration;
+    Std_Library->Identifier = Keywords::Name_Std;
+    Std_Library->Location = Implicit_Location;
+    Libraries_List.push_back(Std_Library);
 
-if Build_Standard then
-Create_Std_Standard_Package (Std_Library);
-Add_Unit_Hash (Std_Standard_Unit);
-end if;
+    if (Build_Standard) {
+        standardPackage::Create_Std_Standard_Package(Std_Library);
+        //FIXME: correct this name per naming convention
+        Primary_Units[standardPackage::Std_Standard_Unit->Identifier] = standardPackage::Std_Standard_Unit;
+    }
 
-if state.options.Bootstrap
-        and then Work_Library_Name = Std_Names.Name_Std
-then
+    auto Dir = std::filesystem::path("");
+    if (state.options.Bootstrap && Work_Library_Name == Keywords::Name_Std)
         Dir = Work_Directory;
-else
-Dir = Null_Identifier;
-end if;
-Set_Library_Directory (Std_Library, Dir);
-if Load_Library (Std_Library) = False
-        and then not state.options.Bootstrap
-        then
-Error_Msg_Option ("cannot find ""std"" library");
-end if;
 
-if Build_Standard then
+    Std_Library->Library_Directory = Dir;
+    if (Load_Library(Std_Library) && !state.options.Bootstrap)
+        throw std::runtime_error("cannot find ""std"" library");
+
+
+    if (Build_Standard) {
 //  Add the standard_file into the library.
-//  This is done after Load_Library, because it checks there is no
-//  previous files in the library.
-Set_Parent (Std_Standard_File, Std_Library);
-Set_Chain (Std_Standard_File, Get_Design_File_Chain (Std_Library));
-Set_Design_File_Chain (Std_Library, Std_Standard_File);
-end if;
+//  This is done after Load_Library, because it checks there is no previous files in the library.
+        standardPackage::Std_Standard_File->Library = Std_Library;
+        Std_Library->Design_Files.push_back(standardPackage::Std_Standard_File);
+    }
 
-Set_Visible_Flag (Std_Library, True);
-end Load_Std_Library;
-
+    Std_Library->Visible_Flag = true;
+}
+/*
 procedure Load_Work_Library (Empty : Boolean = False)
 is
         use Std_Names;
@@ -405,7 +420,7 @@ return;
 end if;
 Work_Library = Std_Library;
 else
-Work_Library = Create_Iir (Iir_Kind_Library_Declaration);
+Work_Library = Create_Iir (IIR::Kind_Library_Declaration);
 Set_Location (Work_Library, Implicit_Location);
 //Set_Visible_Flag (Work_Library, True);
 Set_Library_Directory (Work_Library, Work_Directory);
@@ -426,7 +441,7 @@ Set_Visible_Flag (Work_Library, True);
 end Load_Work_Library;
 */
 // Get or create a library from an identifier.
-Iir_Library_Declaration* packageHandler::Get_Library(std::string Ident, Location_Type Loc) {
+IIR::Library_Declaration* packageHandler::Get_Library(std::string Ident, Location_Type Loc) {
 
 //  The library work is a little bit special.
     if (Ident == Keywords::Name_Work || Ident == Work_Library_Name) {
@@ -446,11 +461,11 @@ Iir_Library_Declaration* packageHandler::Get_Library(std::string Ident, Location
         throw std::logic_error("");
 
 
-    auto Library = new Iir_Library_Declaration;
+    auto Library = new IIR::Library_Declaration;
     Library->Location = Loc;
     Library->Identifier = Ident;
     if (!Load_Library(Library))
-            SemanticError("cannot find resource library" + Ident);
+        SemanticError("cannot find resource library" + Ident);
 
     Library->Visible_Flag = true;
     Libraries_List.push_back(Library);
@@ -462,10 +477,10 @@ Iir_Library_Declaration* packageHandler::Get_Library(std::string Ident, Location
 // Return TRUE if LIBRARY_UNIT and UNIT have identifiers for the same
 // design unit identifier.
 // eg: 'entity A' and 'package A' returns TRUE.
-bool Is_Same_Library_Unit (Iir* Library_Unit, Iir* Unit) return Boolean
+bool Is_Same_Library_Unit (IIR::Base* Library_Unit, IIR::Base* Unit) return Boolean
         is
 Entity_Name1, Entity_Name2: Name_Id;
-Library_Unit_Kind, Unit_Kind : Iir_Kind;
+Library_Unit_Kind, Unit_Kind : IIR::Kind;
 begin
 if Get_Identifier (Unit) /= Get_Identifier (Library_Unit) then
 return False;
@@ -475,21 +490,21 @@ Library_Unit_Kind = Get_Kind (Library_Unit);
 Unit_Kind = Get_Kind (Unit);
 
 //  Package and package body are never the same library unit.
-if Library_Unit_Kind = Iir_Kind_Package_Declaration
-        and then Unit_Kind = Iir_Kind_Package_Body
+if Library_Unit_Kind = IIR::Kind_Package_Declaration
+        and then Unit_Kind = IIR::Kind_Package_Body
 then
 return False;
 end if;
-if Unit_Kind = Iir_Kind_Package_Declaration
-        and then Library_Unit_Kind = Iir_Kind_Package_Body
+if Unit_Kind = IIR::Kind_Package_Declaration
+        and then Library_Unit_Kind = IIR::Kind_Package_Body
 then
 return False;
 end if;
 
 //  Two architecture declarations are identical only if they also have
 //  the same entity name.
-if Unit_Kind = Iir_Kind_Architecture_Body
-        and then Library_Unit_Kind = Iir_Kind_Architecture_Body
+if Unit_Kind = IIR::Kind_Architecture_Body
+        and then Library_Unit_Kind = IIR::Kind_Architecture_Body
 then
         Entity_Name1 = Get_Entity_Identifier_Of_Architecture (Unit);
 Entity_Name2 = Get_Entity_Identifier_Of_Architecture (Library_Unit);
@@ -500,11 +515,11 @@ end if;
 
 //  An architecture declaration never conflits with a library unit that
 //  is not an architecture declaration.
-if (Unit_Kind = Iir_Kind_Architecture_Body
-        and then Library_Unit_Kind /= Iir_Kind_Architecture_Body)
+if (Unit_Kind = IIR::Kind_Architecture_Body
+        and then Library_Unit_Kind /= IIR::Kind_Architecture_Body)
 or else
-(Unit_Kind /= Iir_Kind_Architecture_Body
-        and then Library_Unit_Kind = Iir_Kind_Architecture_Body)
+(Unit_Kind /= IIR::Kind_Architecture_Body
+        and then Library_Unit_Kind = IIR::Kind_Architecture_Body)
 then
 return False;
 end if;
@@ -516,21 +531,21 @@ end Is_Same_Library_Unit;
 // from a previous unit in a source file) has been replaced by a new unit.  Free everything but DESIGN_UNIT, has
 // it may be referenced in other units (dependence...)
 //  FIXME: Isn't the library unit also referenced too ?
-procedure Free_Design_Unit (Design_Unit : Iir_Design_Unit)
+procedure Free_Design_Unit (Design_Unit : IIR::Design_Unit)
 is
         Lib : Iir;
-Unit : Iir_Design_Unit;
-Dep_List : Iir_List;
+Unit : IIR::Design_Unit;
+Dep_List : IIR::List;
 begin
 //  Free dependence list.
 Dep_List = Get_Dependence_List (Design_Unit);
-Destroy_Iir_List (Dep_List);
-Set_Dependence_List (Design_Unit, Null_Iir_List);
+Destroy_IIR::List (Dep_List);
+Set_Dependence_List (Design_Unit, Null_IIR::List);
 
 //  Free default configuration of architecture (if any).
 Lib = Get_Library_Unit (Design_Unit);
 if Lib /= Null_Iir
-        and then Get_Kind (Lib) = Iir_Kind_Architecture_Body
+        and then Get_Kind (Lib) = IIR::Kind_Architecture_Body
 then
         Free_Iir (Get_Entity_Name (Lib));
 Unit = Get_Default_Configuration_Declaration (Lib);
@@ -544,17 +559,18 @@ Free_Iir (Lib);
 Set_Library_Unit (Design_Unit, Null_Iir);
 end Free_Design_Unit;
 */
-void Remove_Unit_From_File(Iir_Design_Unit* Unit_Ref,Iir_Design_File* File) {
+void Remove_Unit_From_File(IIR::Design_Unit* Unit_Ref, IIR::Design_File* File) {
     auto iter = std::find(File->Design_Units.begin(), File->Design_Units.end(), Unit_Ref);
     assert(iter != File->Design_Units.end());
     File->Design_Units.erase(iter);
 }
+
 /*
 // Add or replace a design unit in the working library.
-void packageHandler::Add_Design_Unit_Into_Library(Iir_Design_Unit* Unit, bool Keep_Obsolete = false) {
-//        Design_File: Iir_Design_File;
-//Design_Unit, Prev_Design_Unit : Iir_Design_Unit;
-//Last_Unit : Iir_Design_Unit;
+void packageHandler::Add_Design_Unit_Into_Library(IIR::Design_Unit* Unit, bool Keep_Obsolete = false) {
+//        Design_File: IIR::Design_File;
+//Design_Unit, Prev_Design_Unit : IIR::Design_Unit;
+//Last_Unit : IIR::Design_Unit;
 //Library_Unit: Iir;
 //New_Library_Unit: Iir;
 //Unit_Id : Name_Id;
@@ -757,7 +773,7 @@ end if;
 
 if Design_File = Null_Iir then
 // This is the first apparition of the design file.
-Design_File = Create_Iir (Iir_Kind_Design_File);
+Design_File = Create_Iir (IIR::Kind_Design_File);
 Location_Copy (Design_File, Unit);
 
 Set_Design_File_Filename (Design_File, File_Name);
@@ -794,53 +810,53 @@ Set_Analysis_Time_Stamp (Design_File, Files_Map.Get_Os_Time_Stamp);
 end Add_Design_Unit_Into_Library;
 */
 
-void packageHandler::Add_Design_File_Into_Library (Iir_Design_File* File) {
-    for (auto&& unit : File->Design_Units) {
+void packageHandler::Add_Design_File_Into_Library(IIR::Design_File* File) {
+    for (auto &&unit : File->Design_Units) {
         Add_Design_Unit_Into_Library(unit, true);
     }
 }
 
 struct Save_Design_Unit {
 
-    nlohmann::json operator()(Iir_Entity_Declaration* unit) {
+    nlohmann::json operator()(IIR::Entity_Declaration* unit) {
         nlohmann::json result;
         result["type"] = "entity";
         return result;
     }
 
-    nlohmann::json operator()(Iir_Architecture_Body* unit) {
+    nlohmann::json operator()(IIR::Architecture_Body* unit) {
         nlohmann::json result;
         result["type"] = "architecture";
-        result["entity"] = unit->Entity_Name->Identifier;
+        result["entity"] = getVariantValue(unit->Entity_Name, Identifier);
         return result;
     }
 
-    nlohmann::json operator()(Iir_Package_Declaration* unit) {
+    nlohmann::json operator()(IIR::Package_Declaration* unit) {
         nlohmann::json result;
         result["type"] = "package";
         result["body"] = unit->Need_Body;
         return result;
     }
 
-    nlohmann::json operator()(Iir_Package_Instantiation_Declaration* unit) {
+    nlohmann::json operator()(IIR::Package_Instantiation_Declaration* unit) {
         nlohmann::json result;
         result["type"] = "package_body";
         return result;
     }
 
-    nlohmann::json operator()(Iir_Package_Body* unit) {
+    nlohmann::json operator()(IIR::Package_Body* unit) {
         nlohmann::json result;
         result["type"] = "package_body";
         return result;
     }
 
-    nlohmann::json operator()(Iir_Configuration_Declaration* unit) {
+    nlohmann::json operator()(IIR::Configuration_Declaration* unit) {
         nlohmann::json result;
         result["type"] = "configuration";
         return result;
     }
 
-    nlohmann::json operator()(Iir_Context_Declaration* unit) {
+    nlohmann::json operator()(IIR::Context_Declaration* unit) {
         nlohmann::json result;
         result["type"] = "context";
         return result;
@@ -848,15 +864,17 @@ struct Save_Design_Unit {
 };
 
 // Save the file map of library LIBRARY.
-void packageHandler::Save_Library(Iir_Library_Declaration* Library) {
+void packageHandler::Save_Library(IIR::Library_Declaration* Library) {
     nlohmann::json data;
     data["version"] = 1;
     for (auto &&designFile : Library->Design_Files) {
         //  Ignore std.standard as there is no corresponding file.
-        if(!designFile->Design_Units.empty()){
+        if (!designFile->Design_Units.empty()) {
             nlohmann::json dFile;
             dFile["sha256"] = designFile->File_Checksum;
-            dFile["timestamp"] = designFile->Analysis_Time_Stamp;
+            std::stringstream ss;
+            ss << std::put_time(&designFile->Analysis_Time_Stamp, "%c");
+            dFile["timestamp"] = ss.str();
             dFile["design_units"] = nlohmann::json::array();
             for (auto &&designUnit  : designFile->Design_Units) {
                 auto unit = std::visit(Save_Design_Unit{}, designUnit->Library_Unit);
@@ -881,7 +899,7 @@ inline void packageHandler::Save_Work_Library() {
 
 // parse a file.
 // Return a design_file without putting it into the library (because it was not analyzed).
-Iir_Design_File* packageHandler::Load_File(std::filesystem::path file) {
+IIR::Design_File* packageHandler::Load_File(std::filesystem::path file) {
     Location_Type loc{file, 0, 0, 0};
     Scanner scanner(state, loc);
     scanner.Detect_Encoding_Errors();
@@ -889,7 +907,7 @@ Iir_Design_File* packageHandler::Load_File(std::filesystem::path file) {
     // at the beginning of a file.
     Parser parser(scanner);
     auto Res = parser.Parse_Design_File();
-    if(Res) {
+    if (Res) {
         Res->Library = Work_Library;
         Res->Design_File_Filename = file;
     }
@@ -897,16 +915,18 @@ Iir_Design_File* packageHandler::Load_File(std::filesystem::path file) {
 
 }
 
-Iir_Design_Unit* packageHandler::Find_Design_Unit(Iir_Selected_Name* Unit) {
-    auto Lib = Get_Library(Unit->Prefix->Identifier, Unit->Location);
+IIR::Design_Unit* packageHandler::Find_Design_Unit(IIR::Selected_Name* Unit) {
+    auto Lib = Get_Library(static_cast<IIR::Design_Unit*>(Unit->Prefix)->Identifier, Unit->Location);
     return Find_Primary_Unit(Lib, Unit->Identifier);
 }
 
-Iir_Design_Unit* packageHandler::Find_Design_Unit(Iir_Entity_Aspect_Entity* Unit) {
-    return Find_Secondary_Unit(Unit->Entity_Name, Unit->Architecture->Identifier);
+IIR::Design_Unit* packageHandler::Find_Design_Unit(IIR::Entity_Aspect_Entity* Unit) {
+//    return Find_Secondary_Unit(Unit->Entity_Name, Unit->Architecture->Identifier);
+    return nullptr;
 }
+
 /*
-function Is_Obsolete (Design_Unit : Iir_Design_Unit; Loc : Iir)
+function Is_Obsolete (Design_Unit : IIR::Design_Unit; Loc : Iir)
 return Boolean
         is
 procedure Error_Obsolete (Msg : String; Arg1 : Earg_Type) is
@@ -931,9 +951,9 @@ end if;
 end if;
 end Error_Obsolete;
 
-List : Iir_List;
+List : IIR::List;
 El : Iir;
-Unit : Iir_Design_Unit;
+Unit : IIR::Design_Unit;
 U_Ts : Time_Stamp_Id;
 Du_Ts : Time_Stamp_Id;
 begin
@@ -942,7 +962,7 @@ if Get_Date (Design_Unit) = Date_Obsolete then
 return True;
 end if;
 List = Get_Dependence_List (Design_Unit);
-if List = Null_Iir_List then
+if List = Null_IIR::List then
 return False;
 end if;
 Du_Ts = Get_Analysis_Time_Stamp (Get_Design_File (Design_Unit));
@@ -964,7 +984,7 @@ end loop;
 return False;
 end Is_Obsolete;
 */
-void packageHandler::Finish_Compilation(Iir_Design_Unit* Unit, bool Main) {
+void packageHandler::Finish_Compilation(IIR::Design_Unit* Unit, bool Main) {
     auto Lib_Unit = Unit->Library_Unit;
 
     if (Main || state.options.Dump_All || state.options.Dump_Parse) {
@@ -1035,19 +1055,20 @@ void packageHandler::Finish_Compilation(Iir_Design_Unit* Unit, bool Main) {
 }
 
 
-void packageHandler::Load_Parse_Design_Unit(Iir_Design_Unit* Design_Unit, Iir* Loc) {
+void packageHandler::Load_Parse_Design_Unit(IIR::Design_Unit* Design_Unit, IIR::Base* Loc) {
     assert (Design_Unit->Date_State == Date_Disk);
 
 //  Load the file in memory.
-    auto Design_File = Design_Unit->Design_File;
+    auto Design_File = Design_Unit->design_File;
 
     if (Design_File->File_Checksum != calculateChecksum(Design_File->Design_File_Filename))
         CompilationError("file " + Design_File->Design_File_Filename.string() + "has changed and must be reanalysed");
     else if (Design_Unit->Date == 0)
-        SemanticError(Design_Unit->Design_File->Design_File_Filename.string() + "is not anymore its source file");
+        SemanticError(Design_Unit->design_File->Design_File_Filename.string() + "is not anymore its source file");
 
 //  Set the position of the lexer
-    Parser parser(state, Design_Unit->Source_Pos);
+    Scanner scanner(state, Design_Unit->Source_Pos);
+    Parser parser(scanner);
     auto result = parser.Parse_Design_Unit(Design_Unit->Source_Pos);
 
     if (!result)
@@ -1063,17 +1084,17 @@ void packageHandler::Load_Parse_Design_Unit(Iir_Design_Unit* Design_Unit, Iir* L
 //FIXME: Iirs_Utils.Free_Recursive (Get_Library_Unit (Design_Unit));
     Design_Unit->Library_Unit = result->Library_Unit;
     //FIXME:
-    result->Library_Unit->Parent_Design_Unit = Design_Unit;
+    setVariantValue(result->Library_Unit, Parent_Design_Unit, Design_Unit);
 //Set_Design_Unit (Get_Library_Unit (result), Design_Unit);
 //Set_Parent (Get_Library_Unit (result), Design_Unit);
 
-    for (auto&& contextItem : result->Context_Items) {
+    for (auto &&contextItem : result->Context_Items) {
         Design_Unit->Context_Items.push_back(contextItem);
     }
 
     Design_Unit->Location = result->Location;
 
-    for (auto&& item :Design_Unit->Dependence_List) {
+    for (auto &&item :Design_Unit->Dependence_List) {
         delete item;
     }
 
@@ -1084,7 +1105,7 @@ void packageHandler::Load_Parse_Design_Unit(Iir_Design_Unit* Design_Unit, Iir* L
 
 // Load, parse, analyze, back-end a design_unit if necessary.
 
-void packageHandler::Load_Design_Unit (Iir_Design_Unit* Design_Unit, Iir* Loc) {
+void packageHandler::Load_Design_Unit(IIR::Design_Unit* Design_Unit, IIR::Base* Loc) {
 
     if (Design_Unit->Date_State == Date_Disk)
         Load_Parse_Design_Unit(Design_Unit, Loc);
@@ -1092,7 +1113,7 @@ void packageHandler::Load_Design_Unit (Iir_Design_Unit* Design_Unit, Iir* Loc) {
     if (Design_Unit->Date_State == Date_Parse) {
 //  Analyze the design unit.
 
-        if (Design_Unit->Date = Date_Analyzed) {
+        if (Design_Unit->Date == Date_Analyze) {
 //  Work-around for an internal check in sem.
 //  FIXME: to be removed ?
             Design_Unit->Date = 4;
@@ -1101,10 +1122,9 @@ void packageHandler::Load_Design_Unit (Iir_Design_Unit* Design_Unit, Iir* Loc) {
 //  Avoid infinite recursion, if the unit is self-referenced.
         Design_Unit->Date_State = Date_Analyze;
 
-//  Disable all warnings.  Warnings are emitted only when the unit
-//  is analyzed.
+//  Disable all warnings.  Warnings are emitted only when the unit is analyzed.
 //FIXME: Save_Warnings_Setting (Warnings);
-        Disable_All_Warnings;
+//        Disable_All_Warnings;
 
 //  Analyze unit.
         Finish_Compilation(Design_Unit);
@@ -1114,43 +1134,45 @@ void packageHandler::Load_Design_Unit (Iir_Design_Unit* Design_Unit, Iir* Loc) {
     }
 
     switch (Design_Unit->Date) {
-    case 4:
-        throw std::logic_error("");
-    case 5:
+        case 4:
+            throw std::logic_error("");
+        case 5:
 //  Self-referenced unit.
-        return;
-    case 6:
+            return;
+        case 6:
 //  FIXME: Accept it silently ?
 //  Note: this is used when Flag_Elaborate_With_Outdated is set.
 //  This is also used by anonymous configuration declaration.
-        break;
-    case 7:
-        return;
-    case 0:
-        if (!state.options.Flag_Elaborate_With_Outdated)
-            SemanticError(Design_Unit->Identifier + " is obsolete");
-        return;
-    default:
-        if (Design_Unit->Date > 10)
             break;
-        else
-            throw std::logic_error("");
+        case 7:
+            return;
+        case 0:
+            if (!state.options.Flag_Elaborate_With_Outdated)
+                SemanticError(Design_Unit->Identifier + " is obsolete");
+            return;
+        default:
+            if (Design_Unit->Date > 10)
+                break;
+            else
+                throw std::logic_error("");
     }
 
-    if (!state.options.Flag_Elaborate_With_Outdated && Is_Obsolete(Design_Unit, Loc))
+    // FIXME: About obsolete stuff
+    if (!state.options.Flag_Elaborate_With_Outdated /*&& Is_Obsolete(Design_Unit, Loc)*/)
         Design_Unit->Date = 0;
 }
 
 //  Return the declaration of primary unit NAME of LIBRARY.
-Iir_Design_Unit* packageHandler::Find_Primary_Unit(Iir_Library_Declaration* Library, std::string Name) {
+IIR::Design_Unit* packageHandler::Find_Primary_Unit(IIR::Library_Declaration* Library, std::string Name) {
     auto unit = Primary_Units.find(Library->Identifier + '#' + Name);
 
-    if(unit == Primary_Units.end())
-        return nullptr;
-    else return unit->second;
+//    if (unit == Primary_Units.end())
+//        return nullptr;
+//    else return unit->second;
 }
 
-Iir_Design_Unit* packageHandler::Load_Primary_Unit(Iir_Library_Declaration* Library, std::string Name, Iir* Loc) {
+IIR::Design_Unit*
+packageHandler::Load_Primary_Unit(IIR::Library_Declaration* Library, std::string Name, IIR::Base* Loc) {
     auto Design_Unit = Find_Primary_Unit(Library, Name);
     if (Design_Unit != nullptr)
         Load_Design_Unit(Design_Unit, Loc);
@@ -1161,20 +1183,20 @@ Iir_Design_Unit* packageHandler::Load_Primary_Unit(Iir_Library_Declaration* Libr
 // Return the declaration of secondary unit NAME for PRIMARY, or null if
 // not found.
 
-Iir_Design_Unit* packageHandler::Find_Secondary_Unit(Iir_Design_Unit* Primary, std::string Name) {
-    auto unit = Secondary_Units.find(Primary->Design_File->Library->Identifier + '#' + Name);
-    return unit->second;
+IIR::Design_Unit* packageHandler::Find_Secondary_Unit(IIR::Design_Unit* Primary, std::string Name) {
+    auto unit = Secondary_Units.find(Primary->design_File->Library->Identifier + '#' + Name);
+//    return unit->second;
 }
 
 // Load an secondary unit and analyse it.
-Iir_Design_Unit* packageHandler::Load_Secondary_Unit(Iir_Design_Unit* Primary, std::string Name, Iir* Loc) {
-    auto Design_Unit = Find_Secondary_Unit (Primary, Name);
+IIR::Design_Unit* packageHandler::Load_Secondary_Unit(IIR::Design_Unit* Primary, std::string Name, IIR::Base* Loc) {
+    auto Design_Unit = Find_Secondary_Unit(Primary, Name);
     if (Design_Unit)
-            Load_Design_Unit (Design_Unit, Loc);
+        Load_Design_Unit(Design_Unit, Loc);
     return Design_Unit;
 }
 
-std::vector<Iir_Library_Declaration*> packageHandler::Get_Libraries_List () {
+std::vector<IIR::Library_Declaration*> packageHandler::Get_Libraries_List() {
     return Libraries_List;
 }
 

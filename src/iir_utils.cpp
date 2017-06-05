@@ -688,11 +688,11 @@ Set_Expr_Staticness (Res, Locally);
 return Res;
 end Copy_Enumeration_Literal;
 */
-void Create_Range_Constraint_For_Enumeration_Type(Iir_Enumeration_Type_Definition& Def) {
+void Create_Range_Constraint_For_Enumeration_Type(IIR::Enumeration_Type_Definition& Def) {
 //    Literal_List :  constant Iir_List : = Get_Enumeration_Literal_List(Def);
 
 //  Create a constraint.
-    auto Range_Expr = new Iir_Range_Expression;
+    auto Range_Expr = new IIR::Range_Expression;
     Range_Expr->Location = Def.Location;
     Range_Expr->Type = &Def;
     Range_Expr->Direction = Iir_To;
@@ -907,20 +907,6 @@ return Name;
 end if;
 end Strip_Denoting_Name;
 */
-
-Iir_Simple_Name* Build_Simple_Name(Iir_Identifier_Abs* Ref, Location_Type Loc) {
-    auto Res = new Iir_Simple_Name;
-    Res->Location = Loc;
-    Res->Identifier = Ref->Identifier;
-    Res->Named_Entity = Ref;
-    Res->Base_Name = Res;
-//  FIXME: set type and expr staticness ?
-    return Res;
-}
-
-inline Iir_Simple_Name* Build_Simple_Name(Iir_Identifier_Abs* Ref, Iir* Loc) {
-    return Build_Simple_Name(Ref, Loc->Location);
-}
 /*
 function Build_Reference_Name (Name : Iir) return Iir
         is
@@ -1268,8 +1254,8 @@ begin
 return Res;
 end Get_Configuration;
 */
-inline std::string Get_Entity_Identifier_Of_Architecture (Iir_Architecture_Body* Arch) {
-    return Arch->Entity_Name->Identifier;
+inline std::string Get_Entity_Identifier_Of_Architecture (IIR::Architecture_Body* Arch) {
+    return getVariantValue(Arch->Entity_Name, Identifier);
 /*
 case Get_Kind (Name) is
         when Iir_Kind_Simple_Name
@@ -1453,8 +1439,8 @@ Error_Kind ("get_actual_or_default", Assoc);
 end case;
 end Get_Actual_Or_Default;
 */
-inline Iir_Error* Create_Error (Iir* Orig) {
-    auto Res = new Iir_Error;
+inline IIR::Error* Create_Error (IIR::Base* Orig) {
+    auto Res = new IIR::Error;
     Res->Error_Origin = Orig;
     Res->Location = Orig->Location;
     return Res;
@@ -1470,7 +1456,7 @@ Set_Type (Res, Atype);
 return Res;
 end Create_Error_Expr;
 */
-Iir_Error* Create_Error_Type (Iir* Orig) {
+IIR::Error* Create_Error_Type (IIR::Base* Orig) {
     auto Res = Create_Error(Orig);
 //Set_Expr_Staticness (Res, Locally);
     Res->Base_Type = Res;
@@ -1558,3 +1544,4 @@ procedure Set_HDL_Node (N : PSL_Node; Expr : Iir) is
 PSL.Nodes.Set_HDL_Node (N, PSL.Nodes.HDL_Node (Expr));
 end Set_HDL_Node;
 end Iirs_Utils;
+*/

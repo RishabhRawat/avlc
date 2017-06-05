@@ -121,7 +121,7 @@ using File_Checksum_Id = std::string;
 
 //TODO: This type is only for file positions, as opposed to Iir position, ghdl uses same for both
 struct Location_Type {
-    std::filesystem::path filePath;
+    std::filesystem::path filePath = "";
     uint32_t Line = 0;
     uint32_t Line_Pos = 0;
     uint32_t Pos = 0;
