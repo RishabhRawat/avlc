@@ -22,14 +22,17 @@
 
 #include <string>
 #include <vector>
+#include <typeinfo>
+#include <typeindex>
 #include "iir_types.h"
-#include "types.h"
+#include "Token.h"
 #include <variant>
 #include <optional>
 
 
 #define getVariantValue(var, member) std::visit([](auto bareElement) {return bareElement->member;}, var)
 #define setVariantValue(var, member, value) std::visit([value](auto bareElement) {return bareElement->member = value;}, var)
+#define matchesType(variable, class) std::type_index(typeid(variable)) == std::type_index(typeid(class))
 
 namespace IIR {
 
@@ -61,7 +64,7 @@ namespace IIR {
     const int Association_Element_Subprogram_id = 24;
     const int Choice_By_Range_id = 25;
     const int Choice_By_Expression_id = 26;
-    const int Kind_Choice_By_Others_id = 27;
+    const int Choice_By_Others_id = 27;
     const int Choice_By_None_id = 28;
     const int Choice_By_Name_id = 29;
     const int Entity_Aspect_Entity_id = 30;
@@ -348,7 +351,7 @@ namespace IIR {
     struct Association_Element_Subprogram;
     struct Choice_By_Range;
     struct Choice_By_Expression;
-    struct Kind_Choice_By_Others;
+    struct Choice_By_Others;
     struct Choice_By_None;
     struct Choice_By_Name;
     struct Entity_Aspect_Entity;
@@ -547,6 +550,7 @@ namespace IIR {
     struct Base {
         Location_Type Location;
         int structId;
+        virtual ~Base() {};
     };
 
     struct Error
@@ -791,7 +795,7 @@ namespace IIR {
         Iir_Staticness Choice_Staticness;
     };
 
-    struct Kind_Choice_By_Others
+    struct Choice_By_Others
             : public Base {
         bool Same_Alternative_Flag;
         Base* Associated_Expr;
@@ -873,7 +877,7 @@ namespace IIR {
 
     struct Entity_Class
             : public Base {
-        Token_Type Entity_Class;
+        Token::Token Entity_Class;
         Base* Chain;
     };
 
@@ -948,7 +952,7 @@ namespace IIR {
         Base* Attribute_Specification_Chain;
         std::vector<Base*> Entity_Name_List;
         Base* Attribute_Designator;
-        Token_Type Entity_Class;
+        Token::Token Entity_Class;
         Base* Chain;
         Base* Expression;
         Base* Parent;
@@ -1405,7 +1409,7 @@ namespace IIR {
             : public Base {
         Base* Default_Configuration_Declaration;
         Base* Attribute_Value_Chain;
-        Arch_Name Entity_Name;
+        Simple_Name* Entity_Name;
         Base* Concurrent_Statement_Chain;
         std::vector<Base*> Declaration_Chain;
         std::string Identifier;
@@ -1841,13 +1845,13 @@ namespace IIR {
     struct Interface_Object_Declaration
             : public Base {
         enum class type {constant, variable, signal, file} Interface_Object_Type;
-        std::optional<Interface_Signal_Declaration_Extras> extras;
+        std::optional<Interface_Signal_Declaration_Extras*> extras;
         std::string Identifier;
         bool Visible_Flag;
         Base* Parent;
         Iir_Staticness Expr_Staticness;
         bool After_Drivers_Flag;
-        Base* Chain;
+        Interface_Object_Declaration* Chain;
         Base* Type;
         std::optional<Iir_Mode> Mode;
         Base* Default_Value;

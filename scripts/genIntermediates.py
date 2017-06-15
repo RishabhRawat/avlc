@@ -65,6 +65,9 @@ def generatecpp(filename):
                     cppSource.write(' {\n')
                     for mem_name, mem_type in element["members"].items():
                         cppSource.write('        %s %s;\n' % (mem_type, mem_name))
+                    if "functions" in element:
+                        for function in element["functions"]:
+                            cppSource.write('        %s %s(%s) {%s};\n' % (function["signature"], function["name"], function["args"], function["body"]))
                     cppSource.write('    };\n\n')
 
         cppSource.write('}\n')

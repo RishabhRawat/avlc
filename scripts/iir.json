@@ -4,14 +4,17 @@
   "includes": [
     "string",
     "vector",
+    "typeinfo",
+    "typeindex",
     "iir_types.h",
-    "types.h",
+    "Token.h",
     "variant",
     "optional"
   ],
   "macros": [
     "#define getVariantValue(var, member) std::visit([](auto bareElement) {return bareElement->member;}, var)",
-    "#define setVariantValue(var, member, value) std::visit([value](auto bareElement) {return bareElement->member = value;}, var)"
+    "#define setVariantValue(var, member, value) std::visit([value](auto bareElement) {return bareElement->member = value;}, var)",
+    "#define matchesType(variable, class) std::type_index(typeid(variable)) == std::type_index(typeid(class))"
   ],
   "namespaces": [
     {
@@ -184,7 +187,15 @@
           "members": {
             "Location": "Location_Type",
             "structId": "int"
-          }
+          },
+          "functions":[
+            {
+              "signature": "virtual",
+              "name": "~Base",
+              "args": "",
+              "body": ""
+            }
+          ]
         },
         {
           "name": "Error",
@@ -558,7 +569,7 @@
           }
         },
         {
-          "name": "Kind_Choice_By_Others",
+          "name": "Choice_By_Others",
           "type": "class",
           "inheritance": {
             "Base": "public"
@@ -693,7 +704,7 @@
             "Base": "public"
           },
           "members": {
-            "Entity_Class": "Token_Type",
+            "Entity_Class": "Token::Token",
             "Chain": "Base*"
           }
         },
@@ -813,7 +824,7 @@
             "Attribute_Specification_Chain": "Base*",
             "Entity_Name_List": "std::vector<Base*>",
             "Attribute_Designator": "Base*",
-            "Entity_Class": "Token_Type",
+            "Entity_Class": "Token::Token",
             "Chain": "Base*",
             "Expression": "Base*",
             "Parent": "Base*"
@@ -1455,7 +1466,7 @@
           "members": {
             "Default_Configuration_Declaration": "Base*",
             "Attribute_Value_Chain": "Base*",
-            "Entity_Name": "Arch_Name",
+            "Entity_Name": "Simple_Name*",
             "Concurrent_Statement_Chain": "Base*",
             "Declaration_Chain": "std::vector<Base*>",
             "Identifier": "std::string",
@@ -2041,13 +2052,13 @@
           },
           "members": {
             "Interface_Object_Type": "enum class type {constant, variable, signal, file}",
-            "extras": "std::optional<Interface_Signal_Declaration_Extras>",
+            "extras": "std::optional<Interface_Signal_Declaration_Extras*>",
             "Identifier": "std::string",
             "Visible_Flag": "bool",
             "Parent": "Base*",
             "Expr_Staticness": "Iir_Staticness",
             "After_Drivers_Flag": "bool",
-            "Chain": "Base*",
+            "Chain": "Interface_Object_Declaration*",
             "Type": "Base*",
             "Mode": "std::optional<Iir_Mode>",
             "Default_Value": "Base*",
